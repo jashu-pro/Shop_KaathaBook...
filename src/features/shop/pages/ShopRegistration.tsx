@@ -1,5 +1,5 @@
 /* features/shop/pages/ShopRegistration.tsx */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../../stores/authStore';
 import { useTheme } from '../../../providers/ThemeProvider';
@@ -41,19 +41,25 @@ const ShopRegistration: React.FC = () => {
   const [successState, setSuccessState] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  // Input Refs for System Camera & Gallery Picker
+  const ownerCameraRef = useRef<HTMLInputElement>(null);
+  const ownerGalleryRef = useRef<HTMLInputElement>(null);
+  const shopCameraRef = useRef<HTMLInputElement>(null);
+  const shopGalleryRef = useRef<HTMLInputElement>(null);
+
   // Form State
-  // 1. Owner Details
+  // 1. Owner Details (NO prefilled photos or dummy text)
   const [fullName, setFullName] = useState(user?.fullName || '');
   const [mobileNumber, setMobileNumber] = useState('');
   const [email, setEmail] = useState(user?.email || '');
-  const [ownerAvatar, setOwnerAvatar] = useState('https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80');
+  const [ownerAvatar, setOwnerAvatar] = useState<string | null>(null);
 
   // 2. Shop Details
   const [shopName, setShopName] = useState('');
   const [businessCategory, setBusinessCategory] = useState('Kirana Store');
   const [categorySearch, setCategorySearch] = useState('');
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
-  const [shopLogo, setShopLogo] = useState('https://images.unsplash.com/photo-1578916171728-46686eac8d58?w=300&auto=format&fit=crop&q=80');
+  const [shopLogo, setShopLogo] = useState<string | null>(null);
 
   // 3. Address Details
   const [doorNumber, setDoorNumber] = useState('');
@@ -130,25 +136,18 @@ const ShopRegistration: React.FC = () => {
     s.toLowerCase().includes(stateSearch.toLowerCase())
   );
 
-  // File upload mocks
-  const handleAvatarMockUpload = () => {
-    const samples = [
-      'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=300&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&auto=format&fit=crop&q=80'
-    ];
-    const random = samples[Math.floor(Math.random() * samples.length)];
-    setOwnerAvatar(random);
-  };
-
-  const handleLogoMockUpload = () => {
-    const samples = [
-      'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=300&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=300&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1586015555751-63bb77f4322a?w=300&auto=format&fit=crop&q=80'
-    ];
-    const random = samples[Math.floor(Math.random() * samples.length)];
-    setShopLogo(random);
+  // File selection handler reading system camera & file picker
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, setFn: (val: string) => void) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (event.target?.result) {
+          setFn(event.target.result as string);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   // Step Validation & Navigation
@@ -208,7 +207,7 @@ const ShopRegistration: React.FC = () => {
         gstin: gstin.toUpperCase() || undefined,
         pan: pan.toUpperCase() || undefined,
         upiId: upiId.trim(),
-        logoUrl: shopLogo,
+        logoUrl: shopLogo || undefined,
         currency,
         theme: themePref,
         language,
@@ -253,6 +252,38 @@ const ShopRegistration: React.FC = () => {
       padding: '2.5rem 1rem',
       fontFamily: 'var(--font-sans)'
     }}>
+      {/* Hidden System File Inputs */}
+      <input
+        type="file"
+        ref={ownerCameraRef}
+        accept="image/*"
+        capture="user"
+        style={{ display: 'none' }}
+        onChange={(e) => handleFileChange(e, setOwnerAvatar)}
+      />
+      <input
+        type="file"
+        ref={ownerGalleryRef}
+        accept="image/*"
+        style={{ display: 'none' }}
+        onChange={(e) => handleFileChange(e, setOwnerAvatar)}
+      />
+      <input
+        type="file"
+        ref={shopCameraRef}
+        accept="image/*"
+        capture="environment"
+        style={{ display: 'none' }}
+        onChange={(e) => handleFileChange(e, setShopLogo)}
+      />
+      <input
+        type="file"
+        ref={shopGalleryRef}
+        accept="image/*"
+        style={{ display: 'none' }}
+        onChange={(e) => handleFileChange(e, setShopLogo)}
+      />
+
       <div className="onboarding-card" style={{ padding: '0' }}>
         
         {/* Top Header & Brand Bar */}
@@ -407,16 +438,38 @@ const ShopRegistration: React.FC = () => {
                     <div style={{
                       width: '160px', height: '160px', borderRadius: '50%',
                       overflow: 'hidden', border: '4px solid var(--primary-light)',
-                      boxShadow: '0 10px 25px rgba(15, 23, 42, 0.08)', position: 'relative'
+                      boxShadow: '0 10px 25px rgba(15, 23, 42, 0.08)', position: 'relative',
+                      backgroundColor: 'var(--bg-secondary)', display: 'flex',
+                      alignItems: 'center', justifyContent: 'center'
                     }}>
-                      <img src={ownerAvatar} alt="Owner Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      {ownerAvatar ? (
+                        <img src={ownerAvatar} alt="Owner Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      ) : (
+                        <div style={{
+                          display: 'flex', flexDirection: 'column', alignItems: 'center',
+                          justifyContent: 'center', color: 'var(--text-muted)'
+                        }}>
+                          <UserIcon size={56} />
+                          <span style={{ fontSize: '0.75rem', marginTop: '0.35rem', fontWeight: '600' }}>Add Photo</span>
+                        </div>
+                      )}
                     </div>
 
                     <div style={{ display: 'flex', gap: '0.5rem' }}>
-                      <button type="button" onClick={handleAvatarMockUpload} className="btn btn-secondary btn-icon" title="Take photo via Camera">
+                      <button 
+                        type="button" 
+                        onClick={() => ownerCameraRef.current?.click()} 
+                        className="btn btn-secondary btn-icon" 
+                        title="Take photo via System Camera"
+                      >
                         <Camera size={18} />
                       </button>
-                      <button type="button" onClick={handleAvatarMockUpload} className="btn btn-secondary btn-icon" title="Choose from Gallery">
+                      <button 
+                        type="button" 
+                        onClick={() => ownerGalleryRef.current?.click()} 
+                        className="btn btn-secondary btn-icon" 
+                        title="Upload photo from Gallery / Files"
+                      >
                         <ImageIcon size={18} />
                       </button>
                     </div>
@@ -441,7 +494,7 @@ const ShopRegistration: React.FC = () => {
                       <input
                         type="tel"
                         className="input-field"
-                        placeholder="+91 98765 43210"
+                        placeholder="e.g. +91 98765 43210"
                         value={mobileNumber}
                         onChange={(e) => setMobileNumber(e.target.value)}
                       />
@@ -481,14 +534,34 @@ const ShopRegistration: React.FC = () => {
                       backgroundColor: 'var(--primary-light)', display: 'flex',
                       alignItems: 'center', justifyContent: 'center', position: 'relative'
                     }}>
-                      <img src={shopLogo} alt="Shop Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      {shopLogo ? (
+                        <img src={shopLogo} alt="Shop Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      ) : (
+                        <div style={{
+                          display: 'flex', flexDirection: 'column', alignItems: 'center',
+                          justifyContent: 'center', color: 'var(--primary)'
+                        }}>
+                          <Store size={48} />
+                          <span style={{ fontSize: '0.75rem', marginTop: '0.35rem', fontWeight: '600' }}>Upload Logo</span>
+                        </div>
+                      )}
                     </div>
 
                     <div style={{ display: 'flex', gap: '0.5rem' }}>
-                      <button type="button" onClick={handleLogoMockUpload} className="btn btn-secondary btn-icon" title="Take photo via Camera">
+                      <button 
+                        type="button" 
+                        onClick={() => shopCameraRef.current?.click()} 
+                        className="btn btn-secondary btn-icon" 
+                        title="Take photo via System Camera"
+                      >
                         <Camera size={18} />
                       </button>
-                      <button type="button" onClick={handleLogoMockUpload} className="btn btn-secondary btn-icon" title="Choose from Gallery">
+                      <button 
+                        type="button" 
+                        onClick={() => shopGalleryRef.current?.click()} 
+                        className="btn btn-secondary btn-icon" 
+                        title="Upload logo from Gallery / Files"
+                      >
                         <ImageIcon size={18} />
                       </button>
                     </div>
