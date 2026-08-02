@@ -16,8 +16,7 @@ import ShopRegistration from '../features/shop/pages/ShopRegistration';
 
 // Core Application Pages
 import Dashboard from '../features/dashboard/pages/Dashboard';
-import CustomerList from '../features/customers/pages/CustomerList';
-import CustomerDetail from '../features/customers/pages/CustomerDetail';
+import { CustomerListPage } from '../features/customers';
 import ProductList from '../features/inventory/pages/ProductList';
 import SalesList from '../features/sales/pages/SalesList';
 import NewSale from '../features/sales/pages/NewSale';
@@ -88,8 +87,8 @@ export const AppRouter: React.FC = () => {
         <Route element={<ProtectedRoute requireShop={true} />}>
           <Route element={<MainLayout />}>
             <Route path="/" element={<Dashboard />} />
-            <Route path="/customers" element={<CustomerList />} />
-            <Route path="/customers/:id" element={<CustomerDetail />} />
+            <Route path="/customers" element={<CustomerListPage />} />
+            <Route path="/customers/:id" element={<CustomerListPage />} />
             <Route path="/inventory" element={<ProductList />} />
             <Route path="/sales" element={<SalesList />} />
             <Route path="/sales/new" element={<NewSale />} />

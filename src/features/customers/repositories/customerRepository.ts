@@ -1,81 +1,38 @@
-/* customers/repositories/customerRepository.ts */
+/* features/customers/repositories/customerRepository.ts */
+import type { Customer, CreateCustomerDTO, UpdateCustomerDTO } from '../types';
 import { supabase } from '../../../config/supabase';
 import { LocalStorageDB } from '../../../services/localStorageDB';
 
-// Domain Model
-export interface Customer {
-  id: string;
-  shopId: string;
-  name: string;
-  phone?: string;
-  email?: string;
-  address?: string;
-  village?: string;
-  creditLimit: number;
-  creditBalance: number; // Derived
-  photoUrl?: string;
-  notes?: string;
-  createdAt: string;
-}
-
-// Database Entity
-export interface CustomerEntity {
-  id: string;
-  shop_id: string;
-  name: string;
-  phone: string | null;
-  email: string | null;
-  address: string | null;
-  village: string | null;
-  credit_limit: number;
-  credit_balance: number;
-  photo_url: string | null;
-  notes: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-// Data Transfer Objects
-export interface CreateCustomerDTO {
-  shopId: string;
-  name: string;
-  phone?: string;
-  email?: string;
-  address?: string;
-  village?: string;
-  creditLimit: number;
-  photoUrl?: string;
-  notes?: string;
-}
-
 export interface ICustomerRepository {
-  list(shopId: string): Promise<Customer[]>;
-  getById(id: string): Promise<Customer | null>;
-  create(dto: CreateCustomerDTO): Promise<Customer>;
-  update(id: string, updates: Partial<Customer>): Promise<Customer>;
-  delete(id: string): Promise<void>;
+  getCustomersByShop(shopId: string): Promise<Customer[]>;
+  getCustomerById(id: string): Promise<Customer | null>;
+  createCustomer(shopId: string, data: CreateCustomerDTO): Promise<Customer>;
+  updateCustomer(id: string, updates: UpdateCustomerDTO): Promise<Customer>;
+  deleteCustomer(id: string): Promise<boolean>;
+  findDuplicateByPhone(shopId: string, phone: string): Promise<Customer | null>;
 }
-
-// Mapper to convert Entity -> Domain Model
-const mapEntityToDomain = (entity: CustomerEntity): Customer => ({
-  id: entity.id,
-  shopId: entity.shop_id,
-  name: entity.name,
-  phone: entity.phone || undefined,
-  email: entity.email || undefined,
-  address: entity.address || undefined,
-  village: entity.village || undefined,
-  creditLimit: Number(entity.credit_limit),
-  creditBalance: Number(entity.credit_balance || 0),
-  photoUrl: entity.photo_url || undefined,
-  notes: entity.notes || undefined,
-  createdAt: entity.created_at,
-});
 
 export class SupabaseCustomerRepository implements ICustomerRepository {
-  async list(shopId: string): Promise<Customer[]> {
+  private mapEntityToDomain(data: any): Customer {
+    return {
+      id: data.id,
+      shopId: data.shop_id,
+      name: data.name,
+      phone: data.phone || undefined,
+      email: data.email || undefined,
+      address: data.address || undefined,
+      village: data.village || undefined,
+      creditLimit: Number(data.credit_limit || 0),
+      currentBalance: Number(data.current_balance || 0),
+      photoUrl: data.photo_url || undefined,
+      notes: data.notes || undefined,
+      createdAt: data.created_at,
+      updatedAt: data.updated_at,
+    };
+  }
+
+  async getCustomersByShop(shopId: string): Promise<Customer[]> {
     if (!supabase) return [];
-    // We fetch and also select from the customer balances view or table
     const { data, error } = await supabase
       .from('customers')
       .select('*')
@@ -83,10 +40,10 @@ export class SupabaseCustomerRepository implements ICustomerRepository {
       .order('name', { ascending: true });
 
     if (error || !data) return [];
-    return data.map((d: any) => mapEntityToDomain(d));
+    return data.map((d) => this.mapEntityToDomain(d));
   }
 
-  async getById(id: string): Promise<Customer | null> {
+  async getCustomerById(id: string): Promise<Customer | null> {
     if (!supabase) return null;
     const { data, error } = await supabase
       .from('customers')
@@ -95,35 +52,32 @@ export class SupabaseCustomerRepository implements ICustomerRepository {
       .maybeSingle();
 
     if (error || !data) return null;
-    return mapEntityToDomain(data);
+    return this.mapEntityToDomain(data);
   }
 
-  async create(dto: CreateCustomerDTO): Promise<Customer> {
+  async createCustomer(shopId: string, dto: CreateCustomerDTO): Promise<Customer> {
     if (!supabase) throw new Error('Supabase client not initialized');
     const { data, error } = await supabase
       .from('customers')
       .insert({
-        shop_id: dto.shopId,
+        shop_id: shopId,
         name: dto.name,
         phone: dto.phone || null,
         email: dto.email || null,
         address: dto.address || null,
         village: dto.village || null,
-        credit_limit: dto.creditLimit,
+        credit_limit: dto.creditLimit || 0,
         photo_url: dto.photoUrl || null,
         notes: dto.notes || null,
       })
       .select()
       .single();
 
-    if (error || !data) {
-      throw new Error(error?.message || 'Failed to create customer');
-    }
-
-    return mapEntityToDomain(data);
+    if (error || !data) throw new Error(error?.message || 'Failed to create customer');
+    return this.mapEntityToDomain(data);
   }
 
-  async update(id: string, updates: Partial<Customer>): Promise<Customer> {
+  async updateCustomer(id: string, updates: UpdateCustomerDTO): Promise<Customer> {
     if (!supabase) throw new Error('Supabase client not initialized');
     const { data, error } = await supabase
       .from('customers')
@@ -136,59 +90,140 @@ export class SupabaseCustomerRepository implements ICustomerRepository {
         credit_limit: updates.creditLimit,
         photo_url: updates.photoUrl || null,
         notes: updates.notes || null,
+        updated_at: new Date().toISOString(),
       })
       .eq('id', id)
       .select()
       .single();
 
-    if (error || !data) {
-      throw new Error(error?.message || 'Failed to update customer');
-    }
-
-    return mapEntityToDomain(data);
+    if (error || !data) throw new Error(error?.message || 'Failed to update customer');
+    return this.mapEntityToDomain(data);
   }
 
-  async delete(id: string): Promise<void> {
-    if (!supabase) throw new Error('Supabase client not initialized');
-    const { error } = await supabase
-      .from('customers')
-      .delete()
-      .eq('id', id);
+  async deleteCustomer(id: string): Promise<boolean> {
+    if (!supabase) return false;
+    const { error } = await supabase.from('customers').delete().eq('id', id);
+    return !error;
+  }
 
-    if (error) throw error;
+  async findDuplicateByPhone(shopId: string, phone: string): Promise<Customer | null> {
+    if (!supabase || !phone) return null;
+    const { data } = await supabase
+      .from('customers')
+      .select('*')
+      .eq('shop_id', shopId)
+      .eq('phone', phone)
+      .maybeSingle();
+
+    return data ? this.mapEntityToDomain(data) : null;
   }
 }
 
 export class LocalCustomerRepository implements ICustomerRepository {
-  async list(shopId: string): Promise<Customer[]> {
-    const list = await LocalStorageDB.select('customers', (c: any) => c.shop_id === shopId);
-    return list.map((item: any) => mapEntityToDomain(item));
+  private async preseedInitialCustomers(shopId: string) {
+    const existing = await LocalStorageDB.select('customers', (c: any) => c.shop_id === shopId);
+    if (existing.length === 0) {
+      const sampleCustomers = [
+        {
+          shop_id: shopId,
+          name: 'Ramesh Kumar',
+          phone: '9876543210',
+          village: 'Anantapur Town',
+          credit_limit: 10000,
+          current_balance: 1450,
+          notes: 'Regular customer for Kirana items',
+        },
+        {
+          shop_id: shopId,
+          name: 'Lakshmi Devi',
+          phone: '9123456789',
+          village: 'Rudrampeta Village',
+          credit_limit: 5000,
+          current_balance: 850,
+          notes: 'Weekly grocery purchases',
+        },
+        {
+          shop_id: shopId,
+          name: 'Venkatesh Rao',
+          phone: '9988776655',
+          village: 'Kalyandurg Road',
+          credit_limit: 15000,
+          current_balance: 0,
+          notes: 'Clear balance customer',
+        },
+        {
+          shop_id: shopId,
+          name: 'Suresh Reddy',
+          phone: '9848022334',
+          village: 'Anantapur Town',
+          credit_limit: 8000,
+          current_balance: 3200,
+          notes: 'Pending payment from last month',
+        },
+        {
+          shop_id: shopId,
+          name: 'Anita Sharma',
+          phone: '9701234567',
+          village: 'Collectorate Colony',
+          credit_limit: 12000,
+          current_balance: 0,
+          notes: 'Prefers UPI payments',
+        },
+      ];
+
+      for (const item of sampleCustomers) {
+        await LocalStorageDB.insert('customers', item);
+      }
+    }
   }
 
-  async getById(id: string): Promise<Customer | null> {
+  private mapEntityToDomain(data: any): Customer {
+    return {
+      id: data.id,
+      shopId: data.shop_id,
+      name: data.name,
+      phone: data.phone || undefined,
+      email: data.email || undefined,
+      address: data.address || undefined,
+      village: data.village || undefined,
+      creditLimit: Number(data.credit_limit || 0),
+      currentBalance: Number(data.current_balance || 0),
+      photoUrl: data.photo_url || undefined,
+      notes: data.notes || undefined,
+      createdAt: data.created_at,
+      updatedAt: data.updated_at,
+    };
+  }
+
+  async getCustomersByShop(shopId: string): Promise<Customer[]> {
+    await this.preseedInitialCustomers(shopId);
+    const data = await LocalStorageDB.select('customers', (c: any) => c.shop_id === shopId);
+    return data.map((d: any) => this.mapEntityToDomain(d));
+  }
+
+  async getCustomerById(id: string): Promise<Customer | null> {
     const data = await LocalStorageDB.selectOne('customers', (c: any) => c.id === id);
     if (!data) return null;
-    return mapEntityToDomain(data);
+    return this.mapEntityToDomain(data);
   }
 
-  async create(dto: CreateCustomerDTO): Promise<Customer> {
+  async createCustomer(shopId: string, dto: CreateCustomerDTO): Promise<Customer> {
     const data = await LocalStorageDB.insert('customers', {
-      shop_id: dto.shopId,
+      shop_id: shopId,
       name: dto.name,
       phone: dto.phone || null,
       email: dto.email || null,
       address: dto.address || null,
       village: dto.village || null,
-      credit_limit: dto.creditLimit,
-      credit_balance: 0,
+      credit_limit: dto.creditLimit || 0,
+      current_balance: 0,
       photo_url: dto.photoUrl || null,
       notes: dto.notes || null,
     });
-
-    return mapEntityToDomain(data);
+    return this.mapEntityToDomain(data);
   }
 
-  async update(id: string, updates: Partial<Customer>): Promise<Customer> {
+  async updateCustomer(id: string, updates: UpdateCustomerDTO): Promise<Customer> {
     const data = await LocalStorageDB.update('customers', (c: any) => c.id === id, {
       name: updates.name,
       phone: updates.phone || null,
@@ -199,11 +234,17 @@ export class LocalCustomerRepository implements ICustomerRepository {
       photo_url: updates.photoUrl || null,
       notes: updates.notes || null,
     });
-
-    return mapEntityToDomain(data);
+    return this.mapEntityToDomain(data);
   }
 
-  async delete(id: string): Promise<void> {
+  async deleteCustomer(id: string): Promise<boolean> {
     await LocalStorageDB.delete('customers', (c: any) => c.id === id);
+    return true;
+  }
+
+  async findDuplicateByPhone(shopId: string, phone: string): Promise<Customer | null> {
+    if (!phone) return null;
+    const data = await LocalStorageDB.selectOne('customers', (c: any) => c.shop_id === shopId && c.phone === phone);
+    return data ? this.mapEntityToDomain(data) : null;
   }
 }
