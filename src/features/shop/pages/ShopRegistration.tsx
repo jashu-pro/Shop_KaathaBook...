@@ -1,16 +1,15 @@
 /* features/shop/pages/ShopRegistration.tsx */
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../../stores/authStore';
 import { useTheme } from '../../../providers/ThemeProvider';
+import { ImageUploader } from '../../../components/common/ImageUploader';
 import { 
   User as UserIcon, 
   Store, 
   MapPin, 
   CreditCard, 
   Sliders, 
-  Camera, 
-  Image as ImageIcon, 
   Check, 
   ArrowRight, 
   ArrowLeft, 
@@ -40,12 +39,6 @@ const ShopRegistration: React.FC = () => {
   const [step, setStep] = useState(1);
   const [successState, setSuccessState] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-
-  // Input Refs for System Camera & Gallery Picker
-  const ownerCameraRef = useRef<HTMLInputElement>(null);
-  const ownerGalleryRef = useRef<HTMLInputElement>(null);
-  const shopCameraRef = useRef<HTMLInputElement>(null);
-  const shopGalleryRef = useRef<HTMLInputElement>(null);
 
   // Form State
   // 1. Owner Details (NO prefilled photos or dummy text)
@@ -135,20 +128,6 @@ const ShopRegistration: React.FC = () => {
   const filteredStates = indianStates.filter((s) =>
     s.toLowerCase().includes(stateSearch.toLowerCase())
   );
-
-  // File selection handler reading system camera & file picker
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, setFn: (val: string) => void) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        if (event.target?.result) {
-          setFn(event.target.result as string);
-        }
-      };
-      reader.readAsDataURL(file);
-    }
-  };
 
   // Step Validation & Navigation
   const handleNext = () => {
@@ -252,38 +231,6 @@ const ShopRegistration: React.FC = () => {
       padding: '2.5rem 1rem',
       fontFamily: 'var(--font-sans)'
     }}>
-      {/* Hidden System File Inputs */}
-      <input
-        type="file"
-        ref={ownerCameraRef}
-        accept="image/*"
-        capture="user"
-        style={{ display: 'none' }}
-        onChange={(e) => handleFileChange(e, setOwnerAvatar)}
-      />
-      <input
-        type="file"
-        ref={ownerGalleryRef}
-        accept="image/*"
-        style={{ display: 'none' }}
-        onChange={(e) => handleFileChange(e, setOwnerAvatar)}
-      />
-      <input
-        type="file"
-        ref={shopCameraRef}
-        accept="image/*"
-        capture="environment"
-        style={{ display: 'none' }}
-        onChange={(e) => handleFileChange(e, setShopLogo)}
-      />
-      <input
-        type="file"
-        ref={shopGalleryRef}
-        accept="image/*"
-        style={{ display: 'none' }}
-        onChange={(e) => handleFileChange(e, setShopLogo)}
-      />
-
       <div className="onboarding-card" style={{ padding: '0' }}>
         
         {/* Top Header & Brand Bar */}
@@ -433,47 +380,14 @@ const ShopRegistration: React.FC = () => {
                 </p>
 
                 <div className="grid grid-cols-1" style={{ gap: '2.5rem', display: 'grid', gridTemplateColumns: 'auto 1fr' }}>
-                  {/* Left Side: Avatar (160x160) */}
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
-                    <div style={{
-                      width: '160px', height: '160px', borderRadius: '50%',
-                      overflow: 'hidden', border: '4px solid var(--primary-light)',
-                      boxShadow: '0 10px 25px rgba(15, 23, 42, 0.08)', position: 'relative',
-                      backgroundColor: 'var(--bg-secondary)', display: 'flex',
-                      alignItems: 'center', justifyContent: 'center'
-                    }}>
-                      {ownerAvatar ? (
-                        <img src={ownerAvatar} alt="Owner Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      ) : (
-                        <div style={{
-                          display: 'flex', flexDirection: 'column', alignItems: 'center',
-                          justifyContent: 'center', color: 'var(--text-muted)'
-                        }}>
-                          <UserIcon size={56} />
-                          <span style={{ fontSize: '0.75rem', marginTop: '0.35rem', fontWeight: '600' }}>Add Photo</span>
-                        </div>
-                      )}
-                    </div>
-
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                      <button 
-                        type="button" 
-                        onClick={() => ownerCameraRef.current?.click()} 
-                        className="btn btn-secondary btn-icon" 
-                        title="Take photo via System Camera"
-                      >
-                        <Camera size={18} />
-                      </button>
-                      <button 
-                        type="button" 
-                        onClick={() => ownerGalleryRef.current?.click()} 
-                        className="btn btn-secondary btn-icon" 
-                        title="Upload photo from Gallery / Files"
-                      >
-                        <ImageIcon size={18} />
-                      </button>
-                    </div>
-                  </div>
+                  {/* Left Side: Owner Photo Uploader */}
+                  <ImageUploader
+                    value={ownerAvatar}
+                    onChange={setOwnerAvatar}
+                    variant="avatar"
+                    label="Owner Photo"
+                    facingMode="user"
+                  />
 
                   {/* Right Side: Fields */}
                   <div>
@@ -526,46 +440,14 @@ const ShopRegistration: React.FC = () => {
                 </p>
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '2.5rem' }}>
-                  {/* Left Side: Shop Logo Upload */}
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
-                    <div style={{
-                      width: '160px', height: '160px', borderRadius: 'var(--radius-card)',
-                      overflow: 'hidden', border: '2px dashed var(--primary)',
-                      backgroundColor: 'var(--primary-light)', display: 'flex',
-                      alignItems: 'center', justifyContent: 'center', position: 'relative'
-                    }}>
-                      {shopLogo ? (
-                        <img src={shopLogo} alt="Shop Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      ) : (
-                        <div style={{
-                          display: 'flex', flexDirection: 'column', alignItems: 'center',
-                          justifyContent: 'center', color: 'var(--primary)'
-                        }}>
-                          <Store size={48} />
-                          <span style={{ fontSize: '0.75rem', marginTop: '0.35rem', fontWeight: '600' }}>Upload Logo</span>
-                        </div>
-                      )}
-                    </div>
-
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                      <button 
-                        type="button" 
-                        onClick={() => shopCameraRef.current?.click()} 
-                        className="btn btn-secondary btn-icon" 
-                        title="Take photo via System Camera"
-                      >
-                        <Camera size={18} />
-                      </button>
-                      <button 
-                        type="button" 
-                        onClick={() => shopGalleryRef.current?.click()} 
-                        className="btn btn-secondary btn-icon" 
-                        title="Upload logo from Gallery / Files"
-                      >
-                        <ImageIcon size={18} />
-                      </button>
-                    </div>
-                  </div>
+                  {/* Left Side: Shop Logo Uploader */}
+                  <ImageUploader
+                    value={shopLogo}
+                    onChange={setShopLogo}
+                    variant="logo"
+                    label="Shop Logo"
+                    facingMode="environment"
+                  />
 
                   {/* Right Side: Shop Details */}
                   <div>

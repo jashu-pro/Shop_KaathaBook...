@@ -9,6 +9,29 @@ export interface IShopRepository {
   updateShop(shopId: string, updates: Partial<Shop>): Promise<Shop>;
 }
 
+const uploadBase64ToStorage = async (base64Url?: string, folder = 'logos'): Promise<string | null> => {
+  if (!base64Url) return null;
+  if (!supabase || !base64Url.startsWith('data:image')) return base64Url;
+
+  try {
+    const res = await fetch(base64Url);
+    const blob = await res.blob();
+    const fileName = `${folder}/${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
+
+    const { data, error } = await supabase.storage.from('shop-assets').upload(fileName, blob, {
+      contentType: 'image/jpeg',
+      upsert: true,
+    });
+
+    if (error || !data) return base64Url;
+
+    const { data: publicUrlData } = supabase.storage.from('shop-assets').getPublicUrl(data.path);
+    return publicUrlData.publicUrl;
+  } catch (err) {
+    return base64Url;
+  }
+};
+
 export class SupabaseShopRepository implements IShopRepository {
   private mapEntityToDomain(data: any): Shop {
     return {
@@ -48,6 +71,10 @@ export class SupabaseShopRepository implements IShopRepository {
 
   async createShop(ownerId: string, shopData: CreateShopDTO): Promise<Shop> {
     if (!supabase) throw new Error('Supabase client not initialized');
+    
+    // Upload image to Supabase Storage if configured
+    const uploadedLogoUrl = await uploadBase64ToStorage(shopData.logoUrl, 'logos');
+
     const { data, error } = await supabase
       .from('shops')
       .insert({
@@ -63,7 +90,7 @@ export class SupabaseShopRepository implements IShopRepository {
         gstin: shopData.gstin || null,
         pan: shopData.pan || null,
         upi_id: shopData.upiId || null,
-        logo_url: shopData.logoUrl || null,
+        logo_url: uploadedLogoUrl || null,
         currency: shopData.currency || 'INR',
         theme: shopData.theme || 'dark',
         language: shopData.language || 'en',
@@ -80,6 +107,11 @@ export class SupabaseShopRepository implements IShopRepository {
 
   async updateShop(shopId: string, updates: Partial<Shop>): Promise<Shop> {
     if (!supabase) throw new Error('Supabase client not initialized');
+
+    const uploadedLogoUrl = updates.logoUrl 
+      ? await uploadBase64ToStorage(updates.logoUrl, 'logos') 
+      : undefined;
+
     const { data, error } = await supabase
       .from('shops')
       .update({
@@ -94,7 +126,7 @@ export class SupabaseShopRepository implements IShopRepository {
         gstin: updates.gstin || null,
         pan: updates.pan || null,
         upi_id: updates.upiId || null,
-        logo_url: updates.logoUrl || null,
+        logo_url: uploadedLogoUrl !== undefined ? uploadedLogoUrl : updates.logoUrl || null,
         currency: updates.currency,
         theme: updates.theme,
         language: updates.language,
