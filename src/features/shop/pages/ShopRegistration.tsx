@@ -44,8 +44,8 @@ const ShopRegistration: React.FC = () => {
   // Form State
   // 1. Owner Details
   const [fullName, setFullName] = useState(user?.fullName || '');
-  const [mobileNumber, setMobileNumber] = useState('+91 98765 43210');
-  const [email] = useState(user?.email || 'merchant@shopkhattabook.com');
+  const [mobileNumber, setMobileNumber] = useState('');
+  const [email, setEmail] = useState(user?.email || '');
   const [ownerAvatar, setOwnerAvatar] = useState('https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80');
 
   // 2. Shop Details
@@ -448,12 +448,13 @@ const ShopRegistration: React.FC = () => {
                     </div>
 
                     <div className="form-group">
-                      <label className="form-label">Account Email (Prefilled)</label>
+                      <label className="form-label">Email Address *</label>
                       <input
                         type="email"
                         className="input-field"
+                        placeholder="e.g. ramesh.store@gmail.com"
                         value={email}
-                        disabled
+                        onChange={(e) => setEmail(e.target.value)}
                       />
                     </div>
                   </div>
