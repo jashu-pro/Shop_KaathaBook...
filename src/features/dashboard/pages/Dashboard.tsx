@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../../stores/authStore';
+import { WeeklyChart } from '../components/WeeklyChart';
 import { 
   QrCode, 
   TrendingUp, 
@@ -427,6 +428,11 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* ------------------------------------------------------------- */}
+      {/* ROW 6: WEEKLY SALES & COLLECTIONS PERFORMANCE CHART           */}
+      {/* ------------------------------------------------------------- */}
+      <WeeklyChart />
 
       {/* ------------------------------------------------------------- */}
       {/* UPI QR CODE MODAL POPUP                                       */}
