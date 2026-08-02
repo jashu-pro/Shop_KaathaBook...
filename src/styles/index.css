@@ -1,0 +1,5 @@
+/* index.css */
+@import './variables.css';
+@import './global.css';
+@import './glassmorphism.css';
+@import './components.css';
