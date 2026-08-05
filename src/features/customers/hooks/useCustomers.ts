@@ -31,6 +31,11 @@ export const useCustomers = () => {
   }, [shop?.id]);
 
   useEffect(() => {
+    // Purge legacy sample customers from browser localStorage if present
+    const raw = localStorage.getItem('db_customers');
+    if (raw && (raw.includes('Ramesh Kumar') || raw.includes('Lakshmi Devi') || raw.includes('Suresh Reddy'))) {
+      localStorage.removeItem('db_customers');
+    }
     loadCustomers();
   }, [loadCustomers]);
 
