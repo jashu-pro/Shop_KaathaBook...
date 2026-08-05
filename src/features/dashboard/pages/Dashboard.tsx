@@ -33,50 +33,49 @@ const Dashboard: React.FC = () => {
   const todaysCollections = 0;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', animation: 'modal-slide 0.3s ease' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', animation: 'modal-slide 0.3s ease' }}>
       
       {/* ------------------------------------------------------------- */}
-      {/* ROW 1: LARGE WELCOME BANNER CARD (Emerald Gradient)          */}
+      {/* ROW 1: WELCOME BANNER CARD (Emerald Gradient)                */}
       {/* ------------------------------------------------------------- */}
       <div 
+        className="dashboard-welcome-card"
         style={{
           background: 'linear-gradient(135deg, #047857 0%, #064E3B 100%)',
-          borderRadius: 'var(--radius-card, 28px)',
-          padding: '2rem 2.25rem',
           color: '#FFFFFF',
-          boxShadow: '0 12px 30px rgba(4, 120, 87, 0.25)',
+          boxShadow: '0 8px 24px rgba(4, 120, 87, 0.2)',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
           flexWrap: 'wrap',
-          gap: '1.5rem',
+          gap: '1rem',
           position: 'relative',
           overflow: 'hidden'
         }}
       >
         {/* Subtle decorative glow circle */}
         <div style={{
-          position: 'absolute', top: '-50px', right: '-50px',
-          width: '200px', height: '200px', borderRadius: '50%',
+          position: 'absolute', top: '-40px', right: '-40px',
+          width: '160px', height: '160px', borderRadius: '50%',
           backgroundColor: 'rgba(255, 255, 255, 0.05)', pointerEvents: 'none'
         }} />
 
         <div>
           <div style={{
-            display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
+            display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
             backgroundColor: 'rgba(255, 255, 255, 0.15)', backdropFilter: 'blur(8px)',
-            padding: '0.35rem 0.85rem', borderRadius: '20px', fontSize: '0.8rem',
-            fontWeight: '700', marginBottom: '0.85rem', letterSpacing: '0.02em'
+            padding: '0.25rem 0.65rem', borderRadius: '16px', fontSize: '0.75rem',
+            fontWeight: '700', marginBottom: '0.5rem', letterSpacing: '0.02em'
           }}>
             <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#10B981' }} />
             Shop Owner Dashboard
           </div>
 
-          <h2 style={{ fontSize: '1.85rem', fontWeight: '800', letterSpacing: '-0.5px', marginBottom: '0.35rem', lineHeight: 1.2 }}>
+          <h2 className="dashboard-welcome-title" style={{ fontWeight: '800', letterSpacing: '-0.5px', marginBottom: '0.25rem', lineHeight: 1.2 }}>
             Namaste, {shopName}
           </h2>
 
-          <p style={{ opacity: 0.9, fontSize: '0.95rem', fontWeight: '500' }}>
+          <p style={{ opacity: 0.9, fontSize: '0.825rem', fontWeight: '500' }}>
             UPI ID: <span style={{ fontWeight: '700', letterSpacing: '0.02em' }}>{upiId}</span>
           </p>
         </div>
@@ -87,20 +86,20 @@ const Dashboard: React.FC = () => {
           style={{
             backgroundColor: '#FFFFFF',
             color: '#064E3B',
-            padding: '0.8rem 1.5rem',
-            borderRadius: '18px',
+            padding: '0.55rem 1.15rem',
+            borderRadius: '14px',
             fontWeight: '800',
-            fontSize: '0.95rem',
+            fontSize: '0.85rem',
             display: 'flex',
             alignItems: 'center',
-            gap: '0.6rem',
+            gap: '0.4rem',
             border: 'none',
             cursor: 'pointer',
-            boxShadow: '0 6px 20px rgba(0, 0, 0, 0.15)',
+            boxShadow: '0 4px 14px rgba(0, 0, 0, 0.12)',
             transition: 'all 200ms'
           }}
         >
-          <QrCode size={20} />
+          <QrCode size={18} />
           <span>UPI QR</span>
         </button>
       </div>
@@ -109,167 +108,169 @@ const Dashboard: React.FC = () => {
       {/* ROW 2 & 3: STAT CARDS GRID                                   */}
       {/* ------------------------------------------------------------- */}
       
-      {/* DESKTOP & TABLET ADAPTIVE GRID */}
+      {/* DESKTOP & MOBILE ADAPTIVE GRID */}
       <div className="dashboard-main-grid">
         
-        {/* TOTAL CUSTOMER DEBT (UDHAAR) CARD — Spans 2 cols on Desktop */}
+        {/* TOTAL CUSTOMER DEBT (UDHAAR) CARD — Spans 2 cols on Desktop & Mobile */}
         <div 
-          className="udhaar-card-span"
+          className="udhaar-card-span dashboard-udhaar-card"
           style={{
             backgroundColor: '#047857',
             color: '#FFFFFF',
-            borderRadius: 'var(--radius-card, 28px)',
-            padding: '1.75rem 2rem',
-            boxShadow: '0 10px 25px rgba(4, 120, 87, 0.2)',
+            boxShadow: '0 6px 20px rgba(4, 120, 87, 0.18)',
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'space-between',
-            gap: '1.25rem',
+            gap: '0.85rem',
             position: 'relative'
           }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.95rem', fontWeight: '600', opacity: 0.9 }}>
+            <span style={{ fontSize: '0.85rem', fontWeight: '600', opacity: 0.9 }}>
               Total Customer Debt (Udhaar)
             </span>
             <span style={{
               backgroundColor: 'rgba(255, 255, 255, 0.15)',
-              padding: '0.25rem 0.75rem', borderRadius: '14px',
-              fontSize: '0.75rem', fontWeight: '700'
+              padding: '0.2rem 0.6rem', borderRadius: '12px',
+              fontSize: '0.7rem', fontWeight: '700'
             }}>
               {activeCustomersCount} Customers
             </span>
           </div>
 
           <div>
-            <div style={{ fontSize: '2.5rem', fontWeight: '800', letterSpacing: '-1px', lineHeight: 1.1 }}>
+            <div className="dashboard-udhaar-value" style={{ fontWeight: '800', letterSpacing: '-0.5px', lineHeight: 1.1 }}>
               ₹{totalUdhaar}
             </div>
-            <p style={{ fontSize: '0.85rem', opacity: '0.85', marginTop: '0.4rem' }}>
+            <p style={{ fontSize: '0.775rem', opacity: '0.85', marginTop: '0.25rem' }}>
               Total pending collections across all villages
             </p>
           </div>
         </div>
 
         {/* TODAY'S CREDIT SALES */}
-        <div style={{
-          backgroundColor: 'var(--bg-card)',
-          borderRadius: 'var(--radius-card, 28px)',
-          padding: '1.5rem 1.75rem',
-          border: '1px solid var(--border-color)',
-          boxShadow: '0 4px 20px rgba(15, 23, 42, 0.03)',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'space-between',
-          gap: '1rem'
-        }}>
+        <div 
+          className="dashboard-stat-card"
+          style={{
+            backgroundColor: 'var(--bg-card)',
+            border: '1px solid var(--border-color)',
+            boxShadow: '0 2px 12px rgba(15, 23, 42, 0.03)',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            gap: '0.75rem'
+          }}
+        >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <div style={{
-              width: '42px', height: '42px', borderRadius: '14px',
+              width: '36px', height: '36px', borderRadius: '12px',
               backgroundColor: 'rgba(16, 185, 129, 0.1)', color: '#10B981',
               display: 'flex', alignItems: 'center', justifyContent: 'center'
             }}>
-              <TrendingUp size={22} />
+              <TrendingUp size={18} />
             </div>
           </div>
           <div>
-            <div style={{ fontSize: '2rem', fontWeight: '800', color: 'var(--text-heading)', lineHeight: 1.1 }}>
+            <div className="dashboard-stat-value" style={{ fontWeight: '800', color: 'var(--text-heading)', lineHeight: 1.1 }}>
               ₹{todaysSales}
             </div>
-            <span style={{ fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-body)', marginTop: '0.35rem', display: 'block' }}>
+            <span style={{ fontSize: '0.775rem', fontWeight: '600', color: 'var(--text-body)', marginTop: '0.2rem', display: 'block' }}>
               Today's Credit Sales
             </span>
           </div>
         </div>
 
         {/* TODAY'S COLLECTIONS */}
-        <div style={{
-          backgroundColor: 'var(--bg-card)',
-          borderRadius: 'var(--radius-card, 28px)',
-          padding: '1.5rem 1.75rem',
-          border: '1px solid var(--border-color)',
-          boxShadow: '0 4px 20px rgba(15, 23, 42, 0.03)',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'space-between',
-          gap: '1rem'
-        }}>
+        <div 
+          className="dashboard-stat-card"
+          style={{
+            backgroundColor: 'var(--bg-card)',
+            border: '1px solid var(--border-color)',
+            boxShadow: '0 2px 12px rgba(15, 23, 42, 0.03)',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            gap: '0.75rem'
+          }}
+        >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <div style={{
-              width: '42px', height: '42px', borderRadius: '14px',
+              width: '36px', height: '36px', borderRadius: '12px',
               backgroundColor: 'rgba(245, 158, 11, 0.1)', color: '#F59E0B',
               display: 'flex', alignItems: 'center', justifyContent: 'center'
             }}>
-              <TrendingDown size={22} />
+              <TrendingDown size={18} />
             </div>
           </div>
           <div>
-            <div style={{ fontSize: '2rem', fontWeight: '800', color: 'var(--text-heading)', lineHeight: 1.1 }}>
+            <div className="dashboard-stat-value" style={{ fontWeight: '800', color: 'var(--text-heading)', lineHeight: 1.1 }}>
               ₹{todaysCollections}
             </div>
-            <span style={{ fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-body)', marginTop: '0.35rem', display: 'block' }}>
+            <span style={{ fontSize: '0.775rem', fontWeight: '600', color: 'var(--text-body)', marginTop: '0.2rem', display: 'block' }}>
               Today's Collections
             </span>
           </div>
         </div>
 
         {/* ACTIVE CUSTOMERS */}
-        <div style={{
-          backgroundColor: 'var(--bg-card)',
-          borderRadius: 'var(--radius-card, 28px)',
-          padding: '1.5rem 1.75rem',
-          border: '1px solid var(--border-color)',
-          boxShadow: '0 4px 20px rgba(15, 23, 42, 0.03)',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'space-between',
-          gap: '1rem'
-        }}>
+        <div 
+          className="dashboard-stat-card"
+          style={{
+            backgroundColor: 'var(--bg-card)',
+            border: '1px solid var(--border-color)',
+            boxShadow: '0 2px 12px rgba(15, 23, 42, 0.03)',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            gap: '0.75rem'
+          }}
+        >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <div style={{
-              width: '42px', height: '42px', borderRadius: '14px',
+              width: '36px', height: '36px', borderRadius: '12px',
               backgroundColor: 'rgba(16, 185, 129, 0.1)', color: '#10B981',
               display: 'flex', alignItems: 'center', justifyContent: 'center'
             }}>
-              <Users size={22} />
+              <Users size={18} />
             </div>
           </div>
           <div>
-            <div style={{ fontSize: '2rem', fontWeight: '800', color: 'var(--text-heading)', lineHeight: 1.1 }}>
+            <div className="dashboard-stat-value" style={{ fontWeight: '800', color: 'var(--text-heading)', lineHeight: 1.1 }}>
               {activeCustomersCount}
             </div>
-            <span style={{ fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-body)', marginTop: '0.35rem', display: 'block' }}>
+            <span style={{ fontSize: '0.775rem', fontWeight: '600', color: 'var(--text-body)', marginTop: '0.2rem', display: 'block' }}>
               Active Customers
             </span>
           </div>
         </div>
 
         {/* TOTAL TRANSACTIONS */}
-        <div style={{
-          backgroundColor: 'var(--bg-card)',
-          borderRadius: 'var(--radius-card, 28px)',
-          padding: '1.5rem 1.75rem',
-          border: '1px solid var(--border-color)',
-          boxShadow: '0 4px 20px rgba(15, 23, 42, 0.03)',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'space-between',
-          gap: '1rem'
-        }}>
+        <div 
+          className="dashboard-stat-card"
+          style={{
+            backgroundColor: 'var(--bg-card)',
+            border: '1px solid var(--border-color)',
+            boxShadow: '0 2px 12px rgba(15, 23, 42, 0.03)',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            gap: '0.75rem'
+          }}
+        >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <div style={{
-              width: '42px', height: '42px', borderRadius: '14px',
+              width: '36px', height: '36px', borderRadius: '12px',
               backgroundColor: 'rgba(245, 158, 11, 0.1)', color: '#F59E0B',
               display: 'flex', alignItems: 'center', justifyContent: 'center'
             }}>
-              <ArrowUpRight size={22} />
+              <ArrowUpRight size={18} />
             </div>
           </div>
           <div>
-            <div style={{ fontSize: '2rem', fontWeight: '800', color: 'var(--text-heading)', lineHeight: 1.1 }}>
+            <div className="dashboard-stat-value" style={{ fontWeight: '800', color: 'var(--text-heading)', lineHeight: 1.1 }}>
               {totalTransactionsCount}
             </div>
-            <span style={{ fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-body)', marginTop: '0.35rem', display: 'block' }}>
+            <span style={{ fontSize: '0.775rem', fontWeight: '600', color: 'var(--text-body)', marginTop: '0.2rem', display: 'block' }}>
               Total Transactions
             </span>
           </div>
@@ -280,8 +281,8 @@ const Dashboard: React.FC = () => {
       {/* ------------------------------------------------------------- */}
       {/* ROW 4: QUICK ACTIONS (Horizontal Scrollable Pills)            */}
       {/* ------------------------------------------------------------- */}
-      <div style={{ marginTop: '0.5rem' }}>
-        <h3 style={{ fontSize: '1rem', fontWeight: '800', color: 'var(--text-heading)', marginBottom: '0.85rem' }}>
+      <div style={{ marginTop: '0.25rem' }}>
+        <h3 style={{ fontSize: '0.9rem', fontWeight: '800', color: 'var(--text-heading)', marginBottom: '0.6rem' }}>
           Quick Actions
         </h3>
 
@@ -296,7 +297,7 @@ const Dashboard: React.FC = () => {
               border: '1px solid rgba(16, 185, 129, 0.25)'
             }}
           >
-            <Plus size={18} />
+            <Plus size={16} />
             <span>+ New Credit Sale</span>
           </button>
 
@@ -310,7 +311,7 @@ const Dashboard: React.FC = () => {
               border: '1px solid rgba(245, 158, 11, 0.25)'
             }}
           >
-            <CreditCard size={18} />
+            <CreditCard size={16} />
             <span>Receive Payment</span>
           </button>
 
@@ -324,7 +325,7 @@ const Dashboard: React.FC = () => {
               border: '1px solid var(--border-color)'
             }}
           >
-            <UserPlus size={18} />
+            <UserPlus size={16} />
             <span>Add Customer</span>
           </button>
 
@@ -338,7 +339,7 @@ const Dashboard: React.FC = () => {
               border: '1px solid var(--border-color)'
             }}
           >
-            <BookOpen size={18} />
+            <BookOpen size={16} />
             <span>Open Ledger</span>
           </button>
 
@@ -350,10 +351,10 @@ const Dashboard: React.FC = () => {
               backgroundColor: '#8B5CF6',
               color: '#FFFFFF',
               border: 'none',
-              boxShadow: '0 4px 14px rgba(139, 92, 246, 0.3)'
+              boxShadow: '0 3px 10px rgba(139, 92, 246, 0.25)'
             }}
           >
-            <Mic size={18} />
+            <Mic size={16} />
             <span>AI Voice Entry</span>
           </button>
         </div>
@@ -365,15 +366,15 @@ const Dashboard: React.FC = () => {
       <div 
         style={{
           backgroundColor: 'var(--bg-card)',
-          borderRadius: 'var(--radius-card, 28px)',
-          padding: '1.75rem 2rem',
+          borderRadius: '18px',
+          padding: '1.15rem 1.25rem',
           border: '1px solid var(--border-color)',
-          boxShadow: '0 4px 20px rgba(15, 23, 42, 0.03)',
-          marginTop: '0.5rem'
+          boxShadow: '0 2px 12px rgba(15, 23, 42, 0.03)',
+          marginTop: '0.25rem'
         }}
       >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-          <h3 style={{ fontSize: '1.1rem', fontWeight: '800', color: 'var(--text-heading)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <h3 style={{ fontSize: '0.95rem', fontWeight: '800', color: 'var(--text-heading)' }}>
             Recent Activity Stream
           </h3>
           <button
@@ -381,15 +382,15 @@ const Dashboard: React.FC = () => {
             style={{
               color: 'var(--primary)',
               fontWeight: '700',
-              fontSize: '0.875rem',
+              fontSize: '0.8rem',
               display: 'flex',
               alignItems: 'center',
-              gap: '0.35rem',
+              gap: '0.25rem',
               cursor: 'pointer'
             }}
           >
             <span>View Full Ledger</span>
-            <ArrowRight size={16} />
+            <ArrowRight size={14} />
           </button>
         </div>
 
@@ -398,31 +399,31 @@ const Dashboard: React.FC = () => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '1rem 1.25rem',
-          borderRadius: '18px',
+          padding: '0.75rem 1rem',
+          borderRadius: '14px',
           backgroundColor: 'var(--bg-secondary)',
           border: '1px solid var(--border-color)'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <div style={{
-              width: '42px', height: '42px', borderRadius: '50%',
+              width: '36px', height: '36px', borderRadius: '50%',
               backgroundColor: 'var(--primary-light)', color: 'var(--primary)',
               display: 'flex', alignItems: 'center', justifyContent: 'center'
             }}>
-              <Receipt size={20} />
+              <Receipt size={18} />
             </div>
             <div>
-              <h4 style={{ fontWeight: '700', fontSize: '0.95rem', color: 'var(--text-heading)' }}>
+              <h4 style={{ fontWeight: '700', fontSize: '0.875rem', color: 'var(--text-heading)' }}>
                 Account Initialized
               </h4>
-              <p style={{ fontSize: '0.775rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>
                 Digital ledger created for {shopName}
               </p>
             </div>
           </div>
 
           <div style={{ textAlign: 'right' }}>
-            <span className="badge badge-success">
+            <span className="badge badge-success" style={{ fontSize: '0.7rem' }}>
               Active
             </span>
           </div>
@@ -443,55 +444,55 @@ const Dashboard: React.FC = () => {
             className="glass-panel modal-content"
             onClick={(e) => e.stopPropagation()}
             style={{
-              padding: '2rem',
-              maxWidth: '440px',
+              padding: '1.75rem',
+              maxWidth: '420px',
               textAlign: 'center',
               backgroundColor: 'var(--bg-card)',
-              borderRadius: '28px'
+              borderRadius: '24px'
             }}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <QrCode size={22} style={{ color: 'var(--primary)' }} />
-                <h3 style={{ fontSize: '1.2rem', fontWeight: '800', color: 'var(--text-heading)' }}>
+                <QrCode size={20} style={{ color: 'var(--primary)' }} />
+                <h3 style={{ fontSize: '1.1rem', fontWeight: '800', color: 'var(--text-heading)' }}>
                   Merchant UPI QR
                 </h3>
               </div>
-              <button onClick={() => setShowQrModal(false)} className="btn btn-secondary btn-icon" style={{ borderRadius: '50%' }}>
-                <X size={18} />
+              <button onClick={() => setShowQrModal(false)} className="btn btn-secondary btn-icon" style={{ borderRadius: '50%', padding: '0.35rem' }}>
+                <X size={16} />
               </button>
             </div>
 
             {/* Generated QR Code Card */}
             <div style={{
               backgroundColor: '#FFFFFF',
-              padding: '1.5rem',
-              borderRadius: '24px',
+              padding: '1.25rem',
+              borderRadius: '20px',
               border: '2px solid var(--primary-light)',
-              boxShadow: '0 10px 30px rgba(16, 185, 129, 0.1)',
+              boxShadow: '0 8px 24px rgba(16, 185, 129, 0.1)',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
-              gap: '1rem',
-              marginBottom: '1.5rem'
+              gap: '0.85rem',
+              marginBottom: '1.25rem'
             }}>
               <img
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=upi://pay?pa=${encodeURIComponent(upiId)}%26pn=${encodeURIComponent(shopName)}`}
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=upi://pay?pa=${encodeURIComponent(upiId)}%26pn=${encodeURIComponent(shopName)}`}
                 alt="UPI QR Code"
-                style={{ width: '180px', height: '180px', borderRadius: '12px' }}
+                style={{ width: '160px', height: '160px', borderRadius: '12px' }}
               />
 
               <div>
-                <h4 style={{ fontSize: '1.1rem', fontWeight: '800', color: '#0F172A' }}>
+                <h4 style={{ fontSize: '1rem', fontWeight: '800', color: '#0F172A' }}>
                   {shopName}
                 </h4>
-                <p style={{ fontSize: '0.85rem', color: '#475569', fontWeight: '600', marginTop: '0.2rem' }}>
+                <p style={{ fontSize: '0.8rem', color: '#475569', fontWeight: '600', marginTop: '0.15rem' }}>
                   UPI ID: {upiId}
                 </p>
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '0.75rem' }}>
+            <div style={{ display: 'flex', gap: '0.6rem' }}>
               <button
                 type="button"
                 onClick={() => {
@@ -499,7 +500,7 @@ const Dashboard: React.FC = () => {
                   alert('UPI ID copied to clipboard!');
                 }}
                 className="btn btn-secondary"
-                style={{ flex: 1, borderRadius: '18px' }}
+                style={{ flex: 1, borderRadius: '16px', fontSize: '0.85rem' }}
               >
                 Copy UPI ID
               </button>
@@ -507,7 +508,7 @@ const Dashboard: React.FC = () => {
                 type="button"
                 onClick={() => setShowQrModal(false)}
                 className="btn btn-primary"
-                style={{ flex: 1, borderRadius: '18px' }}
+                style={{ flex: 1, borderRadius: '16px', fontSize: '0.85rem' }}
               >
                 Done
               </button>
