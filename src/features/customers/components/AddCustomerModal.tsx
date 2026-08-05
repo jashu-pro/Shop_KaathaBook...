@@ -1,6 +1,6 @@
 /* features/customers/components/AddCustomerModal.tsx */
 import React, { useState, useRef } from 'react';
-import { X, UserPlus, Camera, Upload, CheckCircle2, AlertTriangle, User } from 'lucide-react';
+import { X, UserPlus, Camera, Upload, CheckCircle2, AlertTriangle, User, RefreshCw, Check } from 'lucide-react';
 import { useCustomers } from '../hooks/useCustomers';
 import type { Customer } from '../types';
 
@@ -25,6 +25,8 @@ export const AddCustomerModal: React.FC<AddCustomerModalProps> = ({ isOpen, onCl
 
   // Webcam modal state
   const [showWebcamModal, setShowWebcamModal] = useState(false);
+  const [snappedImage, setSnappedImage] = useState<string | null>(null);
+
   const videoRef = useRef<HTMLVideoElement>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
 
@@ -74,16 +76,9 @@ export const AddCustomerModal: React.FC<AddCustomerModalProps> = ({ isOpen, onCl
     }
   };
 
-  // Trigger System Camera or Open Live Webcam Viewfinder Stream
-  const handleTakePhotoClick = async () => {
-    setFormError(null);
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-
-    if (isMobile) {
-      cameraInputRef.current?.click();
-      return;
-    }
-
+  // Start Webcam Video Stream
+  const startCameraStream = async () => {
+    setSnappedImage(null);
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
@@ -97,9 +92,8 @@ export const AddCustomerModal: React.FC<AddCustomerModalProps> = ({ isOpen, onCl
             videoRef.current.srcObject = stream;
             videoRef.current.play().catch(() => {});
           }
-        }, 100);
+        }, 120);
       } catch (err: any) {
-        // Fallback to camera file input if stream blocked/unavailable
         cameraInputRef.current?.click();
       }
     } else {
@@ -107,7 +101,21 @@ export const AddCustomerModal: React.FC<AddCustomerModalProps> = ({ isOpen, onCl
     }
   };
 
-  const captureWebcamSnap = () => {
+  // Trigger System Camera or Open Live Viewfinder Stream
+  const handleTakePhotoClick = () => {
+    setFormError(null);
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+    if (isMobile) {
+      cameraInputRef.current?.click();
+      return;
+    }
+
+    startCameraStream();
+  };
+
+  // Snap Frame & Freeze
+  const handleSnapClick = () => {
     if (!videoRef.current) return;
     const video = videoRef.current;
     const canvas = document.createElement('canvas');
@@ -117,9 +125,28 @@ export const AddCustomerModal: React.FC<AddCustomerModalProps> = ({ isOpen, onCl
     const ctx = canvas.getContext('2d');
     if (ctx) {
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      setPhotoUrl(canvas.toDataURL('image/jpeg', 0.85));
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+      setSnappedImage(dataUrl);
+    }
+  };
+
+  // Confirm Snapped Photo & Close Viewfinder Modal
+  const handleUsePhotoConfirm = () => {
+    if (snappedImage) {
+      setPhotoUrl(snappedImage);
     }
     stopWebcamStream();
+  };
+
+  // Retake Photo -> Re-enable Live Stream
+  const handleRetakeClick = () => {
+    setSnappedImage(null);
+    if (videoRef.current && mediaStreamRef.current) {
+      videoRef.current.srcObject = mediaStreamRef.current;
+      videoRef.current.play().catch(() => {});
+    } else {
+      startCameraStream();
+    }
   };
 
   const stopWebcamStream = () => {
@@ -127,6 +154,7 @@ export const AddCustomerModal: React.FC<AddCustomerModalProps> = ({ isOpen, onCl
       mediaStreamRef.current.getTracks().forEach((track) => track.stop());
       mediaStreamRef.current = null;
     }
+    setSnappedImage(null);
     setShowWebcamModal(false);
   };
 
@@ -510,43 +538,190 @@ export const AddCustomerModal: React.FC<AddCustomerModalProps> = ({ isOpen, onCl
         </form>
       </div>
 
-      {/* Desktop Webcam Live Feed Modal Overlay */}
+      {/* ------------------------------------------------------------- */}
+      {/* LIVE CAMERA VIEWFINDER MODAL OVERLAY (DARK SAAS THEME)       */}
+      {/* ------------------------------------------------------------- */}
       {showWebcamModal && (
-        <div className="modal-overlay" style={{ zIndex: 1100 }}>
-          <div className="glass-panel modal-content" style={{ padding: '1.5rem', maxWidth: '520px', width: '100%', textAlign: 'center', backgroundColor: '#FFFFFF', borderRadius: '24px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-              <h3 style={{ fontSize: '1.1rem', fontWeight: '800', color: '#0F172A' }}>
-                Take Customer Photo
-              </h3>
-              <button onClick={stopWebcamStream} className="btn btn-secondary btn-icon" style={{ borderRadius: '50%' }}>
-                <X size={18} />
+        <div className="modal-overlay" style={{ zIndex: 1100, backgroundColor: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(8px)' }}>
+          <div 
+            className="modal-content"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              padding: '1.5rem',
+              maxWidth: '540px',
+              width: '100%',
+              backgroundColor: '#0F172A',
+              color: '#FFFFFF',
+              borderRadius: '24px',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+              border: '1px solid #1E293B'
+            }}
+          >
+            {/* Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                <div style={{
+                  width: '40px', height: '40px', borderRadius: '12px',
+                  backgroundColor: '#064E3B', color: '#10B981',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center'
+                }}>
+                  <Camera size={22} />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: '1.2rem', fontWeight: '800', color: '#FFFFFF', lineHeight: 1.2 }}>
+                    Live Camera Viewfinder
+                  </h3>
+                  <p style={{ fontSize: '0.8rem', color: '#94A3B8', marginTop: '0.1rem' }}>
+                    Works on Laptop Webcam, Tablet & Mobile
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={stopWebcamStream}
+                style={{
+                  backgroundColor: 'transparent',
+                  color: '#94A3B8',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: '0.4rem',
+                  borderRadius: '50%'
+                }}
+              >
+                <X size={20} />
               </button>
             </div>
 
+            {/* Video Viewfinder / Frozen Frame Box */}
             <div style={{
               width: '100%',
-              height: '320px',
+              height: '340px',
               backgroundColor: '#000000',
-              borderRadius: '16px',
+              borderRadius: '18px',
               overflow: 'hidden',
               marginBottom: '1.25rem',
-              position: 'relative'
+              position: 'relative',
+              border: '1px solid #1E293B',
+              boxShadow: 'inset 0 0 20px rgba(0,0,0,0.8)'
             }}>
-              <video
-                ref={videoRef}
-                playsInline
-                muted
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-              />
+              {snappedImage ? (
+                <img
+                  src={snappedImage}
+                  alt="Captured Snap"
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                />
+              ) : (
+                <video
+                  ref={videoRef}
+                  playsInline
+                  muted
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                />
+              )}
             </div>
 
-            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
-              <button type="button" onClick={stopWebcamStream} className="btn btn-secondary" style={{ flex: 1, borderRadius: '14px' }}>
-                Cancel
-              </button>
-              <button type="button" onClick={captureWebcamSnap} className="btn btn-primary" style={{ flex: 1, borderRadius: '14px', backgroundColor: '#059669' }}>
-                <Camera size={18} /> Capture Photo
-              </button>
+            {/* Viewfinder Action Buttons: Live Stream vs Snapped Preview */}
+            <div style={{ display: 'flex', gap: '0.85rem' }}>
+              {snappedImage ? (
+                <>
+                  {/* Retake Button */}
+                  <button
+                    type="button"
+                    onClick={handleRetakeClick}
+                    style={{
+                      flex: 1,
+                      backgroundColor: '#1E293B',
+                      color: '#FFFFFF',
+                      border: '1px solid #334155',
+                      borderRadius: '16px',
+                      padding: '0.8rem 1.25rem',
+                      fontSize: '0.9rem',
+                      fontWeight: '700',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.5rem',
+                      transition: 'all 200ms'
+                    }}
+                  >
+                    <RefreshCw size={16} />
+                    <span>Retake</span>
+                  </button>
+
+                  {/* Use This Photo Button */}
+                  <button
+                    type="button"
+                    onClick={handleUsePhotoConfirm}
+                    style={{
+                      flex: 1.5,
+                      backgroundColor: '#10B981',
+                      color: '#FFFFFF',
+                      border: 'none',
+                      borderRadius: '16px',
+                      padding: '0.8rem 1.25rem',
+                      fontSize: '0.9rem',
+                      fontWeight: '800',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.5rem',
+                      boxShadow: '0 6px 20px rgba(16, 185, 129, 0.3)',
+                      transition: 'all 200ms'
+                    }}
+                  >
+                    <Check size={18} />
+                    <span>Use This Photo</span>
+                  </button>
+                </>
+              ) : (
+                <>
+                  {/* Cancel Stream Button */}
+                  <button
+                    type="button"
+                    onClick={stopWebcamStream}
+                    style={{
+                      flex: 1,
+                      backgroundColor: '#1E293B',
+                      color: '#FFFFFF',
+                      border: '1px solid #334155',
+                      borderRadius: '16px',
+                      padding: '0.8rem 1.25rem',
+                      fontSize: '0.9rem',
+                      fontWeight: '700',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Cancel
+                  </button>
+
+                  {/* Take Snap Button */}
+                  <button
+                    type="button"
+                    onClick={handleSnapClick}
+                    style={{
+                      flex: 1.5,
+                      backgroundColor: '#10B981',
+                      color: '#FFFFFF',
+                      border: 'none',
+                      borderRadius: '16px',
+                      padding: '0.8rem 1.25rem',
+                      fontSize: '0.9rem',
+                      fontWeight: '800',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.5rem',
+                      boxShadow: '0 6px 20px rgba(16, 185, 129, 0.3)'
+                    }}
+                  >
+                    <Camera size={18} />
+                    <span>Take Snap</span>
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>
