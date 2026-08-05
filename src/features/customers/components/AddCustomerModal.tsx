@@ -23,6 +23,11 @@ export const AddCustomerModal: React.FC<AddCustomerModalProps> = ({ isOpen, onCl
   const [notes, setNotes] = useState('');
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
 
+  // Webcam modal state
+  const [showWebcamModal, setShowWebcamModal] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const mediaStreamRef = useRef<MediaStream | null>(null);
+
   const [duplicateCustomer, setDuplicateCustomer] = useState<Customer | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -32,15 +37,97 @@ export const AddCustomerModal: React.FC<AddCustomerModalProps> = ({ isOpen, onCl
 
   if (!isOpen) return null;
 
-  const handlePhotoCapture = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoFile = (file: File) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const img = new Image();
+      img.src = reader.result as string;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX = 600;
+        let w = img.width;
+        let h = img.height;
+        if (w > h) {
+          if (w > MAX) { h = Math.round((h * MAX) / w); w = MAX; }
+        } else {
+          if (h > MAX) { w = Math.round((w * MAX) / h); h = MAX; }
+        }
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, w, h);
+          setPhotoUrl(canvas.toDataURL('image/jpeg', 0.85));
+        } else {
+          setPhotoUrl(reader.result as string);
+        }
+      };
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPhotoUrl(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      handlePhotoFile(file);
+      e.target.value = '';
     }
+  };
+
+  // Trigger System Camera or Open Live Webcam Viewfinder Stream
+  const handleTakePhotoClick = async () => {
+    setFormError(null);
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+    if (isMobile) {
+      cameraInputRef.current?.click();
+      return;
+    }
+
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } }
+        });
+        mediaStreamRef.current = stream;
+        setShowWebcamModal(true);
+
+        setTimeout(() => {
+          if (videoRef.current) {
+            videoRef.current.srcObject = stream;
+            videoRef.current.play().catch(() => {});
+          }
+        }, 100);
+      } catch (err: any) {
+        // Fallback to camera file input if stream blocked/unavailable
+        cameraInputRef.current?.click();
+      }
+    } else {
+      cameraInputRef.current?.click();
+    }
+  };
+
+  const captureWebcamSnap = () => {
+    if (!videoRef.current) return;
+    const video = videoRef.current;
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth || 640;
+    canvas.height = video.videoHeight || 480;
+
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      setPhotoUrl(canvas.toDataURL('image/jpeg', 0.85));
+    }
+    stopWebcamStream();
+  };
+
+  const stopWebcamStream = () => {
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach((track) => track.stop());
+      mediaStreamRef.current = null;
+    }
+    setShowWebcamModal(false);
   };
 
   const handlePhoneChange = async (val: string) => {
@@ -88,20 +175,20 @@ export const AddCustomerModal: React.FC<AddCustomerModalProps> = ({ isOpen, onCl
 
   return (
     <div className="modal-overlay" onClick={onClose} style={{ zIndex: 1000 }}>
-      {/* Hidden File Inputs for Native Camera & Gallery */}
+      {/* Hidden File Inputs */}
       <input
         type="file"
         ref={cameraInputRef}
         accept="image/*"
         capture="user"
-        onChange={handlePhotoCapture}
+        onChange={handleFileChange}
         style={{ display: 'none' }}
       />
       <input
         type="file"
         ref={galleryInputRef}
         accept="image/*"
-        onChange={handlePhotoCapture}
+        onChange={handleFileChange}
         style={{ display: 'none' }}
       />
 
@@ -184,7 +271,7 @@ export const AddCustomerModal: React.FC<AddCustomerModalProps> = ({ isOpen, onCl
               {/* Take Photo Button */}
               <button
                 type="button"
-                onClick={() => cameraInputRef.current?.click()}
+                onClick={handleTakePhotoClick}
                 style={{
                   backgroundColor: '#059669',
                   color: '#FFFFFF',
@@ -422,6 +509,48 @@ export const AddCustomerModal: React.FC<AddCustomerModalProps> = ({ isOpen, onCl
           </button>
         </form>
       </div>
+
+      {/* Desktop Webcam Live Feed Modal Overlay */}
+      {showWebcamModal && (
+        <div className="modal-overlay" style={{ zIndex: 1100 }}>
+          <div className="glass-panel modal-content" style={{ padding: '1.5rem', maxWidth: '520px', width: '100%', textAlign: 'center', backgroundColor: '#FFFFFF', borderRadius: '24px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: '800', color: '#0F172A' }}>
+                Take Customer Photo
+              </h3>
+              <button onClick={stopWebcamStream} className="btn btn-secondary btn-icon" style={{ borderRadius: '50%' }}>
+                <X size={18} />
+              </button>
+            </div>
+
+            <div style={{
+              width: '100%',
+              height: '320px',
+              backgroundColor: '#000000',
+              borderRadius: '16px',
+              overflow: 'hidden',
+              marginBottom: '1.25rem',
+              position: 'relative'
+            }}>
+              <video
+                ref={videoRef}
+                playsInline
+                muted
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
+              <button type="button" onClick={stopWebcamStream} className="btn btn-secondary" style={{ flex: 1, borderRadius: '14px' }}>
+                Cancel
+              </button>
+              <button type="button" onClick={captureWebcamSnap} className="btn btn-primary" style={{ flex: 1, borderRadius: '14px', backgroundColor: '#059669' }}>
+                <Camera size={18} /> Capture Photo
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
