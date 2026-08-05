@@ -21,7 +21,7 @@ import {
   PackagePlus
 } from 'lucide-react';
 
-import { NewSaleWizardModal } from '../features/sales';
+import { RecordCreditSaleModal } from '../features/sales/components/RecordCreditSaleModal';
 import { OfflineBanner } from '../components/common/OfflineBanner';
 
 const MainLayout: React.FC = () => {
@@ -470,8 +470,8 @@ const MainLayout: React.FC = () => {
         </div>
       )}
 
-      {/* New Sale Wizard Modal */}
-      <NewSaleWizardModal
+      {/* Record Credit Sale Modal */}
+      <RecordCreditSaleModal
         isOpen={isRecordSaleModalOpen}
         onClose={() => setIsRecordSaleModalOpen(false)}
       />
