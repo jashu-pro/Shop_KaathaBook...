@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useCustomers } from '../hooks/useCustomers';
 import { AddCustomerModal } from '../components/AddCustomerModal';
+import { RecordCreditSaleModal } from '../../sales/components/RecordCreditSaleModal';
 import type { CustomerFilterTab } from '../types';
 import { useNavigate } from 'react-router-dom';
 
@@ -26,6 +27,7 @@ const CustomerListPage: React.FC = () => {
   const [selectedVillage, setSelectedVillage] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'balance-desc' | 'name-asc' | 'recent'>('balance-desc');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [creditCustomerId, setCreditCustomerId] = useState<string | null>(null);
 
   // Extract unique villages
   const villages = useMemo(() => {
@@ -375,9 +377,9 @@ const CustomerListPage: React.FC = () => {
                 {/* Bottom Card Actions: Give Credit & Receive Payment */}
                 <div style={{ display: 'flex', gap: '0.4rem' }}>
                   <button
-                    onClick={() => navigate(`/sales/new?customerId=${customer.id}`)}
+                    onClick={() => setCreditCustomerId(customer.id)}
                     className="btn btn-secondary"
-                    style={{ flex: 1, padding: '0.5rem 0.6rem', fontSize: '0.775rem', borderRadius: '12px' }}
+                    style={{ flex: 1, padding: '0.5rem 0.6rem', fontSize: '0.775rem', borderRadius: '12px', backgroundColor: '#ECFDF5', color: '#047857', border: '1px solid #A7F3D0' }}
                   >
                     <Plus size={13} /> + Give Credit
                   </button>
@@ -400,6 +402,14 @@ const CustomerListPage: React.FC = () => {
       <AddCustomerModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
+        onSuccess={() => refetch()}
+      />
+
+      {/* Record Credit Sale Modal */}
+      <RecordCreditSaleModal
+        isOpen={Boolean(creditCustomerId)}
+        initialCustomerId={creditCustomerId || ''}
+        onClose={() => setCreditCustomerId(null)}
         onSuccess={() => refetch()}
       />
     </div>
