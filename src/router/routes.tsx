@@ -20,6 +20,7 @@ import { CustomerListPage } from '../features/customers';
 import { ProductListPage } from '../features/inventory';
 import { NewSale, SalesListPage } from '../features/sales';
 import { ReceivePaymentPage, PaymentsListPage } from '../features/payments';
+import { LedgerPage } from '../features/ledger';
 import Reports from '../features/reports/pages/Reports';
 
 // Guard for routes that require authentication
@@ -94,6 +95,7 @@ export const AppRouter: React.FC = () => {
             <Route path="/sales/new" element={<NewSale />} />
             <Route path="/payments" element={<PaymentsListPage />} />
             <Route path="/payments/receive" element={<ReceivePaymentPage />} />
+            <Route path="/ledger" element={<LedgerPage />} />
             <Route path="/reports" element={<Reports />} />
           </Route>
         </Route>
