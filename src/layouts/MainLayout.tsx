@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 
 import { RecordCreditSaleModal } from '../features/sales/components/RecordCreditSaleModal';
+import { OfflineBanner } from '../components/common/OfflineBanner';
 
 const MainLayout: React.FC = () => {
   const navigate = useNavigate();
@@ -329,6 +330,9 @@ const MainLayout: React.FC = () => {
             </button>
           </div>
         </header>
+
+        {/* Offline & Sync Status Banner */}
+        <OfflineBanner />
 
         {/* Main Content Router Outlet */}
         <main style={{ flex: 1, padding: '1.5rem 1rem', maxWidth: '1600px', margin: '0 auto', width: '100%' }}>
