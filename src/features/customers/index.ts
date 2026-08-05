@@ -4,3 +4,4 @@ export * from './repositories/customerRepository';
 export * from './hooks/useCustomers';
 export { default as CustomerListPage } from './pages/CustomerListPage';
 export { AddCustomerModal } from './components/AddCustomerModal';
+export { CustomerDetailsModal } from './components/CustomerDetailsModal';

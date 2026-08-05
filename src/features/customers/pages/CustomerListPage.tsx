@@ -12,16 +12,20 @@ import {
 } from 'lucide-react';
 import { useCustomers } from '../hooks/useCustomers';
 import { AddCustomerModal } from '../components/AddCustomerModal';
+import { CustomerDetailsModal } from '../components/CustomerDetailsModal';
 import { RecordCreditSaleModal } from '../../sales/components/RecordCreditSaleModal';
 import type { Customer } from '../types';
+import { useNavigate } from 'react-router-dom';
 
 export const CustomerListPage: React.FC = () => {
+  const navigate = useNavigate();
   const { customers, isLoading, refetch } = useCustomers();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTagFilter, setActiveTagFilter] = useState<string>('all');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [creditCustomerId, setCreditCustomerId] = useState<string | null>(null);
+  const [detailsCustomer, setDetailsCustomer] = useState<Customer | null>(null);
 
   // Filtered Customers
   const filteredCustomers = useMemo(() => {
@@ -378,7 +382,7 @@ export const CustomerListPage: React.FC = () => {
                     </button>
 
                     <button
-                      onClick={() => setCreditCustomerId(customer.id)}
+                      onClick={() => setDetailsCustomer(customer)}
                       style={{
                         width: '34px',
                         height: '34px',
@@ -391,7 +395,7 @@ export const CustomerListPage: React.FC = () => {
                         color: '#475569',
                         cursor: 'pointer'
                       }}
-                      title="View Details"
+                      title="View Details & Bahi Ledger"
                     >
                       <ChevronRight size={16} />
                     </button>
@@ -416,6 +420,15 @@ export const CustomerListPage: React.FC = () => {
         initialCustomerId={creditCustomerId || ''}
         onClose={() => setCreditCustomerId(null)}
         onSuccess={() => refetch()}
+      />
+
+      {/* Customer Details & Bahi Ledger Modal */}
+      <CustomerDetailsModal
+        customer={detailsCustomer}
+        isOpen={Boolean(detailsCustomer)}
+        onClose={() => setDetailsCustomer(null)}
+        onNewBill={(cId) => setCreditCustomerId(cId)}
+        onCollectPayment={(cId) => navigate(`/payments/receive?customerId=${cId}`)}
       />
 
     </div>
