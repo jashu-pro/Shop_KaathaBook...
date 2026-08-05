@@ -40,8 +40,8 @@ const MainLayout: React.FC = () => {
     { to: '/settings', label: 'Settings', icon: Settings },
   ];
 
-  const shopInitials = shop?.name ? shop.name.substring(0, 1).toUpperCase() : 'S';
-  const shopLocation = [shop?.city, shop?.state].filter(Boolean).join(', ') || 'Anantapur, Anantapur';
+  const shopInitials = shop?.name ? shop.name.substring(0, 1).toUpperCase() : 'K';
+  const shopLocation = [shop?.city, shop?.state].filter(Boolean).join(', ') || '';
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: 'var(--bg-primary)', color: 'var(--text-heading)' }}>

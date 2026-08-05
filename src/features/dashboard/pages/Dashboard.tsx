@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../../stores/authStore';
 import { WeeklyChart } from '../components/WeeklyChart';
+import { useCustomers } from '../../customers/hooks/useCustomers';
 import { 
   QrCode, 
   TrendingUp, 
@@ -22,13 +23,14 @@ import {
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const { shop } = useAuthStore();
+  const { customers } = useCustomers();
   const [showQrModal, setShowQrModal] = useState(false);
 
-  const shopName = shop?.name || 'Sri Laxmi Traders';
-  const upiId = shop?.upiId || 'srilaxmi@ybl';
-  const activeCustomersCount = 5;
-  const totalTransactionsCount = 1;
-  const totalUdhaar = 0;
+  const shopName = shop?.name || 'My KhattaBook Store';
+  const upiId = shop?.upiId || '';
+  const activeCustomersCount = customers.length;
+  const totalTransactionsCount = 0;
+  const totalUdhaar = customers.reduce((acc, c) => acc + (c.currentBalance > 0 ? c.currentBalance : 0), 0);
   const todaysSales = 0;
   const todaysCollections = 0;
 

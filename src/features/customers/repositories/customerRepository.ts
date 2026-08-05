@@ -120,63 +120,6 @@ export class SupabaseCustomerRepository implements ICustomerRepository {
 }
 
 export class LocalCustomerRepository implements ICustomerRepository {
-  private async preseedInitialCustomers(shopId: string) {
-    const existing = await LocalStorageDB.select('customers', (c: any) => c.shop_id === shopId);
-    if (existing.length === 0) {
-      const sampleCustomers = [
-        {
-          shop_id: shopId,
-          name: 'Ramesh Kumar',
-          phone: '9876543210',
-          village: 'Anantapur Town',
-          credit_limit: 10000,
-          current_balance: 1450,
-          notes: 'Regular customer for Kirana items',
-        },
-        {
-          shop_id: shopId,
-          name: 'Lakshmi Devi',
-          phone: '9123456789',
-          village: 'Rudrampeta Village',
-          credit_limit: 5000,
-          current_balance: 850,
-          notes: 'Weekly grocery purchases',
-        },
-        {
-          shop_id: shopId,
-          name: 'Venkatesh Rao',
-          phone: '9988776655',
-          village: 'Kalyandurg Road',
-          credit_limit: 15000,
-          current_balance: 0,
-          notes: 'Clear balance customer',
-        },
-        {
-          shop_id: shopId,
-          name: 'Suresh Reddy',
-          phone: '9848022334',
-          village: 'Anantapur Town',
-          credit_limit: 8000,
-          current_balance: 3200,
-          notes: 'Pending payment from last month',
-        },
-        {
-          shop_id: shopId,
-          name: 'Anita Sharma',
-          phone: '9701234567',
-          village: 'Collectorate Colony',
-          credit_limit: 12000,
-          current_balance: 0,
-          notes: 'Prefers UPI payments',
-        },
-      ];
-
-      for (const item of sampleCustomers) {
-        await LocalStorageDB.insert('customers', item);
-      }
-    }
-  }
-
   private mapEntityToDomain(data: any): Customer {
     return {
       id: data.id,
@@ -196,7 +139,6 @@ export class LocalCustomerRepository implements ICustomerRepository {
   }
 
   async getCustomersByShop(shopId: string): Promise<Customer[]> {
-    await this.preseedInitialCustomers(shopId);
     const data = await LocalStorageDB.select('customers', (c: any) => c.shop_id === shopId);
     return data.map((d: any) => this.mapEntityToDomain(d));
   }
