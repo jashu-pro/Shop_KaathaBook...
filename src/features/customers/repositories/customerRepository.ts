@@ -24,6 +24,7 @@ export class SupabaseCustomerRepository implements ICustomerRepository {
       village: data.village || undefined,
       creditLimit: Number(data.credit_limit || 0),
       currentBalance: Number(data.current_balance || 0),
+      tag: data.tag || 'Regular',
       photoUrl: data.photo_url || undefined,
       notes: data.notes || undefined,
       createdAt: data.created_at,
@@ -57,6 +58,11 @@ export class SupabaseCustomerRepository implements ICustomerRepository {
 
   async createCustomer(shopId: string, dto: CreateCustomerDTO): Promise<Customer> {
     if (!supabase) throw new Error('Supabase client not initialized');
+    
+    const initialBalance = dto.openingBalance
+      ? (dto.balanceType === 'advance' ? -Math.abs(dto.openingBalance) : Math.abs(dto.openingBalance))
+      : 0;
+
     const { data, error } = await supabase
       .from('customers')
       .insert({
@@ -67,6 +73,8 @@ export class SupabaseCustomerRepository implements ICustomerRepository {
         address: dto.address || null,
         village: dto.village || null,
         credit_limit: dto.creditLimit || 0,
+        current_balance: initialBalance,
+        tag: dto.tag || 'Regular',
         photo_url: dto.photoUrl || null,
         notes: dto.notes || null,
       })
@@ -88,6 +96,7 @@ export class SupabaseCustomerRepository implements ICustomerRepository {
         address: updates.address || null,
         village: updates.village || null,
         credit_limit: updates.creditLimit,
+        tag: updates.tag,
         photo_url: updates.photoUrl || null,
         notes: updates.notes || null,
         updated_at: new Date().toISOString(),
@@ -131,6 +140,7 @@ export class LocalCustomerRepository implements ICustomerRepository {
       village: data.village || undefined,
       creditLimit: Number(data.credit_limit || 0),
       currentBalance: Number(data.current_balance || 0),
+      tag: data.tag || 'Regular',
       photoUrl: data.photo_url || undefined,
       notes: data.notes || undefined,
       createdAt: data.created_at,
@@ -150,6 +160,10 @@ export class LocalCustomerRepository implements ICustomerRepository {
   }
 
   async createCustomer(shopId: string, dto: CreateCustomerDTO): Promise<Customer> {
+    const initialBalance = dto.openingBalance
+      ? (dto.balanceType === 'advance' ? -Math.abs(dto.openingBalance) : Math.abs(dto.openingBalance))
+      : 0;
+
     const data = await LocalStorageDB.insert('customers', {
       shop_id: shopId,
       name: dto.name,
@@ -158,7 +172,8 @@ export class LocalCustomerRepository implements ICustomerRepository {
       address: dto.address || null,
       village: dto.village || null,
       credit_limit: dto.creditLimit || 0,
-      current_balance: 0,
+      current_balance: initialBalance,
+      tag: dto.tag || 'Regular',
       photo_url: dto.photoUrl || null,
       notes: dto.notes || null,
     });
@@ -173,6 +188,7 @@ export class LocalCustomerRepository implements ICustomerRepository {
       address: updates.address || null,
       village: updates.village || null,
       credit_limit: updates.creditLimit,
+      tag: updates.tag,
       photo_url: updates.photoUrl || null,
       notes: updates.notes || null,
     });

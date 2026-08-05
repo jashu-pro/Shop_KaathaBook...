@@ -10,6 +10,7 @@ export interface Customer {
   village?: string;
   creditLimit: number;
   currentBalance: number; // positive = customer owes merchant (Udhaar), negative = advance
+  tag?: string;
   photoUrl?: string;
   notes?: string;
   createdAt: string;
@@ -23,6 +24,9 @@ export interface CreateCustomerDTO {
   address?: string;
   village?: string;
   creditLimit?: number;
+  tag?: string;
+  openingBalance?: number;
+  balanceType?: 'udhaar' | 'advance';
   photoUrl?: string;
   notes?: string;
 }
@@ -34,6 +38,7 @@ export interface UpdateCustomerDTO {
   address?: string;
   village?: string;
   creditLimit?: number;
+  tag?: string;
   photoUrl?: string;
   notes?: string;
 }
