@@ -106,16 +106,22 @@ const MainLayout: React.FC = () => {
           {/* New Sale Quick Action Button */}
           <button
             onClick={() => setIsRecordSaleModalOpen(true)}
-            className="btn btn-primary"
             style={{
               width: '100%',
-              padding: '0.85rem',
-              borderRadius: '18px',
-              fontWeight: '700',
+              padding: '0.85rem 1rem',
+              borderRadius: '16px',
+              fontWeight: '800',
               fontSize: '0.95rem',
-              marginBottom: '2rem',
+              marginBottom: '1.5rem',
               backgroundColor: '#059669',
-              justifyContent: sidebarCollapsed ? 'center' : 'flex-start'
+              color: '#FFFFFF',
+              border: 'none',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: sidebarCollapsed ? 'center' : 'flex-start',
+              gap: '0.4rem',
+              cursor: 'pointer',
+              boxShadow: '0 4px 14px rgba(5, 150, 105, 0.25)'
             }}
           >
             <Plus size={20} />
@@ -409,7 +415,7 @@ const MainLayout: React.FC = () => {
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem' }}>
               <button
-                onClick={() => { setFabMenuOpen(false); navigate('/sales/new'); }}
+                onClick={() => { setFabMenuOpen(false); setIsRecordSaleModalOpen(true); }}
                 style={{
                   padding: '1rem', borderRadius: '18px', backgroundColor: 'rgba(16, 185, 129, 0.1)',
                   border: '1px solid rgba(16, 185, 129, 0.3)', color: '#10B981',
