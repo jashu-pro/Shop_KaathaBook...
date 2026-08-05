@@ -17,7 +17,7 @@ import ShopRegistration from '../features/shop/pages/ShopRegistration';
 // Core Application Pages
 import Dashboard from '../features/dashboard/pages/Dashboard';
 import { CustomerListPage } from '../features/customers';
-import ProductList from '../features/inventory/pages/ProductList';
+import { ProductListPage } from '../features/inventory';
 import SalesList from '../features/sales/pages/SalesList';
 import NewSale from '../features/sales/pages/NewSale';
 import Reports from '../features/reports/pages/Reports';
@@ -89,7 +89,7 @@ export const AppRouter: React.FC = () => {
             <Route path="/" element={<Dashboard />} />
             <Route path="/customers" element={<CustomerListPage />} />
             <Route path="/customers/:id" element={<CustomerListPage />} />
-            <Route path="/inventory" element={<ProductList />} />
+            <Route path="/inventory" element={<ProductListPage />} />
             <Route path="/sales" element={<SalesList />} />
             <Route path="/sales/new" element={<NewSale />} />
             <Route path="/reports" element={<Reports />} />
