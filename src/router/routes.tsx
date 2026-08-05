@@ -18,8 +18,7 @@ import ShopRegistration from '../features/shop/pages/ShopRegistration';
 import Dashboard from '../features/dashboard/pages/Dashboard';
 import { CustomerListPage } from '../features/customers';
 import { ProductListPage } from '../features/inventory';
-import SalesList from '../features/sales/pages/SalesList';
-import NewSale from '../features/sales/pages/NewSale';
+import { NewSale, SalesListPage } from '../features/sales';
 import Reports from '../features/reports/pages/Reports';
 
 // Guard for routes that require authentication
@@ -90,7 +89,7 @@ export const AppRouter: React.FC = () => {
             <Route path="/customers" element={<CustomerListPage />} />
             <Route path="/customers/:id" element={<CustomerListPage />} />
             <Route path="/inventory" element={<ProductListPage />} />
-            <Route path="/sales" element={<SalesList />} />
+            <Route path="/sales" element={<SalesListPage />} />
             <Route path="/sales/new" element={<NewSale />} />
             <Route path="/reports" element={<Reports />} />
           </Route>

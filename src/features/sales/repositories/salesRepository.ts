@@ -1,265 +1,286 @@
-/* sales/repositories/salesRepository.ts */
+/* features/sales/repositories/salesRepository.ts */
+import type { Sale, CreateSaleDTO } from '../types';
 import { supabase } from '../../../config/supabase';
 import { LocalStorageDB } from '../../../services/localStorageDB';
 
-export interface SaleItem {
-  id?: string;
-  productId: string;
-  quantity: number;
-  unitPrice: number;
-  totalPrice: number;
-  taxRate: number;
-}
-
-export interface Sale {
-  id: string;
-  shopId: string;
-  customerId?: string;
-  invoiceNo: string;
-  saleDate: string;
-  subtotal: number;
-  taxAmount: number;
-  discountAmount: number;
-  totalAmount: number;
-  amountPaid: number;
-  paymentStatus: 'paid' | 'partially_paid' | 'unpaid';
-  paymentMethod?: string;
-  billImageUrl?: string;
-  notes?: string;
-  items: SaleItem[];
-}
-
 export interface ISaleRepository {
-  list(shopId: string): Promise<Sale[]>;
-  getById(id: string): Promise<Sale | null>;
-  create(sale: Omit<Sale, 'id' | 'saleDate' | 'invoiceNo'>): Promise<Sale>;
+  listSales(shopId: string): Promise<Sale[]>;
+  getSaleById(id: string): Promise<Sale | null>;
+  createSale(shopId: string, dto: CreateSaleDTO): Promise<Sale>;
+  deleteSale(id: string): Promise<void>;
 }
 
 export class SupabaseSaleRepository implements ISaleRepository {
-  async list(shopId: string): Promise<Sale[]> {
-    if (!supabase) return [];
-    const { data, error } = await supabase
-      .from('sales')
-      .select('*, sale_items(*)')
-      .eq('shop_id', shopId)
-      .order('sale_date', { ascending: false });
-
-    if (error || !data) return [];
-    return data.map((s: any) => ({
-      id: s.id,
-      shopId: s.shop_id,
-      customerId: s.customer_id || undefined,
-      invoiceNo: s.invoice_no,
-      saleDate: s.sale_date,
-      subtotal: Number(s.subtotal),
-      taxAmount: Number(s.tax_amount),
-      discountAmount: Number(s.discount_amount),
-      totalAmount: Number(s.total_amount),
-      amountPaid: Number(s.amount_paid),
-      paymentStatus: s.payment_status,
-      paymentMethod: s.payment_method || undefined,
-      billImageUrl: s.bill_image_url || undefined,
-      notes: s.notes || undefined,
-      items: (s.sale_items || []).map((i: any) => ({
-        id: i.id,
-        productId: i.product_id,
-        quantity: Number(i.quantity),
-        unitPrice: Number(i.unit_price),
-        totalPrice: Number(i.total_price),
-        taxRate: Number(i.tax_rate),
-      })),
-    }));
-  }
-
-  async getById(id: string): Promise<Sale | null> {
-    if (!supabase) return null;
-    const { data, error } = await supabase
-      .from('sales')
-      .select('*, sale_items(*)')
-      .eq('id', id)
-      .maybeSingle();
-
-    if (error || !data) return null;
+  private mapSale(data: any): Sale {
     return {
       id: data.id,
       shopId: data.shop_id,
       customerId: data.customer_id || undefined,
+      customerName: data.customers?.name || undefined,
+      customerPhone: data.customers?.phone || undefined,
       invoiceNo: data.invoice_no,
       saleDate: data.sale_date,
-      subtotal: Number(data.subtotal),
-      taxAmount: Number(data.tax_amount),
-      discountAmount: Number(data.discount_amount),
-      totalAmount: Number(data.total_amount),
-      amountPaid: Number(data.amount_paid),
-      paymentStatus: data.payment_status,
+      subtotal: Number(data.subtotal || 0),
+      taxAmount: Number(data.tax_amount || 0),
+      discountAmount: Number(data.discount_amount || 0),
+      totalAmount: Number(data.total_amount || 0),
+      amountPaid: Number(data.amount_paid || 0),
+      paymentStatus: data.payment_status || 'unpaid',
       paymentMethod: data.payment_method || undefined,
       billImageUrl: data.bill_image_url || undefined,
       notes: data.notes || undefined,
-      items: (data.sale_items || []).map((i: any) => ({
-        id: i.id,
-        productId: i.product_id,
-        quantity: Number(i.quantity),
-        unitPrice: Number(i.unit_price),
-        totalPrice: Number(i.total_price),
-        taxRate: Number(i.tax_rate),
-      })),
+      createdAt: data.created_at,
     };
   }
 
-  async create(sale: Omit<Sale, 'id' | 'saleDate' | 'invoiceNo'>): Promise<Sale> {
-    if (!supabase) throw new Error('Supabase client not initialized');
-    const invoiceNo = `INV-${Date.now().toString().slice(-6)}`;
+  async listSales(shopId: string): Promise<Sale[]> {
+    if (!supabase) return [];
+    const { data, error } = await supabase
+      .from('sales')
+      .select('*, customers(name, phone)')
+      .eq('shop_id', shopId)
+      .order('created_at', { ascending: false });
 
-    // Insert sale
-    const { data: saleData, error: saleError } = await supabase
+    if (error || !data) return [];
+    return data.map((d) => this.mapSale(d));
+  }
+
+  async getSaleById(id: string): Promise<Sale | null> {
+    if (!supabase) return null;
+    const { data, error } = await supabase
+      .from('sales')
+      .select('*, customers(name, phone), sale_items(*, products(name))')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (error || !data) return null;
+    const sale = this.mapSale(data);
+    if (data.sale_items) {
+      sale.items = data.sale_items.map((item: any) => ({
+        id: item.id,
+        saleId: item.sale_id,
+        productId: item.product_id,
+        productName: item.products?.name,
+        quantity: Number(item.quantity),
+        unitPrice: Number(item.unit_price),
+        totalPrice: Number(item.total_price),
+        taxRate: Number(item.tax_rate || 0),
+      }));
+    }
+    return sale;
+  }
+
+  async createSale(shopId: string, dto: CreateSaleDTO): Promise<Sale> {
+    if (!supabase) throw new Error('Supabase client not initialized');
+
+    const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+    const invoiceNo = dto.invoiceNo || `INV-${dateStr}-${randomSuffix}`;
+
+    const dueAmount = Math.max(0, dto.totalAmount - dto.amountPaid);
+    let status: 'paid' | 'partially_paid' | 'unpaid' = dto.paymentStatus;
+    if (dto.amountPaid >= dto.totalAmount) status = 'paid';
+    else if (dto.amountPaid > 0) status = 'partially_paid';
+    else status = 'unpaid';
+
+    // Insert Sale
+    const { data: saleData, error: saleErr } = await supabase
       .from('sales')
       .insert({
-        shop_id: sale.shopId,
-        customer_id: sale.customerId || null,
+        shop_id: shopId,
+        customer_id: dto.customerId || null,
         invoice_no: invoiceNo,
-        subtotal: sale.subtotal,
-        tax_amount: sale.taxAmount,
-        discount_amount: sale.discountAmount,
-        total_amount: sale.totalAmount,
-        amount_paid: sale.amountPaid,
-        payment_status: sale.paymentStatus,
-        payment_method: sale.paymentMethod || null,
-        bill_image_url: sale.billImageUrl || null,
-        notes: sale.notes || null,
+        subtotal: dto.subtotal,
+        tax_amount: dto.taxAmount || 0,
+        discount_amount: dto.discountAmount || 0,
+        total_amount: dto.totalAmount,
+        amount_paid: dto.amountPaid,
+        payment_status: status,
+        payment_method: dto.paymentMethod || 'credit',
+        bill_image_url: dto.billImageUrl || null,
+        notes: dto.notes || null,
       })
-      .select()
+      .select('*, customers(name, phone)')
       .single();
 
-    if (saleError || !saleData) throw saleError || new Error('Failed to save sale header');
+    if (saleErr || !saleData) throw saleErr || new Error('Failed to create sale record');
 
-    // Insert sale items
-    const itemsToInsert = sale.items.map((item) => ({
-      sale_id: saleData.id,
-      product_id: item.productId,
-      quantity: item.quantity,
-      unit_price: item.unitPrice,
-      total_price: item.totalPrice,
-      tax_rate: item.taxRate,
-    }));
-
-    const { error: itemsError } = await supabase.from('sale_items').insert(itemsToInsert);
-    if (itemsError) throw itemsError;
-
-    return {
-      ...sale,
-      id: saleData.id,
-      invoiceNo: saleData.invoice_no,
-      saleDate: saleData.sale_date,
-    };
-  }
-}
-
-export class LocalSaleRepository implements ISaleRepository {
-  async list(shopId: string): Promise<Sale[]> {
-    const list = await LocalStorageDB.select('sales', (s: any) => s.shop_id === shopId);
-    // Hydrate items
-    const result: Sale[] = [];
-    for (const s of list) {
-      const items = await LocalStorageDB.select('sale_items', (i: any) => i.sale_id === s.id);
-      result.push({
-        id: s.id,
-        shopId: s.shop_id,
-        customerId: s.customer_id || undefined,
-        invoiceNo: s.invoice_no,
-        saleDate: s.created_at,
-        subtotal: Number(s.subtotal),
-        taxAmount: Number(s.tax_amount),
-        discountAmount: Number(s.discount_amount),
-        totalAmount: Number(s.total_amount),
-        amountPaid: Number(s.amount_paid),
-        paymentStatus: s.payment_status,
-        paymentMethod: s.payment_method || undefined,
-        billImageUrl: s.bill_image_url || undefined,
-        notes: s.notes || undefined,
-        items: items.map((i: any) => ({
-          id: i.id,
-          productId: i.product_id,
-          quantity: Number(i.quantity),
-          unitPrice: Number(i.unit_price),
-          totalPrice: Number(i.total_price),
-          taxRate: Number(i.tax_rate),
-        })),
-      });
-    }
-    return result;
-  }
-
-  async getById(id: string): Promise<Sale | null> {
-    const s = await LocalStorageDB.selectOne('sales', (item: any) => item.id === id);
-    if (!s) return null;
-    const items = await LocalStorageDB.select('sale_items', (i: any) => i.sale_id === s.id);
-    return {
-      id: s.id,
-      shopId: s.shop_id,
-      customerId: s.customer_id || undefined,
-      invoiceNo: s.invoice_no,
-      saleDate: s.created_at,
-      subtotal: Number(s.subtotal),
-      taxAmount: Number(s.tax_amount),
-      discountAmount: Number(s.discount_amount),
-      totalAmount: Number(s.total_amount),
-      amountPaid: Number(s.amount_paid),
-      paymentStatus: s.payment_status,
-      paymentMethod: s.payment_method || undefined,
-      billImageUrl: s.bill_image_url || undefined,
-      notes: s.notes || undefined,
-      items: items.map((i: any) => ({
-        id: i.id,
-        productId: i.product_id,
-        quantity: Number(i.quantity),
-        unitPrice: Number(i.unit_price),
-        totalPrice: Number(i.total_price),
-        taxRate: Number(i.tax_rate),
-      })),
-    };
-  }
-
-  async create(sale: Omit<Sale, 'id' | 'saleDate' | 'invoiceNo'>): Promise<Sale> {
-    const invoiceNo = `INV-${Date.now().toString().slice(-6)}`;
-    const saleData = await LocalStorageDB.insert('sales', {
-      shop_id: sale.shopId,
-      customer_id: sale.customerId || null,
-      invoice_no: invoiceNo,
-      subtotal: sale.subtotal,
-      tax_amount: sale.taxAmount,
-      discount_amount: sale.discountAmount,
-      total_amount: sale.totalAmount,
-      amount_paid: sale.amountPaid,
-      payment_status: sale.paymentStatus,
-      payment_method: sale.paymentMethod || null,
-      bill_image_url: sale.billImageUrl || null,
-      notes: sale.notes || null,
-    });
-
-    for (const item of sale.items) {
-      await LocalStorageDB.insert('sale_items', {
+    // Insert Sale Items
+    if (dto.items && dto.items.length > 0) {
+      const itemsToInsert = dto.items.map((item) => ({
         sale_id: saleData.id,
         product_id: item.productId,
         quantity: item.quantity,
         unit_price: item.unitPrice,
         total_price: item.totalPrice,
-        tax_rate: item.taxRate,
-      });
+        tax_rate: item.taxRate || 0,
+      }));
 
-      // Adjust mock product inventory directly since DB triggers aren't running in localStorage
-      const product = await LocalStorageDB.selectOne('products', (p: any) => p.id === item.productId);
-      if (product) {
-        await LocalStorageDB.update('products', (p: any) => p.id === item.productId, {
-          stock_qty: Number(product.stock_qty) - item.quantity,
-        });
+      await supabase.from('sale_items').insert(itemsToInsert);
+
+      // Deduct stock for each product
+      for (const item of dto.items) {
+        const { data: prod } = await supabase.from('products').select('stock_qty').eq('id', item.productId).maybeSingle();
+        if (prod) {
+          const newQty = Math.max(0, Number(prod.stock_qty) - item.quantity);
+          await supabase.from('products').update({ stock_qty: newQty }).eq('id', item.productId);
+          await supabase.from('stock_movements').insert({
+            shop_id: shopId,
+            product_id: item.productId,
+            type: 'out',
+            quantity: item.quantity,
+            reason: `Sale ${invoiceNo}`,
+          });
+        }
       }
     }
 
+    // Update Customer Udhaar Balance if due > 0
+    if (dto.customerId && dueAmount > 0) {
+      const { data: cust } = await supabase.from('customers').select('current_balance').eq('id', dto.customerId).maybeSingle();
+      if (cust) {
+        const newBalance = Number(cust.current_balance || 0) + dueAmount;
+        await supabase.from('customers').update({ current_balance: newBalance }).eq('id', dto.customerId);
+      }
+    }
+
+    return this.mapSale(saleData);
+  }
+
+  async deleteSale(id: string): Promise<void> {
+    if (!supabase) throw new Error('Supabase client not initialized');
+    await supabase.from('sales').delete().eq('id', id);
+  }
+}
+
+export class LocalSaleRepository implements ISaleRepository {
+  private mapSale(data: any): Sale {
     return {
-      ...sale,
-      id: saleData.id,
-      invoiceNo: saleData.invoice_no,
-      saleDate: saleData.created_at,
+      id: data.id,
+      shopId: data.shop_id,
+      customerId: data.customer_id || undefined,
+      customerName: data.customer_name || undefined,
+      customerPhone: data.customer_phone || undefined,
+      invoiceNo: data.invoice_no,
+      saleDate: data.sale_date || data.created_at,
+      subtotal: Number(data.subtotal || 0),
+      taxAmount: Number(data.tax_amount || 0),
+      discountAmount: Number(data.discount_amount || 0),
+      totalAmount: Number(data.total_amount || 0),
+      amountPaid: Number(data.amount_paid || 0),
+      paymentStatus: data.payment_status || 'unpaid',
+      paymentMethod: data.payment_method || undefined,
+      billImageUrl: data.bill_image_url || undefined,
+      notes: data.notes || undefined,
+      createdAt: data.created_at,
     };
+  }
+
+  async listSales(shopId: string): Promise<Sale[]> {
+    const data = await LocalStorageDB.select('sales', (s: any) => s.shop_id === shopId);
+    return data.map((d: any) => this.mapSale(d));
+  }
+
+  async getSaleById(id: string): Promise<Sale | null> {
+    const data = await LocalStorageDB.selectOne('sales', (s: any) => s.id === id);
+    if (!data) return null;
+    const sale = this.mapSale(data);
+    const itemsData = await LocalStorageDB.select('sale_items', (i: any) => i.sale_id === id);
+    sale.items = itemsData.map((item: any) => ({
+      id: item.id,
+      saleId: item.sale_id,
+      productId: item.product_id,
+      productName: item.product_name,
+      quantity: Number(item.quantity),
+      unitPrice: Number(item.unit_price),
+      totalPrice: Number(item.total_price),
+      taxRate: Number(item.tax_rate || 0),
+    }));
+    return sale;
+  }
+
+  async createSale(shopId: string, dto: CreateSaleDTO): Promise<Sale> {
+    const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+    const invoiceNo = dto.invoiceNo || `INV-${dateStr}-${randomSuffix}`;
+
+    const dueAmount = Math.max(0, dto.totalAmount - dto.amountPaid);
+    let status: 'paid' | 'partially_paid' | 'unpaid' = dto.paymentStatus;
+    if (dto.amountPaid >= dto.totalAmount) status = 'paid';
+    else if (dto.amountPaid > 0) status = 'partially_paid';
+    else status = 'unpaid';
+
+    // Get customer name if selected
+    let customerName: string | undefined;
+    let customerPhone: string | undefined;
+    if (dto.customerId) {
+      const cust = await LocalStorageDB.selectOne('customers', (c: any) => c.id === dto.customerId);
+      if (cust) {
+        customerName = cust.name;
+        customerPhone = cust.phone;
+      }
+    }
+
+    const saleRecord = await LocalStorageDB.insert('sales', {
+      shop_id: shopId,
+      customer_id: dto.customerId || null,
+      customer_name: customerName || null,
+      customer_phone: customerPhone || null,
+      invoice_no: invoiceNo,
+      subtotal: dto.subtotal,
+      tax_amount: dto.taxAmount || 0,
+      discount_amount: dto.discountAmount || 0,
+      total_amount: dto.totalAmount,
+      amount_paid: dto.amountPaid,
+      payment_status: status,
+      payment_method: dto.paymentMethod || 'credit',
+      bill_image_url: dto.billImageUrl || null,
+      notes: dto.notes || null,
+    });
+
+    // Save items & update stock
+    if (dto.items && dto.items.length > 0) {
+      for (const item of dto.items) {
+        const prod = await LocalStorageDB.selectOne('products', (p: any) => p.id === item.productId);
+        await LocalStorageDB.insert('sale_items', {
+          sale_id: saleRecord.id,
+          product_id: item.productId,
+          product_name: prod ? prod.name : 'Item',
+          quantity: item.quantity,
+          unit_price: item.unitPrice,
+          total_price: item.totalPrice,
+          tax_rate: item.taxRate || 0,
+        });
+
+        if (prod) {
+          const newQty = Math.max(0, Number(prod.stock_qty || 0) - item.quantity);
+          await LocalStorageDB.update('products', (p: any) => p.id === item.productId, { stock_qty: newQty });
+          await LocalStorageDB.insert('stock_movements', {
+            shop_id: shopId,
+            product_id: item.productId,
+            product_name: prod.name,
+            type: 'out',
+            quantity: item.quantity,
+            reason: `Sale ${invoiceNo}`,
+          });
+        }
+      }
+    }
+
+    // Update Customer Udhaar balance
+    if (dto.customerId && dueAmount > 0) {
+      const cust = await LocalStorageDB.selectOne('customers', (c: any) => c.id === dto.customerId);
+      if (cust) {
+        const newBalance = Number(cust.current_balance || 0) + dueAmount;
+        await LocalStorageDB.update('customers', (c: any) => c.id === dto.customerId, { current_balance: newBalance });
+      }
+    }
+
+    return this.mapSale(saleRecord);
+  }
+
+  async deleteSale(id: string): Promise<void> {
+    await LocalStorageDB.delete('sales', (s: any) => s.id === id);
+    await LocalStorageDB.delete('sale_items', (i: any) => i.sale_id === id);
   }
 }
