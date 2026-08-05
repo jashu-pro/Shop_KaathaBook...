@@ -21,6 +21,8 @@ import {
   PackagePlus
 } from 'lucide-react';
 
+import { RecordCreditSaleModal } from '../features/sales/components/RecordCreditSaleModal';
+
 const MainLayout: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -30,6 +32,7 @@ const MainLayout: React.FC = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [onlineStatus, setOnlineStatus] = useState(true);
   const [fabMenuOpen, setFabMenuOpen] = useState(false);
+  const [isRecordSaleModalOpen, setIsRecordSaleModalOpen] = useState(false);
 
   const navItems = [
     { to: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -101,7 +104,7 @@ const MainLayout: React.FC = () => {
 
           {/* New Sale Quick Action Button */}
           <button
-            onClick={() => navigate('/sales/new')}
+            onClick={() => setIsRecordSaleModalOpen(true)}
             className="btn btn-primary"
             style={{
               width: '100%',
@@ -110,6 +113,7 @@ const MainLayout: React.FC = () => {
               fontWeight: '700',
               fontSize: '0.95rem',
               marginBottom: '2rem',
+              backgroundColor: '#059669',
               justifyContent: sidebarCollapsed ? 'center' : 'flex-start'
             }}
           >
@@ -455,6 +459,12 @@ const MainLayout: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Record Credit Sale Modal */}
+      <RecordCreditSaleModal
+        isOpen={isRecordSaleModalOpen}
+        onClose={() => setIsRecordSaleModalOpen(false)}
+      />
 
     </div>
   );
