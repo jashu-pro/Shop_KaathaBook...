@@ -144,6 +144,33 @@ export class SupabaseSaleRepository implements ISaleRepository {
       }
     }
 
+    // Record Payment in payments table if amountPaid > 0
+    if (dto.amountPaid > 0 && dto.customerId) {
+      await supabase.from('payments').insert({
+        shop_id: shopId,
+        customer_id: dto.customerId,
+        amount: dto.amountPaid,
+        payment_method: dto.paymentMethod || 'cash',
+        notes: `Immediate cash paid for sale ${invoiceNo}`,
+      });
+    }
+
+    // Record Ledger Entry in ledger_entries table
+    if (dto.customerId) {
+      const { data: cust } = await supabase.from('customers').select('current_balance').eq('id', dto.customerId).maybeSingle();
+      await supabase.from('ledger_entries').insert({
+        shop_id: shopId,
+        customer_id: dto.customerId,
+        entry_date: new Date().toISOString(),
+        entry_type: 'debit',
+        amount: dto.totalAmount - dto.amountPaid,
+        balance_after: Number(cust?.current_balance || 0),
+        description: `Sale ${invoiceNo}`,
+        reference_type: 'sale',
+        reference_id: saleData.id,
+      });
+    }
+
     return this.mapSale(saleData);
   }
 
@@ -274,6 +301,36 @@ export class LocalSaleRepository implements ISaleRepository {
         const newBalance = Number(cust.current_balance || 0) + dueAmount;
         await LocalStorageDB.update('customers', (c: any) => c.id === dto.customerId, { current_balance: newBalance });
       }
+    }
+
+    // Insert Payment into payments if amountPaid > 0
+    if (dto.amountPaid > 0 && dto.customerId) {
+      const cust = await LocalStorageDB.selectOne('customers', (c: any) => c.id === dto.customerId);
+      await LocalStorageDB.insert('payments', {
+        shop_id: shopId,
+        customer_id: dto.customerId,
+        customer_name: cust?.name || null,
+        amount: dto.amountPaid,
+        payment_method: dto.paymentMethod || 'cash',
+        notes: `Immediate cash paid for sale ${invoiceNo}`,
+      });
+    }
+
+    // Insert Ledger Entry
+    if (dto.customerId) {
+      const cust = await LocalStorageDB.selectOne('customers', (c: any) => c.id === dto.customerId);
+      await LocalStorageDB.insert('ledger_entries', {
+        shop_id: shopId,
+        customer_id: dto.customerId,
+        customer_name: cust?.name || null,
+        entry_date: new Date().toISOString(),
+        entry_type: 'debit',
+        amount: dto.totalAmount - dto.amountPaid,
+        balance_after: Number(cust?.current_balance || 0),
+        description: `Sale ${invoiceNo}`,
+        reference_type: 'sale',
+        reference_id: saleRecord.id,
+      });
     }
 
     return this.mapSale(saleRecord);
