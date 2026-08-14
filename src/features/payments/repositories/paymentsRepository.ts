@@ -73,10 +73,24 @@ export class SupabasePaymentRepository implements IPaymentRepository {
 
     // Deduct payment amount from customer's current balance (Udhaar)
     const { data: cust } = await supabase.from('customers').select('current_balance').eq('id', dto.customerId).maybeSingle();
+    let newBalance = 0;
     if (cust) {
-      const newBalance = Number(cust.current_balance || 0) - dto.amount;
+      newBalance = Math.max(0, Number(cust.current_balance || 0) - dto.amount);
       await supabase.from('customers').update({ current_balance: newBalance }).eq('id', dto.customerId);
     }
+
+    // Insert Credit (Jama) entry into ledger_entries table
+    await supabase.from('ledger_entries').insert({
+      shop_id: shopId,
+      customer_id: dto.customerId,
+      entry_date: new Date().toISOString(),
+      entry_type: 'credit',
+      amount: dto.amount,
+      balance_after: newBalance,
+      description: dto.notes || `Payment Received (${(dto.paymentMethod || 'cash').toUpperCase()}) ${dto.referenceNo ? `#${dto.referenceNo}` : ''}`,
+      reference_type: 'payment',
+      reference_id: data.id,
+    });
 
     return this.mapPayment(data);
   }
@@ -137,11 +151,26 @@ export class LocalPaymentRepository implements IPaymentRepository {
       notes: dto.notes || null,
     });
 
-    // Deduct payment amount from customer's current balance
+    let newBalance = 0;
     if (cust) {
-      const newBalance = Number(cust.current_balance || 0) - dto.amount;
+      newBalance = Math.max(0, Number(cust.current_balance || 0) - dto.amount);
       await LocalStorageDB.update('customers', (c: any) => c.id === dto.customerId, { current_balance: newBalance });
     }
+
+    // Insert Credit (Jama) entry into ledger_entries
+    await LocalStorageDB.insert('ledger_entries', {
+      shop_id: shopId,
+      customer_id: dto.customerId,
+      customer_name: customerName || null,
+      customer_phone: customerPhone || null,
+      entry_date: new Date().toISOString(),
+      entry_type: 'credit',
+      amount: dto.amount,
+      balance_after: newBalance,
+      description: dto.notes || `Payment Received (${(dto.paymentMethod || 'cash').toUpperCase()}) ${dto.referenceNo ? `#${dto.referenceNo}` : ''}`,
+      reference_type: 'payment',
+      reference_id: record.id,
+    });
 
     return this.mapPayment(record);
   }

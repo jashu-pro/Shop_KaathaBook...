@@ -41,87 +41,125 @@ export class SupabaseLedgerRepository implements ILedgerRepository {
   ): Promise<LedgerEntry[]> {
     if (!supabase) return [];
 
-    let query = supabase
+    let ledgerQuery = supabase
       .from('ledger_entries')
       .select('*, customers(name, phone)')
       .eq('shop_id', shopId)
       .order('entry_date', { ascending: true });
 
-    if (customerId) query = query.eq('customer_id', customerId);
-    if (startDate) query = query.gte('entry_date', startDate);
-    if (endDate) query = query.lte('entry_date', endDate);
+    let paymentsQuery = supabase
+      .from('payments')
+      .select('*, customers(name, phone)')
+      .eq('shop_id', shopId)
+      .order('created_at', { ascending: true });
 
-    const { data, error } = await query;
-
-    // If explicit ledger_entries present, map them
-    if (!error && data && data.length > 0) {
-      return data.map((d) => this.mapEntry(d));
-    }
-
-    // Fallback: Combine Sales & Payments into unified Bahi Ledger with running balances!
-    let salesQuery = supabase.from('sales').select('*, customers(name, phone)').eq('shop_id', shopId);
-    let paymentsQuery = supabase.from('payments').select('*, customers(name, phone)').eq('shop_id', shopId);
+    let salesQuery = supabase
+      .from('sales')
+      .select('*, customers(name, phone)')
+      .eq('shop_id', shopId)
+      .order('created_at', { ascending: true });
 
     if (customerId) {
-      salesQuery = salesQuery.eq('customer_id', customerId);
+      ledgerQuery = ledgerQuery.eq('customer_id', customerId);
       paymentsQuery = paymentsQuery.eq('customer_id', customerId);
+      salesQuery = salesQuery.eq('customer_id', customerId);
+    }
+    if (startDate) {
+      ledgerQuery = ledgerQuery.gte('entry_date', startDate);
+      paymentsQuery = paymentsQuery.gte('payment_date', startDate);
+      salesQuery = salesQuery.gte('sale_date', startDate);
+    }
+    if (endDate) {
+      ledgerQuery = ledgerQuery.lte('entry_date', endDate);
+      paymentsQuery = paymentsQuery.lte('payment_date', endDate);
+      salesQuery = salesQuery.lte('sale_date', endDate);
     }
 
-    const [salesRes, paymentsRes] = await Promise.all([salesQuery, paymentsQuery]);
+    const [ledgerRes, paymentsRes, salesRes] = await Promise.all([ledgerQuery, paymentsQuery, salesQuery]);
 
     const combined: LedgerEntry[] = [];
+    const seenPaymentIds = new Set<string>();
+    const seenSaleIds = new Set<string>();
 
-    if (salesRes.data) {
-      salesRes.data.forEach((s: any) => {
-        combined.push({
-          id: s.id,
-          shopId: s.shop_id,
-          customerId: s.customer_id,
-          customerName: s.customers?.name,
-          customerPhone: s.customers?.phone,
-          entryDate: s.sale_date || s.created_at,
-          entryType: 'debit',
-          amount: Number(s.total_amount - (s.amount_paid || 0)),
-          balanceAfter: 0,
-          description: `Credit Bill (${s.invoice_no})`,
-          referenceType: 'sale',
-          referenceId: s.id,
-          createdAt: s.created_at,
-        });
+    if (ledgerRes.data) {
+      ledgerRes.data.forEach((d: any) => {
+        const mapped = this.mapEntry(d);
+        combined.push(mapped);
+        if (d.reference_type === 'payment' && d.reference_id) {
+          seenPaymentIds.add(d.reference_id);
+        }
+        if (d.reference_type === 'sale' && d.reference_id) {
+          seenSaleIds.add(d.reference_id);
+        }
       });
     }
 
+    // Merge payments not already in ledger_entries as Jama (credit)
     if (paymentsRes.data) {
       paymentsRes.data.forEach((p: any) => {
-        combined.push({
-          id: p.id,
-          shopId: p.shop_id,
-          customerId: p.customer_id,
-          customerName: p.customers?.name,
-          customerPhone: p.customers?.phone,
-          entryDate: p.payment_date || p.created_at,
-          entryType: 'credit',
-          amount: Number(p.amount),
-          balanceAfter: 0,
-          description: `Payment Received (${(p.payment_method || 'cash').toUpperCase()}) ${p.reference_no ? `#${p.reference_no}` : ''}`,
-          referenceType: 'payment',
-          referenceId: p.id,
-          createdAt: p.created_at,
-        });
+        if (!seenPaymentIds.has(p.id)) {
+          combined.push({
+            id: `pay-${p.id}`,
+            shopId: p.shop_id,
+            customerId: p.customer_id,
+            customerName: p.customers?.name,
+            customerPhone: p.customers?.phone,
+            entryDate: p.payment_date || p.created_at,
+            entryType: 'credit',
+            amount: Number(p.amount || 0),
+            balanceAfter: 0,
+            description: p.notes || `Payment Received (${(p.payment_method || 'cash').toUpperCase()}) ${p.reference_no ? `#${p.reference_no}` : ''}`,
+            referenceType: 'payment',
+            referenceId: p.id,
+            createdAt: p.created_at,
+          });
+        }
       });
     }
 
-    // Sort chronologically ascending to compute running balance
+    // Merge sales not already in ledger_entries as Udhaar (debit) if ledger_entries is missing them
+    if (salesRes.data && (!ledgerRes.data || ledgerRes.data.length === 0)) {
+      salesRes.data.forEach((s: any) => {
+        if (!seenSaleIds.has(s.id)) {
+          combined.push({
+            id: `sale-${s.id}`,
+            shopId: s.shop_id,
+            customerId: s.customer_id,
+            customerName: s.customers?.name,
+            customerPhone: s.customers?.phone,
+            entryDate: s.sale_date || s.created_at,
+            entryType: 'debit',
+            amount: Number(s.total_amount || 0),
+            balanceAfter: 0,
+            description: `Credit Bill (${s.invoice_no})`,
+            referenceType: 'sale',
+            referenceId: s.id,
+            createdAt: s.created_at,
+          });
+        }
+      });
+    }
+
+    // Sort chronologically ascending to compute running balances correctly
     combined.sort((a, b) => new Date(a.entryDate).getTime() - new Date(b.entryDate).getTime());
 
-    let runningBal = 0;
+    const customerBalMap: { [cust: string]: number } = {};
+    let globalRunningBal = 0;
+
     combined.forEach((entry) => {
-      if (entry.entryType === 'debit') runningBal += entry.amount;
-      else runningBal -= entry.amount;
-      entry.balanceAfter = runningBal;
+      if (customerId) {
+        if (entry.entryType === 'debit') globalRunningBal += entry.amount;
+        else globalRunningBal -= entry.amount;
+        entry.balanceAfter = globalRunningBal;
+      } else {
+        const cId = entry.customerId || 'unknown';
+        if (!customerBalMap[cId]) customerBalMap[cId] = 0;
+        if (entry.entryType === 'debit') customerBalMap[cId] += entry.amount;
+        else customerBalMap[cId] -= entry.amount;
+        entry.balanceAfter = customerBalMap[cId];
+      }
     });
 
-    // Return descending for display
     return combined.reverse();
   }
 
@@ -131,7 +169,7 @@ export class SupabaseLedgerRepository implements ILedgerRepository {
     // Calculate current customer balance
     const { data: cust } = await supabase.from('customers').select('current_balance').eq('id', dto.customerId).maybeSingle();
     const currentBal = Number(cust?.current_balance || 0);
-    const balanceAfter = dto.entryType === 'debit' ? currentBal + dto.amount : currentBal - dto.amount;
+    const balanceAfter = dto.entryType === 'debit' ? currentBal + dto.amount : Math.max(0, currentBal - dto.amount);
 
     const { data, error } = await supabase
       .from('ledger_entries')
@@ -189,72 +227,93 @@ export class LocalLedgerRepository implements ILedgerRepository {
     _endDate?: string
   ): Promise<LedgerEntry[]> {
     const rawEntries = await LocalStorageDB.select('ledger_entries', (e: any) => e.shop_id === shopId);
-    let filtered = rawEntries.map((d: any) => this.mapEntry(d));
+    let filteredLedger = rawEntries.map((d: any) => this.mapEntry(d));
 
-    if (customerId) filtered = filtered.filter((e) => e.customerId === customerId);
+    if (customerId) filteredLedger = filteredLedger.filter((e) => e.customerId === customerId);
 
-    // If explicit ledger_entries present
-    if (filtered.length > 0) {
-      return filtered.sort((a, b) => new Date(b.entryDate).getTime() - new Date(a.entryDate).getTime());
-    }
-
-    // Combine local sales & payments into unified Bahi Khatta ledger
-    const sales = await LocalStorageDB.select('sales', (s: any) => s.shop_id === shopId);
     const payments = await LocalStorageDB.select('payments', (p: any) => p.shop_id === shopId);
+    const sales = await LocalStorageDB.select('sales', (s: any) => s.shop_id === shopId);
 
-    const combined: LedgerEntry[] = [];
+    const combined: LedgerEntry[] = [...filteredLedger];
+    const seenPaymentIds = new Set<string>();
+    const seenSaleIds = new Set<string>();
 
-    sales.forEach((s: any) => {
-      if (!customerId || s.customer_id === customerId) {
-        const owed = Number(s.total_amount - (s.amount_paid || 0));
-        if (owed > 0) {
-          combined.push({
-            id: s.id,
-            shopId: s.shop_id,
-            customerId: s.customer_id,
-            customerName: s.customer_name,
-            customerPhone: s.customer_phone,
-            entryDate: s.sale_date || s.created_at,
-            entryType: 'debit',
-            amount: owed,
-            balanceAfter: 0,
-            description: `Credit Bill (${s.invoice_no})`,
-            referenceType: 'sale',
-            referenceId: s.id,
-            createdAt: s.created_at,
-          });
-        }
+    filteredLedger.forEach((entry) => {
+      if (entry.referenceType === 'payment' && entry.referenceId) {
+        seenPaymentIds.add(entry.referenceId);
+      }
+      if (entry.referenceType === 'sale' && entry.referenceId) {
+        seenSaleIds.add(entry.referenceId);
       }
     });
 
     payments.forEach((p: any) => {
       if (!customerId || p.customer_id === customerId) {
-        combined.push({
-          id: p.id,
-          shopId: p.shop_id,
-          customerId: p.customer_id,
-          customerName: p.customer_name,
-          customerPhone: p.customer_phone,
-          entryDate: p.payment_date || p.created_at,
-          entryType: 'credit',
-          amount: Number(p.amount),
-          balanceAfter: 0,
-          description: `Payment Received (${(p.payment_method || 'cash').toUpperCase()}) ${p.reference_no ? `#${p.reference_no}` : ''}`,
-          referenceType: 'payment',
-          referenceId: p.id,
-          createdAt: p.created_at,
-        });
+        if (!seenPaymentIds.has(p.id)) {
+          combined.push({
+            id: `pay-${p.id}`,
+            shopId: p.shop_id,
+            customerId: p.customer_id,
+            customerName: p.customer_name,
+            customerPhone: p.customer_phone,
+            entryDate: p.payment_date || p.created_at,
+            entryType: 'credit',
+            amount: Number(p.amount),
+            balanceAfter: 0,
+            description: p.notes || `Payment Received (${(p.payment_method || 'cash').toUpperCase()}) ${p.reference_no ? `#${p.reference_no}` : ''}`,
+            referenceType: 'payment',
+            referenceId: p.id,
+            createdAt: p.created_at,
+          });
+        }
       }
     });
+
+    if (filteredLedger.length === 0) {
+      sales.forEach((s: any) => {
+        if (!customerId || s.customer_id === customerId) {
+          if (!seenSaleIds.has(s.id)) {
+            const owed = Number(s.total_amount - (s.amount_paid || 0));
+            if (owed > 0) {
+              combined.push({
+                id: `sale-${s.id}`,
+                shopId: s.shop_id,
+                customerId: s.customer_id,
+                customerName: s.customer_name,
+                customerPhone: s.customer_phone,
+                entryDate: s.sale_date || s.created_at,
+                entryType: 'debit',
+                amount: owed,
+                balanceAfter: 0,
+                description: `Credit Bill (${s.invoice_no})`,
+                referenceType: 'sale',
+                referenceId: s.id,
+                createdAt: s.created_at,
+              });
+            }
+          }
+        }
+      });
+    }
 
     // Chronological order for running balance
     combined.sort((a, b) => new Date(a.entryDate).getTime() - new Date(b.entryDate).getTime());
 
-    let runningBal = 0;
+    const customerBalMap: { [cust: string]: number } = {};
+    let globalRunningBal = 0;
+
     combined.forEach((entry) => {
-      if (entry.entryType === 'debit') runningBal += entry.amount;
-      else runningBal -= entry.amount;
-      entry.balanceAfter = runningBal;
+      if (customerId) {
+        if (entry.entryType === 'debit') globalRunningBal += entry.amount;
+        else globalRunningBal -= entry.amount;
+        entry.balanceAfter = globalRunningBal;
+      } else {
+        const cId = entry.customerId || 'unknown';
+        if (!customerBalMap[cId]) customerBalMap[cId] = 0;
+        if (entry.entryType === 'debit') customerBalMap[cId] += entry.amount;
+        else customerBalMap[cId] -= entry.amount;
+        entry.balanceAfter = customerBalMap[cId];
+      }
     });
 
     return combined.reverse();
@@ -263,7 +322,7 @@ export class LocalLedgerRepository implements ILedgerRepository {
   async createLedgerEntry(shopId: string, dto: CreateLedgerEntryDTO): Promise<LedgerEntry> {
     const cust = await LocalStorageDB.selectOne('customers', (c: any) => c.id === dto.customerId);
     const currentBal = Number(cust?.current_balance || 0);
-    const balanceAfter = dto.entryType === 'debit' ? currentBal + dto.amount : currentBal - dto.amount;
+    const balanceAfter = dto.entryType === 'debit' ? currentBal + dto.amount : Math.max(0, currentBal - dto.amount);
 
     const record = await LocalStorageDB.insert('ledger_entries', {
       shop_id: shopId,

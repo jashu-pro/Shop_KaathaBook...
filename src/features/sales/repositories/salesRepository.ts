@@ -145,30 +145,50 @@ export class SupabaseSaleRepository implements ISaleRepository {
     }
 
     // Record Payment in payments table if amountPaid > 0
+    let paymentId: string | undefined;
     if (dto.amountPaid > 0 && dto.customerId) {
-      await supabase.from('payments').insert({
+      const { data: pData } = await supabase.from('payments').insert({
         shop_id: shopId,
         customer_id: dto.customerId,
         amount: dto.amountPaid,
         payment_method: dto.paymentMethod || 'cash',
-        notes: `Immediate cash paid for sale ${invoiceNo}`,
-      });
+        notes: `Immediate payment paid for sale ${invoiceNo}`,
+      }).select('id').maybeSingle();
+      if (pData) paymentId = pData.id;
     }
 
     // Record Ledger Entry in ledger_entries table
     if (dto.customerId) {
       const { data: cust } = await supabase.from('customers').select('current_balance').eq('id', dto.customerId).maybeSingle();
+      const currentBal = Number(cust?.current_balance || 0);
+
+      // Debit (Udhaar) for total sale bill
       await supabase.from('ledger_entries').insert({
         shop_id: shopId,
         customer_id: dto.customerId,
         entry_date: new Date().toISOString(),
         entry_type: 'debit',
-        amount: dto.totalAmount - dto.amountPaid,
-        balance_after: Number(cust?.current_balance || 0),
+        amount: dto.totalAmount,
+        balance_after: currentBal,
         description: `Sale ${invoiceNo}`,
         reference_type: 'sale',
         reference_id: saleData.id,
       });
+
+      // Credit (Jama) for amount paid if > 0
+      if (dto.amountPaid > 0 && paymentId) {
+        await supabase.from('ledger_entries').insert({
+          shop_id: shopId,
+          customer_id: dto.customerId,
+          entry_date: new Date().toISOString(),
+          entry_type: 'credit',
+          amount: dto.amountPaid,
+          balance_after: currentBal,
+          description: `Payment for Sale (${invoiceNo})`,
+          reference_type: 'payment',
+          reference_id: paymentId,
+        });
+      }
     }
 
     return this.mapSale(saleData);
@@ -304,33 +324,54 @@ export class LocalSaleRepository implements ISaleRepository {
     }
 
     // Insert Payment into payments if amountPaid > 0
+    let paymentRecordId: string | undefined;
     if (dto.amountPaid > 0 && dto.customerId) {
       const cust = await LocalStorageDB.selectOne('customers', (c: any) => c.id === dto.customerId);
-      await LocalStorageDB.insert('payments', {
+      const pRecord = await LocalStorageDB.insert('payments', {
         shop_id: shopId,
         customer_id: dto.customerId,
         customer_name: cust?.name || null,
         amount: dto.amountPaid,
         payment_method: dto.paymentMethod || 'cash',
-        notes: `Immediate cash paid for sale ${invoiceNo}`,
+        notes: `Immediate payment paid for sale ${invoiceNo}`,
       });
+      paymentRecordId = pRecord.id;
     }
 
     // Insert Ledger Entry
     if (dto.customerId) {
       const cust = await LocalStorageDB.selectOne('customers', (c: any) => c.id === dto.customerId);
+      const currentBal = Number(cust?.current_balance || 0);
+
+      // Debit (Udhaar) for total sale bill
       await LocalStorageDB.insert('ledger_entries', {
         shop_id: shopId,
         customer_id: dto.customerId,
         customer_name: cust?.name || null,
         entry_date: new Date().toISOString(),
         entry_type: 'debit',
-        amount: dto.totalAmount - dto.amountPaid,
-        balance_after: Number(cust?.current_balance || 0),
+        amount: dto.totalAmount,
+        balance_after: currentBal,
         description: `Sale ${invoiceNo}`,
         reference_type: 'sale',
         reference_id: saleRecord.id,
       });
+
+      // Credit (Jama) for amount paid if > 0
+      if (dto.amountPaid > 0 && paymentRecordId) {
+        await LocalStorageDB.insert('ledger_entries', {
+          shop_id: shopId,
+          customer_id: dto.customerId,
+          customer_name: cust?.name || null,
+          entry_date: new Date().toISOString(),
+          entry_type: 'credit',
+          amount: dto.amountPaid,
+          balance_after: currentBal,
+          description: `Payment for Sale (${invoiceNo})`,
+          reference_type: 'payment',
+          reference_id: paymentRecordId,
+        });
+      }
     }
 
     return this.mapSale(saleRecord);
