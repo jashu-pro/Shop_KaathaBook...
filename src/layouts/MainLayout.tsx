@@ -35,12 +35,12 @@ const MainLayout: React.FC = () => {
   const [fabMenuOpen, setFabMenuOpen] = useState(false);
   const [isRecordSaleModalOpen, setIsRecordSaleModalOpen] = useState(false);
 
-  const navItems = [
+  const navItems: Array<{ to: string; label: string; icon: any; badge?: string }> = [
     { to: '/', label: 'Dashboard', icon: LayoutDashboard },
     { to: '/customers', label: 'Customers', icon: Users },
     { to: '/ledger', label: 'Ledger', icon: BookOpen },
     { to: '/reports', label: 'Reports', icon: BarChart3 },
-    { to: '/ai-assistant', label: 'AI Assistant', icon: Sparkles, badge: 'PRO' },
+    { to: '/ai-assistant', label: 'AI Assistant', icon: Sparkles },
     { to: '/settings', label: 'Settings', icon: Settings },
   ];
 
@@ -62,16 +62,17 @@ const MainLayout: React.FC = () => {
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'space-between',
-          padding: '1.5rem 1rem',
+          padding: '1.25rem 0.85rem',
           transition: 'width 300ms cubic-bezier(0.4, 0, 0.2, 1)',
           position: 'sticky',
           top: 0,
           height: '100vh',
+          overflow: 'hidden',
           zIndex: 40,
           boxShadow: '4px 0 20px rgba(15, 23, 42, 0.02)'
         }}
       >
-        <div>
+        <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflowY: 'auto', paddingRight: '2px' }}>
           {/* Brand Header */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2rem', padding: '0 0.5rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
@@ -178,7 +179,7 @@ const MainLayout: React.FC = () => {
         </div>
 
         {/* Sidebar Footer Shop Profile Card */}
-        <div>
+        <div style={{ marginTop: 'auto', flexShrink: 0, paddingTop: '0.75rem', borderTop: '1px solid var(--border-color)' }}>
           {!sidebarCollapsed ? (
             <div style={{
               padding: '0.85rem',

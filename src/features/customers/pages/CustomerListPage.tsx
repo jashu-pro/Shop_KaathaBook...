@@ -3,434 +3,297 @@ import React, { useState, useMemo } from 'react';
 import { 
   Search, 
   UserPlus, 
-  FileText, 
-  PhoneCall, 
-  Send, 
-  ChevronRight, 
-  Plus,
-  Users
+  Users, 
+  ArrowUpDown, 
+  Filter, 
+  RotateCw, 
+  AlertCircle
 } from 'lucide-react';
 import { useCustomers } from '../hooks/useCustomers';
 import { AddCustomerModal } from '../components/AddCustomerModal';
 import { CustomerDetailsModal } from '../components/CustomerDetailsModal';
+import { CustomerProfileCard } from '../components/CustomerProfileCard';
 import { RecordCreditSaleModal } from '../../sales/components/RecordCreditSaleModal';
 import type { Customer } from '../types';
-import { useNavigate } from 'react-router-dom';
 
 export const CustomerListPage: React.FC = () => {
-  const navigate = useNavigate();
-  const { customers, isLoading, refetch } = useCustomers();
+  const { customers, isLoading, error, refetch } = useCustomers();
 
+  // Search, Filter & Sort State
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeTagFilter, setActiveTagFilter] = useState<string>('all');
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [creditCustomerId, setCreditCustomerId] = useState<string | null>(null);
-  const [detailsCustomer, setDetailsCustomer] = useState<Customer | null>(null);
+  const [filterTab, setFilterTab] = useState<'all' | 'udhaar' | 'settled' | 'advance' | 'vip' | 'risk'>('all');
+  const [sortOption, setSortOption] = useState<'highest_udhaar' | 'name_asc' | 'recent'>('highest_udhaar');
 
-  // Filtered Customers
-  const filteredCustomers = useMemo(() => {
-    return customers.filter((c) => {
+  // Modal Control States
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [detailsCustomer, setDetailsCustomer] = useState<Customer | null>(null);
+  const [receivePaymentCustomerId, setReceivePaymentCustomerId] = useState<string | null>(null);
+
+  // Multi-field Search, Filter, and Sort Processing
+  const processedCustomers = useMemo(() => {
+    let result = customers.filter((c) => {
+      // Search matching across Name, Phone, Village, Address
       const q = searchQuery.toLowerCase().trim();
-      const matchesQuery =
+      const matchesSearch =
         !q ||
         c.name.toLowerCase().includes(q) ||
         (c.phone && c.phone.includes(q)) ||
-        (c.village && c.village.toLowerCase().includes(q));
+        (c.village && c.village.toLowerCase().includes(q)) ||
+        (c.address && c.address.toLowerCase().includes(q));
 
-      let matchesTag = true;
-      if (activeTagFilter === 'vip') matchesTag = c.tag?.toLowerCase() === 'vip';
-      else if (activeTagFilter === 'regular') matchesTag = c.tag?.toLowerCase() === 'regular' || !c.tag;
-      else if (activeTagFilter === 'risk') matchesTag = c.tag?.toLowerCase() === 'risk';
-      else if (activeTagFilter === 'new') matchesTag = new Date(c.createdAt).getTime() > Date.now() - 7 * 24 * 3600 * 1000;
+      // Filter matching
+      let matchesFilter = true;
+      if (filterTab === 'udhaar') matchesFilter = c.currentBalance > 0;
+      else if (filterTab === 'settled') matchesFilter = c.currentBalance === 0;
+      else if (filterTab === 'advance') matchesFilter = c.currentBalance < 0;
+      else if (filterTab === 'vip') matchesFilter = c.tag?.toLowerCase() === 'vip';
+      else if (filterTab === 'risk') matchesFilter = c.tag?.toLowerCase() === 'risk';
 
-      return matchesQuery && matchesTag;
+      return matchesSearch && matchesFilter;
     });
-  }, [customers, searchQuery, activeTagFilter]);
 
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map((part) => part[0])
-      .join('')
-      .substring(0, 2)
-      .toUpperCase();
-  };
+    // Sort processing
+    return result.sort((a, b) => {
+      if (sortOption === 'highest_udhaar') {
+        return b.currentBalance - a.currentBalance;
+      }
+      if (sortOption === 'name_asc') {
+        return a.name.localeCompare(b.name);
+      }
+      if (sortOption === 'recent') {
+        return new Date(b.updatedAt || b.createdAt).getTime() - new Date(a.updatedAt || a.createdAt).getTime();
+      }
+      return 0;
+    });
+  }, [customers, searchQuery, filterTab, sortOption]);
 
-  const getAvatarBg = (customer: Customer) => {
-    if (customer.tag === 'risk') return { bg: '#FEE2E2', text: '#DC2626' };
-    if (customer.tag === 'vip') return { bg: '#ECFDF5', text: '#059669' };
-    const initials = getInitials(customer.name);
-    if (initials.startsWith('V')) return { bg: '#FEF3C7', text: '#D97706' };
-    if (initials.startsWith('K')) return { bg: '#FEF3C7', text: '#B45309' };
-    return { bg: '#E0E7FF', text: '#4338CA' };
-  };
-
-  const handleDownloadPDF = () => {
-    window.print();
-  };
+  const totalUdhaarBalance = useMemo(() => {
+    return customers.reduce((acc, c) => acc + (c.currentBalance > 0 ? c.currentBalance : 0), 0);
+  }, [customers]);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', animation: 'modal-slide 0.3s ease' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', animation: 'modal-slide 0.3s ease' }}>
       
       {/* ------------------------------------------------------------- */}
-      {/* TOP HEADER & ACTION BAR                                       */}
+      {/* TOP PAGE TITLE & ADD CUSTOMER ACTION BAR                      */}
       {/* ------------------------------------------------------------- */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         flexWrap: 'wrap',
-        gap: '0.85rem'
+        gap: '1rem'
       }}>
-        {/* Search Bar */}
-        <div style={{ flex: 1, minWidth: '260px', position: 'relative', display: 'flex', alignItems: 'center' }}>
-          <Search size={18} style={{ position: 'absolute', left: '1rem', color: '#94A3B8' }} />
-          <input
-            type="text"
-            className="input-field"
-            placeholder="Search by Name, Village, Mobile..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            style={{
-              paddingLeft: '2.6rem',
-              paddingTop: '0.7rem',
-              paddingBottom: '0.7rem',
-              borderRadius: '16px',
-              fontSize: '0.875rem',
-              backgroundColor: '#FFFFFF',
-              border: '1.5px solid #E2E8F0'
-            }}
-          />
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+            <h1 style={{ fontSize: '1.45rem', fontWeight: '800', color: 'var(--text-heading)', letterSpacing: '-0.5px' }}>
+              Customer Directory
+            </h1>
+            <span className="badge badge-success" style={{ fontSize: '0.75rem', fontWeight: '800' }}>
+              {customers.length} {customers.length === 1 ? 'Customer' : 'Customers'}
+            </span>
+          </div>
+          <p style={{ color: 'var(--text-body)', fontSize: '0.875rem', marginTop: '0.2rem' }}>
+            Total Pending Udhaar: <strong style={{ color: 'var(--error)' }}>₹{totalUdhaarBalance.toLocaleString('en-IN')}</strong>
+          </p>
         </div>
 
-        {/* Action Buttons: PDF & Add Customer */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <button
-            onClick={handleDownloadPDF}
-            style={{
-              backgroundColor: '#ECFDF5',
-              color: '#047857',
-              border: '1.5px solid #A7F3D0',
-              borderRadius: '16px',
-              padding: '0.65rem 1.15rem',
-              fontWeight: '700',
-              fontSize: '0.85rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.4rem',
-              cursor: 'pointer'
-            }}
-          >
-            <FileText size={16} />
-            <span>Download All Customers PDF ({customers.length})</span>
-          </button>
-
-          <button
-            onClick={() => setIsAddModalOpen(true)}
-            style={{
-              backgroundColor: '#059669',
-              color: '#FFFFFF',
-              border: 'none',
-              borderRadius: '16px',
-              padding: '0.65rem 1.25rem',
-              fontWeight: '700',
-              fontSize: '0.875rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.4rem',
-              cursor: 'pointer',
-              boxShadow: '0 4px 14px rgba(5, 150, 105, 0.25)'
-            }}
-          >
-            <UserPlus size={18} />
-            <span>+ Add Customer</span>
-          </button>
-        </div>
+        {/* Add Customer Button */}
+        <button
+          onClick={() => setIsAddModalOpen(true)}
+          className="btn btn-primary"
+          style={{ padding: '0.75rem 1.35rem', gap: '0.5rem', borderRadius: '18px', fontWeight: '800' }}
+        >
+          <UserPlus size={18} />
+          <span>+ Add Customer</span>
+        </button>
       </div>
 
       {/* ------------------------------------------------------------- */}
-      {/* CATEGORY FILTER CHIPS ROW                                     */}
+      {/* SEARCH, FILTER PILLS & SORT SELECTOR BAR                      */}
       {/* ------------------------------------------------------------- */}
-      <div style={{ display: 'flex', gap: '0.45rem', overflowX: 'auto', paddingBottom: '0.2rem' }}>
-        {[
-          { id: 'all', label: 'All Customers' },
-          { id: 'vip', label: 'VIP' },
-          { id: 'regular', label: 'Regular' },
-          { id: 'risk', label: 'Risk' },
-          { id: 'new', label: 'New' },
-        ].map((tab) => {
-          const selected = activeTagFilter === tab.id;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTagFilter(tab.id)}
-              style={{
-                padding: '0.45rem 1.1rem',
-                borderRadius: '14px',
-                fontSize: '0.825rem',
-                fontWeight: selected ? '800' : '600',
-                backgroundColor: selected ? '#059669' : '#FFFFFF',
-                color: selected ? '#FFFFFF' : '#475569',
-                border: selected ? 'none' : '1.5px solid #E2E8F0',
-                cursor: 'pointer',
-                whiteSpace: 'nowrap',
-                transition: 'all 150ms ease'
-              }}
+      <div style={{
+        backgroundColor: 'var(--bg-card)',
+        padding: '1rem 1.25rem',
+        borderRadius: 'var(--radius-card, 24px)',
+        border: '1px solid var(--border-color)',
+        boxShadow: '0 2px 10px rgba(15, 23, 42, 0.02)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '1rem'
+      }}>
+        {/* Search Bar & Sort Dropdown */}
+        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+          {/* Multi-field Search Input */}
+          <div style={{ flex: 1, minWidth: '260px', position: 'relative', display: 'flex', alignItems: 'center' }}>
+            <Search size={18} style={{ position: 'absolute', left: '1rem', color: 'var(--text-muted)' }} />
+            <input
+              type="text"
+              className="input-field"
+              placeholder="Search by name, phone, village, address..."
+              style={{ paddingLeft: '2.75rem' }}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+
+          {/* Sort Selector */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: '220px' }}>
+            <ArrowUpDown size={16} style={{ color: 'var(--text-muted)' }} />
+            <select
+              className="input-field"
+              value={sortOption}
+              onChange={(e) => setSortOption(e.target.value as any)}
+              style={{ fontWeight: '700', fontSize: '0.85rem' }}
             >
-              {tab.label}
-            </button>
-          );
-        })}
+              <option value="highest_udhaar">Sort: Highest Udhaar</option>
+              <option value="name_asc">Sort: Name (A → Z)</option>
+              <option value="recent">Sort: Recent Activity</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Filter Pills */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', overflowX: 'auto', paddingBottom: '0.2rem' }}>
+          <Filter size={15} style={{ color: 'var(--text-muted)', flexShrink: 0, marginRight: '0.2rem' }} />
+
+          {[
+            { id: 'all', label: 'All' },
+            { id: 'udhaar', label: '🔴 Udhaar' },
+            { id: 'settled', label: '🟢 Settled' },
+            { id: 'advance', label: '🟢 Advance' },
+            { id: 'vip', label: '⭐ VIP' },
+            { id: 'risk', label: '⚠️ Risk' },
+          ].map((tab) => {
+            const isActive = filterTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setFilterTab(tab.id as any)}
+                style={{
+                  padding: '0.45rem 0.95rem',
+                  borderRadius: '16px',
+                  border: isActive ? '2px solid var(--primary)' : '1px solid var(--border-color)',
+                  backgroundColor: isActive ? 'var(--primary-light)' : 'var(--bg-card)',
+                  color: isActive ? 'var(--primary)' : 'var(--text-body)',
+                  fontSize: '0.8rem',
+                  fontWeight: isActive ? '800' : '600',
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                  transition: 'all 150ms'
+                }}
+              >
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* ------------------------------------------------------------- */}
-      {/* CUSTOMERS LIST CARDS                                          */}
+      {/* CUSTOMER PROFILE CARDS GRID / SKELETON / EMPTY / ERROR         */}
       {/* ------------------------------------------------------------- */}
+
+      {/* Loading Skeletons */}
       {isLoading ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="skeleton" style={{ height: '100px', borderRadius: '18px' }} />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.25rem' }}>
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div key={i} className="skeleton" style={{ height: '220px', borderRadius: '24px' }} />
           ))}
         </div>
-      ) : filteredCustomers.length === 0 ? (
+      ) : error ? (
+        /* Error State with Retry */
         <div style={{
-          backgroundColor: '#FFFFFF', borderRadius: '24px', padding: '3.5rem 1.5rem',
-          textAlign: 'center', border: '1.5px solid #E2E8F0'
+          padding: '3rem 2rem',
+          textAlign: 'center',
+          backgroundColor: 'var(--bg-card)',
+          borderRadius: '24px',
+          border: '1px solid var(--border-color)'
         }}>
-          <Users size={44} style={{ color: '#94A3B8', marginBottom: '0.75rem' }} />
-          <h3 style={{ fontSize: '1.15rem', fontWeight: '800', color: '#0F172A' }}>
-            No Customers Found
+          <AlertCircle size={48} style={{ color: 'var(--error)', margin: '0 auto 1rem auto' }} />
+          <h3 style={{ fontSize: '1.2rem', fontWeight: '800', color: 'var(--text-heading)' }}>Unable to Load Customers</h3>
+          <p style={{ color: 'var(--text-body)', fontSize: '0.875rem', marginTop: '0.25rem', marginBottom: '1.25rem' }}>
+            Something went wrong while fetching customer data.
+          </p>
+          <button onClick={() => refetch()} className="btn btn-secondary" style={{ gap: '0.4rem', margin: '0 auto' }}>
+            <RotateCw size={16} /> Retry
+          </button>
+        </div>
+      ) : processedCustomers.length === 0 ? (
+        /* Empty State */
+        <div style={{
+          padding: '3.5rem 2rem',
+          textAlign: 'center',
+          backgroundColor: 'var(--bg-card)',
+          borderRadius: '24px',
+          border: '1px solid var(--border-color)'
+        }}>
+          <Users size={56} style={{ color: 'var(--text-muted)', margin: '0 auto 1rem auto' }} />
+          <h3 style={{ fontSize: '1.25rem', fontWeight: '800', color: 'var(--text-heading)' }}>
+            {searchQuery || filterTab !== 'all' ? 'No Customers Match Criteria' : 'No Customers Yet'}
           </h3>
-          <p style={{ color: '#64748B', fontSize: '0.85rem', marginTop: '0.2rem', marginBottom: '1.25rem' }}>
-            {searchQuery ? `No customer matching "${searchQuery}"` : 'Get started by creating your customer directory'}
+          <p style={{ color: 'var(--text-body)', fontSize: '0.875rem', marginTop: '0.35rem', marginBottom: '1.5rem' }}>
+            {searchQuery || filterTab !== 'all'
+              ? 'Try adjusting your search terms or filter selection.'
+              : 'Start building your merchant digital ledger by adding your first customer.'}
           </p>
           <button
             onClick={() => setIsAddModalOpen(true)}
-            style={{
-              backgroundColor: '#059669', color: '#FFFFFF', border: 'none', borderRadius: '14px',
-              padding: '0.65rem 1.25rem', fontWeight: '700', fontSize: '0.85rem', cursor: 'pointer'
-            }}
+            className="btn btn-primary"
+            style={{ padding: '0.75rem 1.5rem', gap: '0.5rem', margin: '0 auto' }}
           >
-            <UserPlus size={16} /> Add Customer Now
+            <UserPlus size={18} /> + Add First Customer
           </button>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          {filteredCustomers.map((customer) => {
-            const hasUdhaar = customer.currentBalance > 0;
-            const avatarStyle = getAvatarBg(customer);
-            const tagLabel = (customer.tag || 'REGULAR').toUpperCase();
-
-            return (
-              <div
-                key={customer.id}
-                style={{
-                  backgroundColor: '#FFFFFF',
-                  borderRadius: '18px',
-                  padding: '1.1rem 1.35rem',
-                  border: '1.5px solid #E2E8F0',
-                  boxShadow: '0 2px 10px rgba(15, 23, 42, 0.02)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '0.75rem',
-                  transition: 'all 150ms ease'
-                }}
-              >
-                {/* Top Section: Avatar, Name/Village & Tag/Balance */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.85rem' }}>
-                  
-                  {/* Left Avatar & Name */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-                    <div style={{
-                      width: '46px',
-                      height: '46px',
-                      borderRadius: '14px',
-                      backgroundColor: avatarStyle.bg,
-                      color: avatarStyle.text,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontWeight: '800',
-                      fontSize: '1rem',
-                      overflow: 'hidden',
-                      flexShrink: 0
-                    }}>
-                      {customer.photoUrl ? (
-                        <img src={customer.photoUrl} alt={customer.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      ) : (
-                        getInitials(customer.name)
-                      )}
-                    </div>
-
-                    <div>
-                      <h4 style={{ fontSize: '1.05rem', fontWeight: '800', color: '#0F172A', lineHeight: 1.2 }}>
-                        {customer.name}
-                      </h4>
-                      <span style={{ fontSize: '0.8rem', color: '#64748B', fontWeight: '500' }}>
-                        {customer.village || 'Location N/A'}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Right Tag & Balance */}
-                  <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.2rem' }}>
-                    <span style={{
-                      fontSize: '0.675rem',
-                      fontWeight: '800',
-                      letterSpacing: '0.04em',
-                      padding: '0.15rem 0.5rem',
-                      borderRadius: '10px',
-                      backgroundColor: customer.tag === 'risk' ? '#FEF2F2' : customer.tag === 'vip' ? '#ECFDF5' : '#FFFBEB',
-                      color: customer.tag === 'risk' ? '#DC2626' : customer.tag === 'vip' ? '#059669' : '#D97706',
-                      border: `1px solid ${customer.tag === 'risk' ? '#FCA5A5' : customer.tag === 'vip' ? '#6EE7B7' : '#FDE68A'}`
-                    }}>
-                      • {tagLabel}
-                    </span>
-
-                    <div style={{
-                      fontSize: '1.2rem',
-                      fontWeight: '800',
-                      color: hasUdhaar ? '#DC2626' : '#10B981'
-                    }}>
-                      ₹{customer.currentBalance}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Bottom Section: Mobile/Timestamp & Quick Action Icon Buttons */}
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  borderTop: '1px solid #F1F5F9',
-                  paddingTop: '0.65rem',
-                  flexWrap: 'wrap',
-                  gap: '0.5rem'
-                }}>
-                  <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <span style={{ fontSize: '0.825rem', fontWeight: '700', color: '#334155' }}>
-                      +91 {customer.phone || 'N/A'}
-                    </span>
-                    <span style={{ fontSize: '0.725rem', color: '#94A3B8' }}>
-                      {new Date(customer.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} · {new Date(customer.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
-                    </span>
-                  </div>
-
-                  {/* Icon Actions Bar */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-                    {customer.phone && (
-                      <>
-                        <a
-                          href={`tel:${customer.phone}`}
-                          style={{
-                            width: '34px',
-                            height: '34px',
-                            borderRadius: '10px',
-                            backgroundColor: '#F8FAFC',
-                            border: '1.5px solid #E2E8F0',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            color: '#334155',
-                            textDecoration: 'none'
-                          }}
-                          title="Call Customer"
-                        >
-                          <PhoneCall size={15} />
-                        </a>
-
-                        <a
-                          href={`https://wa.me/91${customer.phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Namaste ${customer.name}, your current Khatta pending balance is ₹${customer.currentBalance}. Thank you!`)}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          style={{
-                            width: '34px',
-                            height: '34px',
-                            borderRadius: '10px',
-                            backgroundColor: '#F8FAFC',
-                            border: '1.5px solid #E2E8F0',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            color: '#059669',
-                            textDecoration: 'none'
-                          }}
-                          title="Send WhatsApp Reminder"
-                        >
-                          <Send size={15} />
-                        </a>
-                      </>
-                    )}
-
-                    <button
-                      onClick={() => setCreditCustomerId(customer.id)}
-                      style={{
-                        padding: '0.35rem 0.75rem',
-                        borderRadius: '10px',
-                        fontSize: '0.775rem',
-                        fontWeight: '700',
-                        backgroundColor: '#ECFDF5',
-                        color: '#047857',
-                        border: '1px solid #A7F3D0',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.2rem'
-                      }}
-                    >
-                      <Plus size={13} /> Credit
-                    </button>
-
-                    <button
-                      onClick={() => setDetailsCustomer(customer)}
-                      style={{
-                        width: '34px',
-                        height: '34px',
-                        borderRadius: '10px',
-                        backgroundColor: '#F8FAFC',
-                        border: '1.5px solid #E2E8F0',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: '#475569',
-                        cursor: 'pointer'
-                      }}
-                      title="View Details & Bahi Ledger"
-                    >
-                      <ChevronRight size={16} />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+        /* Customer Profile Cards Grid */
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.25rem' }}>
+          {processedCustomers.map((customer) => (
+            <CustomerProfileCard
+              key={customer.id}
+              customer={customer}
+              onSelect={(cust) => setDetailsCustomer(cust)}
+              onCollectPayment={(id) => setReceivePaymentCustomerId(id)}
+            />
+          ))}
         </div>
       )}
 
       {/* Add Customer Modal */}
-      <AddCustomerModal
-        isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-        onSuccess={() => refetch()}
-      />
+      {isAddModalOpen && (
+        <AddCustomerModal
+          isOpen={isAddModalOpen}
+          onClose={() => setIsAddModalOpen(false)}
+          onSuccess={() => {
+            setIsAddModalOpen(false);
+            refetch();
+          }}
+        />
+      )}
 
-      {/* Record Credit Sale Modal */}
-      <RecordCreditSaleModal
-        isOpen={Boolean(creditCustomerId)}
-        initialCustomerId={creditCustomerId || ''}
-        onClose={() => setCreditCustomerId(null)}
-        onSuccess={() => refetch()}
-      />
+      {/* Customer Details & Khatta Ledger Modal */}
+      {detailsCustomer && (
+        <CustomerDetailsModal
+          customer={detailsCustomer}
+          isOpen={!!detailsCustomer}
+          onClose={() => setDetailsCustomer(null)}
+          onNewBill={(id) => setReceivePaymentCustomerId(id)}
+          onCollectPayment={(id) => setReceivePaymentCustomerId(id)}
+        />
+      )}
 
-      {/* Customer Details & Bahi Ledger Modal */}
-      <CustomerDetailsModal
-        customer={detailsCustomer}
-        isOpen={Boolean(detailsCustomer)}
-        onClose={() => setDetailsCustomer(null)}
-        onNewBill={(cId) => setCreditCustomerId(cId)}
-        onCollectPayment={(cId) => navigate(`/payments/receive?customerId=${cId}`)}
-      />
-
+      {/* Record Credit Sale / Payment Modal Integration */}
+      {receivePaymentCustomerId && (
+        <RecordCreditSaleModal
+          isOpen={!!receivePaymentCustomerId}
+          onClose={() => setReceivePaymentCustomerId(null)}
+          initialCustomerId={receivePaymentCustomerId}
+          onSuccess={() => {
+            setReceivePaymentCustomerId(null);
+            refetch();
+          }}
+        />
+      )}
     </div>
   );
 };

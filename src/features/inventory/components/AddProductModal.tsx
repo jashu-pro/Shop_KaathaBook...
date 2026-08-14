@@ -1,6 +1,6 @@
 /* features/inventory/components/AddProductModal.tsx */
-import React, { useState } from 'react';
-import { X, PackagePlus, Barcode, Plus, CheckCircle2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, PackagePlus, Barcode, Plus, Edit3 } from 'lucide-react';
 import { useInventory } from '../hooks/useInventory';
 import { ImageUploader } from '../../../components/common/ImageUploader';
 import type { Product, ProductUnit } from '../types';
@@ -10,6 +10,7 @@ interface AddProductModalProps {
   onClose: () => void;
   onSuccess?: (product: Product) => void;
   onOpenAddCategory?: () => void;
+  initialProduct?: Product | null;
 }
 
 export const AddProductModal: React.FC<AddProductModalProps> = ({
@@ -17,12 +18,15 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
   onClose,
   onSuccess,
   onOpenAddCategory,
+  initialProduct = null
 }) => {
-  const { categories, addProduct } = useInventory();
+  const { categories, addProduct, editProduct } = useInventory();
+
+  const isEditMode = !!initialProduct;
 
   const [name, setName] = useState('');
   const [categoryId, setCategoryId] = useState('');
-  const [sku, setSku] = useState(`SKU-${Date.now().toString().slice(-6)}`);
+  const [sku, setSku] = useState('');
   const [barcode, setBarcode] = useState('');
   const [mrp, setMrp] = useState('');
   const [price, setPrice] = useState('');
@@ -36,18 +40,48 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (initialProduct) {
+      setName(initialProduct.name);
+      setCategoryId(initialProduct.categoryId || '');
+      setSku(initialProduct.sku || '');
+      setBarcode(initialProduct.barcode || '');
+      setMrp(initialProduct.mrp ? String(initialProduct.mrp) : '');
+      setPrice(String(initialProduct.price));
+      setCostPrice(initialProduct.costPrice ? String(initialProduct.costPrice) : '');
+      setUnit(initialProduct.unit || 'piece');
+      setStockQty(String(initialProduct.stockQty));
+      setAlertQty(String(initialProduct.alertQty));
+      setImageUrl(initialProduct.imageUrl || null);
+      setDescription(initialProduct.description || '');
+    } else {
+      setName('');
+      setCategoryId('');
+      setSku(`SKU-${Date.now().toString().slice(-6)}`);
+      setBarcode('');
+      setMrp('');
+      setPrice('');
+      setCostPrice('');
+      setUnit('piece');
+      setStockQty('50');
+      setAlertQty('5');
+      setImageUrl(null);
+      setDescription('');
+    }
+  }, [initialProduct, isOpen]);
+
   if (!isOpen) return null;
 
   const generateBarcode = () => {
-    // Generate 12-digit random Indian barcode number
     const random12 = '890' + Math.floor(100000000 + Math.random() * 900000000).toString();
     setBarcode(random12);
   };
 
-  const generateSku = () => {
-    const random = Math.floor(1000 + Math.random() * 9000);
-    setSku(`KIR-${random}`);
-  };
+  // Real-time Profit Margin Calculation
+  const numSellingPrice = Number(price) || 0;
+  const numCostPrice = Number(costPrice) || 0;
+  const profitAmount = numSellingPrice - numCostPrice;
+  const marginPercentage = numSellingPrice > 0 ? Math.round((profitAmount / numSellingPrice) * 100) : 0;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,315 +91,319 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
       setError('Product name is required');
       return;
     }
-    if (!price || Number(price) <= 0) {
+    if (!price || Number(price) < 0) {
       setError('Valid selling price is required');
+      return;
+    }
+    if (Number(costPrice) < 0) {
+      setError('Cost price cannot be negative');
       return;
     }
 
     setSubmitting(true);
     try {
-      const created = await addProduct({
-        name: name.trim(),
-        categoryId: categoryId || undefined,
-        sku: sku.trim() || undefined,
-        barcode: barcode.trim() || undefined,
-        mrp: mrp ? Number(mrp) : Number(price),
-        price: Number(price),
-        costPrice: costPrice ? Number(costPrice) : 0,
-        unit,
-        stockQty: stockQty ? Number(stockQty) : 0,
-        alertQty: alertQty ? Number(alertQty) : 5,
-        imageUrl: imageUrl || undefined,
-        description: description.trim() || undefined,
-      });
-
-      setSubmitting(false);
-      if (onSuccess) onSuccess(created);
-      onClose();
+      if (isEditMode && initialProduct) {
+        const updated = await editProduct(initialProduct.id, {
+          name: name.trim(),
+          categoryId: categoryId || undefined,
+          sku: sku.trim() || undefined,
+          barcode: barcode.trim() || undefined,
+          mrp: mrp ? Number(mrp) : Number(price),
+          price: Number(price),
+          costPrice: costPrice ? Number(costPrice) : 0,
+          unit,
+          stockQty: Number(stockQty) || 0,
+          alertQty: Number(alertQty) || 5,
+          imageUrl: imageUrl || undefined,
+          description: description.trim() || undefined,
+        });
+        setSubmitting(false);
+        if (onSuccess && updated) onSuccess(updated);
+        onClose();
+      } else {
+        const created = await addProduct({
+          name: name.trim(),
+          categoryId: categoryId || undefined,
+          sku: sku.trim() || undefined,
+          barcode: barcode.trim() || undefined,
+          mrp: mrp ? Number(mrp) : Number(price),
+          price: Number(price),
+          costPrice: costPrice ? Number(costPrice) : 0,
+          unit,
+          stockQty: stockQty ? Number(stockQty) : 0,
+          alertQty: alertQty ? Number(alertQty) : 5,
+          imageUrl: imageUrl || undefined,
+          description: description.trim() || undefined,
+        });
+        setSubmitting(false);
+        if (onSuccess && created) onSuccess(created);
+        onClose();
+      }
     } catch (err: any) {
       setSubmitting(false);
-      setError(err.message || 'Failed to create product');
+      setError(err.message || 'Failed to save product');
     }
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose} style={{ zIndex: 1000 }}>
-      <div 
-        className="glass-panel modal-content"
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          padding: '1.75rem',
-          maxWidth: '560px',
-          width: '100%',
-          backgroundColor: '#FFFFFF',
-          borderRadius: '24px',
-          maxHeight: '90vh',
-          overflowY: 'auto'
-        }}
-      >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+    <div style={{
+      position: 'fixed', inset: 0,
+      backgroundColor: 'rgba(15, 23, 42, 0.65)',
+      backdropFilter: 'blur(4px)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      zIndex: 1000, padding: '1rem'
+    }}>
+      <div style={{
+        backgroundColor: 'var(--bg-card)',
+        color: 'var(--text-body)',
+        borderRadius: 'var(--radius-card, 28px)',
+        maxWidth: '640px', width: '100%',
+        boxShadow: 'var(--glass-shadow)',
+        border: '1px solid var(--border-color)',
+        overflow: 'hidden',
+        maxHeight: '90vh',
+        display: 'flex', flexDirection: 'column'
+      }}>
+        {/* Header */}
+        <div style={{
+          padding: '1.25rem 1.5rem',
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          borderBottom: '1px solid var(--border-color)',
+          backgroundColor: 'var(--bg-secondary)'
+        }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
             <div style={{
-              width: '40px', height: '40px', borderRadius: '12px',
-              backgroundColor: 'rgba(16, 185, 129, 0.12)', color: '#10B981',
+              width: '36px', height: '36px', borderRadius: '12px',
+              backgroundColor: 'var(--primary-light)', color: 'var(--primary)',
               display: 'flex', alignItems: 'center', justifyContent: 'center'
             }}>
-              <PackagePlus size={22} />
+              {isEditMode ? <Edit3 size={20} /> : <PackagePlus size={20} />}
             </div>
             <div>
-              <h3 style={{ fontSize: '1.3rem', fontWeight: '800', color: '#0F172A' }}>
-                Add New Product
+              <h3 style={{ fontSize: '1.2rem', fontWeight: '800', color: 'var(--text-heading)' }}>
+                {isEditMode ? 'Edit Product Details' : 'Add New Inventory Product'}
               </h3>
-              <p style={{ fontSize: '0.8rem', color: '#64748B' }}>
-                Add item to Kirana stock & POS catalog
+              <p style={{ fontSize: '0.775rem', color: 'var(--text-muted)' }}>
+                Configure selling price, cost price, stock alert thresholds
               </p>
             </div>
           </div>
 
-          <button onClick={onClose} className="btn btn-secondary btn-icon" style={{ borderRadius: '50%' }}>
+          <button onClick={onClose} className="btn btn-secondary btn-icon" style={{ width: '36px', height: '36px' }}>
             <X size={18} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        {/* Form Body */}
+        <form onSubmit={handleSubmit} style={{ padding: '1.5rem', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           
+          {error && (
+            <div className="input-error" style={{ padding: '0.75rem 1rem', backgroundColor: 'var(--error-light)', color: 'var(--error)', borderRadius: '14px', fontSize: '0.85rem' }}>
+              {error}
+            </div>
+          )}
+
           {/* Product Image Uploader */}
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '0.5rem' }}>
+          <div className="form-group" style={{ textAlign: 'center' }}>
+            <label className="form-label" style={{ marginBottom: '0.5rem', display: 'block' }}>Product Photo (Optional)</label>
             <ImageUploader
               value={imageUrl}
               onChange={(val) => setImageUrl(val)}
-              variant="avatar"
+              variant="logo"
               label="Product Image"
             />
           </div>
 
-          {/* Product Name */}
-          <div>
-            <label style={{ display: 'block', fontSize: '0.825rem', fontWeight: '700', color: '#0F172A', marginBottom: '0.35rem' }}>
-              Product Name *
-            </label>
+          {/* Name & Category */}
+          <div className="form-group">
+            <label className="form-label">Product Name *</label>
             <input
               type="text"
               className="input-field"
-              placeholder="e.g. Fortune Sunflower Oil 1L, India Gate Basmati Rice 5kg"
+              placeholder="e.g. Ashirvaad Atta 5kg or Tata Salt 1kg"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              style={{ borderRadius: '14px', padding: '0.7rem 1rem', border: '1px solid #CBD5E1', fontSize: '0.875rem' }}
-              autoFocus
+              required
             />
           </div>
 
-          {/* Category & Unit */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '0.85rem' }}>
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
-                <label style={{ fontSize: '0.825rem', fontWeight: '700', color: '#0F172A' }}>
-                  Category
-                </label>
-                {onOpenAddCategory && (
-                  <button
-                    type="button"
-                    onClick={onOpenAddCategory}
-                    style={{ fontSize: '0.75rem', fontWeight: '700', color: '#10B981', display: 'flex', alignItems: 'center', gap: '0.2rem', cursor: 'pointer' }}
-                  >
-                    <Plus size={12} /> Add Category
-                  </button>
-                )}
-              </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '0.75rem', alignItems: 'flex-end' }}>
+            <div className="form-group">
+              <label className="form-label">Category</label>
               <select
                 className="input-field"
                 value={categoryId}
                 onChange={(e) => setCategoryId(e.target.value)}
-                style={{ borderRadius: '14px', padding: '0.7rem 1rem', border: '1px solid #CBD5E1', fontSize: '0.875rem', backgroundColor: '#FFFFFF' }}
               >
-                <option value="">-- General / Uncategorized --</option>
+                <option value="">-- Select Category --</option>
                 {categories.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
+                  <option key={c.id} value={c.id}>{c.name}</option>
                 ))}
               </select>
             </div>
 
+            {onOpenAddCategory && (
+              <button
+                type="button"
+                onClick={onOpenAddCategory}
+                className="btn btn-secondary"
+                style={{ padding: '0.75rem', borderRadius: '16px' }}
+                title="Create New Category"
+              >
+                <Plus size={18} /> New Category
+              </button>
+            )}
+          </div>
+
+          {/* Pricing & Realtime Margin Calculation */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
+            <div className="form-group">
+              <label className="form-label">Selling Price (₹) *</label>
+              <input
+                type="number"
+                className="input-field"
+                placeholder="250"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Cost / Purchase Price (₹)</label>
+              <input
+                type="number"
+                className="input-field"
+                placeholder="200"
+                value={costPrice}
+                onChange={(e) => setCostPrice(e.target.value)}
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">MRP (₹)</label>
+              <input
+                type="number"
+                className="input-field"
+                placeholder="260"
+                value={mrp}
+                onChange={(e) => setMrp(e.target.value)}
+              />
+            </div>
+          </div>
+
+          {/* Real-time Profit Analytics Box */}
+          <div style={{
+            padding: '0.85rem 1rem',
+            borderRadius: '16px',
+            backgroundColor: 'var(--bg-secondary)',
+            border: '1px solid var(--border-color)',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
+          }}>
             <div>
-              <label style={{ display: 'block', fontSize: '0.825rem', fontWeight: '700', color: '#0F172A', marginBottom: '0.35rem' }}>
-                Unit / Metric
-              </label>
+              <span style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-muted)' }}>Estimated Profit Per Unit</span>
+              <div style={{ fontSize: '1.1rem', fontWeight: '800', color: profitAmount >= 0 ? 'var(--primary)' : 'var(--error)' }}>
+                ₹{profitAmount.toLocaleString('en-IN')}
+              </div>
+            </div>
+
+            <div style={{ textAlign: 'right' }}>
+              <span style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-muted)' }}>Margin Percentage</span>
+              <div style={{ fontSize: '1.1rem', fontWeight: '800', color: marginPercentage > 0 ? 'var(--primary)' : 'var(--text-heading)' }}>
+                {marginPercentage}%
+              </div>
+            </div>
+          </div>
+
+          {/* Stock Qty, Alert Threshold & Unit */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
+            <div className="form-group">
+              <label className="form-label">Unit *</label>
               <select
                 className="input-field"
                 value={unit}
                 onChange={(e) => setUnit(e.target.value as ProductUnit)}
-                style={{ borderRadius: '14px', padding: '0.7rem 1rem', border: '1px solid #CBD5E1', fontSize: '0.875rem', backgroundColor: '#FFFFFF' }}
               >
-                <option value="piece">Piece (Pcs)</option>
-                <option value="packet">Packet (Pkt)</option>
+                <option value="piece">Piece (pcs)</option>
+                <option value="packet">Packet (pkt)</option>
                 <option value="kg">Kilogram (kg)</option>
                 <option value="g">Gram (g)</option>
                 <option value="liter">Liter (L)</option>
-                <option value="ml">Milliliter (ml)</option>
                 <option value="box">Box</option>
                 <option value="bag">Bag</option>
               </select>
             </div>
+
+            <div className="form-group">
+              <label className="form-label">Initial Stock Qty</label>
+              <input
+                type="number"
+                className="input-field"
+                value={stockQty}
+                onChange={(e) => setStockQty(e.target.value)}
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Low Stock Alert Limit</label>
+              <input
+                type="number"
+                className="input-field"
+                value={alertQty}
+                onChange={(e) => setAlertQty(e.target.value)}
+              />
+            </div>
           </div>
 
-          {/* Barcode & SKU */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem' }}>
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
-                <label style={{ fontSize: '0.825rem', fontWeight: '700', color: '#0F172A' }}>
-                  Barcode
-                </label>
+          {/* SKU & Barcode Generator */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+            <div className="form-group">
+              <label className="form-label">SKU Code</label>
+              <input
+                type="text"
+                className="input-field"
+                value={sku}
+                onChange={(e) => setSku(e.target.value)}
+              />
+            </div>
+
+            <div className="form-group">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <label className="form-label">Barcode</label>
                 <button
                   type="button"
                   onClick={generateBarcode}
-                  style={{ fontSize: '0.725rem', fontWeight: '700', color: '#3B82F6', cursor: 'pointer' }}
+                  style={{ background: 'none', border: 'none', color: 'var(--primary)', fontSize: '0.75rem', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.2rem' }}
                 >
-                  Auto-Gen
-                </button>
-              </div>
-              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                <Barcode size={16} style={{ position: 'absolute', left: '0.85rem', color: '#64748B' }} />
-                <input
-                  type="text"
-                  className="input-field"
-                  placeholder="890123456789"
-                  value={barcode}
-                  onChange={(e) => setBarcode(e.target.value)}
-                  style={{ borderRadius: '14px', paddingLeft: '2.4rem', border: '1px solid #CBD5E1', fontSize: '0.85rem' }}
-                />
-              </div>
-            </div>
-
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
-                <label style={{ fontSize: '0.825rem', fontWeight: '700', color: '#0F172A' }}>
-                  SKU Code
-                </label>
-                <button
-                  type="button"
-                  onClick={generateSku}
-                  style={{ fontSize: '0.725rem', fontWeight: '700', color: '#3B82F6', cursor: 'pointer' }}
-                >
-                  Auto-Gen
+                  <Barcode size={12} /> Auto Gen
                 </button>
               </div>
               <input
                 type="text"
                 className="input-field"
-                placeholder="SKU-1002"
-                value={sku}
-                onChange={(e) => setSku(e.target.value)}
-                style={{ borderRadius: '14px', padding: '0.7rem 1rem', border: '1px solid #CBD5E1', fontSize: '0.85rem' }}
+                placeholder="890123456789"
+                value={barcode}
+                onChange={(e) => setBarcode(e.target.value)}
               />
             </div>
           </div>
 
-          {/* Pricing Row: MRP, Selling Price, Cost Price */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
-            <div>
-              <label style={{ display: 'block', fontSize: '0.825rem', fontWeight: '700', color: '#0F172A', marginBottom: '0.35rem' }}>
-                MRP (₹)
-              </label>
-              <input
-                type="number"
-                className="input-field"
-                placeholder="150"
-                value={mrp}
-                onChange={(e) => setMrp(e.target.value)}
-                style={{ borderRadius: '14px', padding: '0.7rem 0.85rem', border: '1px solid #CBD5E1', fontSize: '0.875rem' }}
-              />
-            </div>
-
-            <div>
-              <label style={{ display: 'block', fontSize: '0.825rem', fontWeight: '700', color: '#0F172A', marginBottom: '0.35rem' }}>
-                Selling Price *
-              </label>
-              <input
-                type="number"
-                className="input-field"
-                placeholder="140"
-                value={price}
-                onChange={(e) => setPrice(e.target.value)}
-                style={{ borderRadius: '14px', padding: '0.7rem 0.85rem', border: '1px solid #CBD5E1', fontSize: '0.875rem', fontWeight: '700' }}
-              />
-            </div>
-
-            <div>
-              <label style={{ display: 'block', fontSize: '0.825rem', fontWeight: '700', color: '#0F172A', marginBottom: '0.35rem' }}>
-                Cost Price (₹)
-              </label>
-              <input
-                type="number"
-                className="input-field"
-                placeholder="110"
-                value={costPrice}
-                onChange={(e) => setCostPrice(e.target.value)}
-                style={{ borderRadius: '14px', padding: '0.7rem 0.85rem', border: '1px solid #CBD5E1', fontSize: '0.875rem' }}
-              />
-            </div>
-          </div>
-
-          {/* Stock Tracking Row */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem' }}>
-            <div>
-              <label style={{ display: 'block', fontSize: '0.825rem', fontWeight: '700', color: '#0F172A', marginBottom: '0.35rem' }}>
-                Initial Stock Qty *
-              </label>
-              <input
-                type="number"
-                className="input-field"
-                placeholder="50"
-                value={stockQty}
-                onChange={(e) => setStockQty(e.target.value)}
-                style={{ borderRadius: '14px', padding: '0.7rem 1rem', border: '1px solid #CBD5E1', fontSize: '0.875rem' }}
-              />
-            </div>
-
-            <div>
-              <label style={{ display: 'block', fontSize: '0.825rem', fontWeight: '700', color: '#0F172A', marginBottom: '0.35rem' }}>
-                Low Stock Alert Limit
-              </label>
-              <input
-                type="number"
-                className="input-field"
-                placeholder="5"
-                value={alertQty}
-                onChange={(e) => setAlertQty(e.target.value)}
-                style={{ borderRadius: '14px', padding: '0.7rem 1rem', border: '1px solid #CBD5E1', fontSize: '0.875rem' }}
-              />
-            </div>
-          </div>
-
-          {/* Description */}
-          <div>
-            <label style={{ display: 'block', fontSize: '0.825rem', fontWeight: '700', color: '#0F172A', marginBottom: '0.35rem' }}>
-              Product Notes / Description (Optional)
-            </label>
-            <input
-              type="text"
-              className="input-field"
-              placeholder="e.g. 100% pure refined oil, 1 year shelf life"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              style={{ borderRadius: '14px', padding: '0.7rem 1rem', border: '1px solid #CBD5E1', fontSize: '0.85rem' }}
-            />
-          </div>
-
-          {error && <div className="input-error" style={{ fontSize: '0.8rem' }}>{error}</div>}
-
-          <div style={{ display: 'flex', gap: '0.65rem', marginTop: '0.5rem' }}>
-            <button type="button" onClick={onClose} className="btn btn-secondary" style={{ flex: 1, borderRadius: '16px' }}>
+          {/* Action Buttons */}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem', paddingTop: '1rem', borderTop: '1px solid var(--border-color)' }}>
+            <button type="button" onClick={onClose} className="btn btn-secondary" disabled={submitting}>
               Cancel
             </button>
-            <button type="submit" disabled={submitting} className="btn btn-primary" style={{ flex: 1.5, borderRadius: '16px', backgroundColor: '#059669' }}>
-              <CheckCircle2 size={18} />
-              <span>{submitting ? 'Saving...' : 'Save Product'}</span>
+
+            <button type="submit" className="btn btn-primary" style={{ padding: '0.75rem 1.75rem' }} disabled={submitting}>
+              {submitting ? 'Saving Product...' : isEditMode ? 'Save Changes' : '+ Add Product'}
             </button>
           </div>
-
         </form>
       </div>
     </div>
   );
 };
+
+export default AddProductModal;

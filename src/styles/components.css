@@ -67,6 +67,29 @@
   transform: translateY(-1px);
 }
 
+.btn-outline {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+
+.btn-outline:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--primary-light);
+}
+
+.btn-ghost {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-body);
+}
+
+.btn-ghost:hover {
+  background: var(--bg-secondary);
+  color: var(--text-heading);
+}
+
 .btn-icon {
   padding: 0.6rem;
   border-radius: 12px;

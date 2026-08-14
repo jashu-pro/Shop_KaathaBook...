@@ -18,6 +18,7 @@ export interface Shop {
   currency: string;
   theme: string;
   language: string;
+  defaultCreditPeriod?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -38,4 +39,5 @@ export interface CreateShopDTO {
   currency?: string;
   theme?: string;
   language?: string;
+  defaultCreditPeriod?: number;
 }

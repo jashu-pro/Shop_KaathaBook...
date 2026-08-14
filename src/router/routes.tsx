@@ -11,6 +11,8 @@ import Login from '../features/auth/pages/Login';
 import Register from '../features/auth/pages/Register';
 import ForgotPassword from '../features/auth/pages/ForgotPassword';
 
+import AuthCallback from '../features/auth/pages/AuthCallback';
+
 // Shop Onboarding Page
 import ShopRegistration from '../features/shop/pages/ShopRegistration';
 
@@ -77,6 +79,7 @@ export const AppRouter: React.FC = () => {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/auth/callback" element={<AuthCallback />} />
         </Route>
 
         {/* Onboarding Routes - Requires login, but no shop registration check */}

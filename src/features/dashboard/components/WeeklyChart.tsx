@@ -14,17 +14,17 @@ interface WeeklyChartProps {
 
 export const WeeklyChart: React.FC<WeeklyChartProps> = ({ data }) => {
   const defaultData: DayData[] = [
-    { day: 'Mon', sales: 1200, collections: 800 },
-    { day: 'Tue', sales: 2400, collections: 1500 },
-    { day: 'Wed', sales: 1800, collections: 2100 },
-    { day: 'Thu', sales: 3100, collections: 1900 },
-    { day: 'Fri', sales: 2800, collections: 3400 },
-    { day: 'Sat', sales: 4200, collections: 2900 },
-    { day: 'Sun', sales: 3500, collections: 4100 },
+    { day: 'Mon', sales: 0, collections: 0 },
+    { day: 'Tue', sales: 0, collections: 0 },
+    { day: 'Wed', sales: 0, collections: 0 },
+    { day: 'Thu', sales: 0, collections: 0 },
+    { day: 'Fri', sales: 0, collections: 0 },
+    { day: 'Sat', sales: 0, collections: 0 },
+    { day: 'Sun', sales: 0, collections: 0 },
   ];
 
   const chartData = data && data.length > 0 ? data : defaultData;
-  const maxVal = Math.max(...chartData.flatMap((d) => [d.sales, d.collections]), 5000);
+  const maxVal = Math.max(...chartData.flatMap((d) => [d.sales, d.collections]), 1000);
 
   const totalWeeklySales = chartData.reduce((acc, d) => acc + d.sales, 0);
   const totalWeeklyCollections = chartData.reduce((acc, d) => acc + d.collections, 0);
@@ -66,13 +66,23 @@ export const WeeklyChart: React.FC<WeeklyChartProps> = ({ data }) => {
             <span>Collections (₹{totalWeeklyCollections.toLocaleString('en-IN')})</span>
           </div>
 
-          <div style={{
-            backgroundColor: 'rgba(16, 185, 129, 0.1)', color: '#10B981',
-            padding: '0.35rem 0.75rem', borderRadius: '20px', fontSize: '0.75rem',
-            fontWeight: '700', display: 'flex', alignItems: 'center', gap: '0.25rem'
-          }}>
-            <ArrowUpRight size={14} /> +18.4% growth
-          </div>
+          {totalWeeklySales > 0 || totalWeeklyCollections > 0 ? (
+            <div style={{
+              backgroundColor: 'rgba(16, 185, 129, 0.1)', color: '#10B981',
+              padding: '0.35rem 0.75rem', borderRadius: '20px', fontSize: '0.75rem',
+              fontWeight: '700', display: 'flex', alignItems: 'center', gap: '0.25rem'
+            }}>
+              <ArrowUpRight size={14} /> Active Period
+            </div>
+          ) : (
+            <div style={{
+              backgroundColor: 'var(--bg-secondary)', color: 'var(--text-muted)',
+              padding: '0.35rem 0.75rem', borderRadius: '20px', fontSize: '0.75rem',
+              fontWeight: '600'
+            }}>
+              No transactions this week
+            </div>
+          )}
         </div>
       </div>
 
