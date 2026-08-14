@@ -6,25 +6,61 @@ import {
   Plus, 
   Search, 
   Calendar, 
-  Trash2
+  Trash2,
+  Filter,
+  DollarSign,
+  Smartphone,
+  Building2,
+  Eye
 } from 'lucide-react';
 import { usePayments } from '../hooks/usePayments';
-import type { PaymentMode } from '../types';
+import { PaymentDetailsModal } from '../components/PaymentDetailsModal';
+import type { Payment, PaymentMode } from '../types';
 
-const PaymentsListPage: React.FC = () => {
+export const PaymentsListPage: React.FC = () => {
   const navigate = useNavigate();
   const { payments, isLoading, removePayment, refetch } = usePayments();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMethod, setSelectedMethod] = useState<string>('all');
+  const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'week' | 'month'>('all');
+  const [selectedPaymentForDetails, setSelectedPaymentForDetails] = useState<Payment | null>(null);
 
   const totalPaymentsCount = payments.length;
 
   const totalCollected = useMemo(() => {
-    return payments.reduce((acc, p) => acc + p.amount, 0);
+    return payments.reduce((acc, p) => acc + (Number(p.amount) || 0), 0);
+  }, [payments]);
+
+  // Today's collections
+  const todayStart = useMemo(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  }, []);
+
+  const todayCollected = useMemo(() => {
+    return payments.reduce((acc, p) => {
+      const pTime = new Date(p.paymentDate || p.createdAt).getTime();
+      return pTime >= todayStart ? acc + (Number(p.amount) || 0) : acc;
+    }, 0);
+  }, [payments, todayStart]);
+
+  const cashCollected = useMemo(() => {
+    return payments.reduce((acc, p) => p.paymentMethod === 'cash' ? acc + (Number(p.amount) || 0) : acc, 0);
+  }, [payments]);
+
+  const upiCollected = useMemo(() => {
+    return payments.reduce((acc, p) => ['phonepe', 'gpay', 'paytm'].includes(p.paymentMethod) ? acc + (Number(p.amount) || 0) : acc, 0);
+  }, [payments]);
+
+  const bankCollected = useMemo(() => {
+    return payments.reduce((acc, p) => p.paymentMethod === 'bank_transfer' ? acc + (Number(p.amount) || 0) : acc, 0);
   }, [payments]);
 
   const filteredPayments = useMemo(() => {
+    const weekAgo = todayStart - 7 * 24 * 60 * 60 * 1000;
+    const monthAgo = todayStart - 30 * 24 * 60 * 60 * 1000;
+
     return payments.filter((p) => {
       const q = searchQuery.toLowerCase().trim();
       const matchesSearch = 
@@ -35,11 +71,22 @@ const PaymentsListPage: React.FC = () => {
 
       const matchesMethod = selectedMethod === 'all' || p.paymentMethod === selectedMethod;
 
-      return matchesSearch && matchesMethod;
-    });
-  }, [payments, searchQuery, selectedMethod]);
+      let matchesDate = true;
+      const pTime = new Date(p.paymentDate || p.createdAt).getTime();
+      if (dateFilter === 'today') {
+        matchesDate = pTime >= todayStart;
+      } else if (dateFilter === 'week') {
+        matchesDate = pTime >= weekAgo;
+      } else if (dateFilter === 'month') {
+        matchesDate = pTime >= monthAgo;
+      }
 
-  const handleDeletePayment = async (id: string, amount: number) => {
+      return matchesSearch && matchesMethod && matchesDate;
+    });
+  }, [payments, searchQuery, selectedMethod, dateFilter, todayStart]);
+
+  const handleDeletePayment = async (e: React.MouseEvent, id: string, amount: number) => {
+    e.stopPropagation();
     if (window.confirm(`Are you sure you want to delete payment record of ₹${amount}?`)) {
       await removePayment(id);
       refetch();
@@ -49,15 +96,15 @@ const PaymentsListPage: React.FC = () => {
   const getMethodBadge = (method: PaymentMode) => {
     switch (method) {
       case 'phonepe':
-        return { label: 'PhonePe', color: '#673AB7', bg: 'rgba(103, 58, 183, 0.1)' };
+        return { label: 'PhonePe', color: '#673AB7', bg: 'rgba(103, 58, 183, 0.1)', icon: Smartphone };
       case 'gpay':
-        return { label: 'Google Pay', color: '#1A73E8', bg: 'rgba(26, 115, 232, 0.1)' };
+        return { label: 'Google Pay', color: '#1A73E8', bg: 'rgba(26, 115, 232, 0.1)', icon: Smartphone };
       case 'paytm':
-        return { label: 'Paytm', color: '#00BAF2', bg: 'rgba(0, 186, 242, 0.1)' };
+        return { label: 'Paytm', color: '#00BAF2', bg: 'rgba(0, 186, 242, 0.1)', icon: Smartphone };
       case 'bank_transfer':
-        return { label: 'Bank Transfer', color: '#8B5CF6', bg: 'rgba(139, 92, 246, 0.1)' };
+        return { label: 'Bank Transfer', color: '#8B5CF6', bg: 'rgba(139, 92, 246, 0.1)', icon: Building2 };
       default:
-        return { label: 'Cash', color: '#10B981', bg: 'rgba(16, 185, 129, 0.1)' };
+        return { label: 'Cash', color: '#10B981', bg: 'rgba(16, 185, 129, 0.1)', icon: DollarSign };
     }
   };
 
@@ -79,26 +126,25 @@ const PaymentsListPage: React.FC = () => {
       }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.2rem' }}>
-            <CreditCard size={22} style={{ color: 'var(--primary)' }} />
-            <h2 style={{ fontSize: '1.25rem', fontWeight: '800', color: 'var(--text-heading)' }}>
-              Received Payment History
+            <CreditCard size={22} style={{ color: '#10B981' }} />
+            <h2 style={{ fontSize: '1.25rem', fontWeight: '900', color: 'var(--text-heading)' }}>
+              Received Payment History (Jama)
             </h2>
             <span className="badge badge-success" style={{ marginLeft: '0.25rem', fontSize: '0.7rem' }}>
               {totalPaymentsCount} Payments
             </span>
           </div>
-          <p style={{ color: 'var(--text-body)', fontSize: '0.825rem' }}>
-            Track customer settlements across Cash, PhonePe, Google Pay, Paytm, and Bank Transfer.
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.825rem' }}>
+            Customer cash, UPI (PhonePe/GPay/Paytm) and bank transfer settlement records.
           </p>
         </div>
 
-        {/* Metrics & Receive Payment Button */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap' }}>
           <div style={{ textAlign: 'right' }}>
             <span style={{ fontSize: '0.7rem', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Total Collections Collected
+              Total Collections (All Time)
             </span>
-            <div style={{ fontSize: '1.35rem', fontWeight: '800', color: '#10B981', lineHeight: 1.1 }}>
+            <div style={{ fontSize: '1.35rem', fontWeight: '900', color: 'var(--text-heading)', lineHeight: 1.1 }}>
               ₹{totalCollected.toLocaleString('en-IN')}
             </div>
           </div>
@@ -106,7 +152,7 @@ const PaymentsListPage: React.FC = () => {
           <button
             onClick={() => navigate('/payments/receive')}
             className="btn btn-primary"
-            style={{ borderRadius: '14px', padding: '0.65rem 1.25rem', fontWeight: '700', fontSize: '0.85rem', backgroundColor: '#059669' }}
+            style={{ borderRadius: '14px', padding: '0.65rem 1.25rem', fontWeight: '800', fontSize: '0.875rem', backgroundColor: '#059669' }}
           >
             <Plus size={18} />
             <span>+ Receive Payment</span>
@@ -114,7 +160,42 @@ const PaymentsListPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Search & Method Filter */}
+      {/* KPI Collection Breakdown Cards */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+        gap: '0.75rem'
+      }}>
+        <div style={{ backgroundColor: 'var(--bg-card)', padding: '1rem', borderRadius: '18px', border: '1px solid var(--border-color)' }}>
+          <span style={{ fontSize: '0.725rem', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Today's Collection</span>
+          <div style={{ fontSize: '1.35rem', fontWeight: '900', color: '#10B981', marginTop: '0.2rem' }}>
+            ₹{todayCollected.toLocaleString('en-IN')}
+          </div>
+        </div>
+
+        <div style={{ backgroundColor: 'var(--bg-card)', padding: '1rem', borderRadius: '18px', border: '1px solid var(--border-color)' }}>
+          <span style={{ fontSize: '0.725rem', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Cash Collections</span>
+          <div style={{ fontSize: '1.35rem', fontWeight: '900', color: '#047857', marginTop: '0.2rem' }}>
+            ₹{cashCollected.toLocaleString('en-IN')}
+          </div>
+        </div>
+
+        <div style={{ backgroundColor: 'var(--bg-card)', padding: '1rem', borderRadius: '18px', border: '1px solid var(--border-color)' }}>
+          <span style={{ fontSize: '0.725rem', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase' }}>UPI (PhonePe/GPay)</span>
+          <div style={{ fontSize: '1.35rem', fontWeight: '900', color: '#2563EB', marginTop: '0.2rem' }}>
+            ₹{upiCollected.toLocaleString('en-IN')}
+          </div>
+        </div>
+
+        <div style={{ backgroundColor: 'var(--bg-card)', padding: '1rem', borderRadius: '18px', border: '1px solid var(--border-color)' }}>
+          <span style={{ fontSize: '0.725rem', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Bank Transfers</span>
+          <div style={{ fontSize: '1.35rem', fontWeight: '900', color: '#7C3AED', marginTop: '0.2rem' }}>
+            ₹{bankCollected.toLocaleString('en-IN')}
+          </div>
+        </div>
+      </div>
+
+      {/* Search & Filter Bar */}
       <div style={{
         backgroundColor: 'var(--bg-card)',
         borderRadius: '20px',
@@ -124,56 +205,72 @@ const PaymentsListPage: React.FC = () => {
         flexDirection: 'column',
         gap: '0.85rem'
       }}>
-        <div style={{ display: 'flex', gap: '0.85rem', flexWrap: 'wrap', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '0.85rem', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ flex: 1, minWidth: '240px', position: 'relative', display: 'flex', alignItems: 'center' }}>
             <Search size={16} style={{ position: 'absolute', left: '1rem', color: 'var(--text-muted)' }} />
             <input
               type="text"
               className="input-field"
-              placeholder="Search by customer name, mobile, reference number..."
+              placeholder="Search by customer name, phone, UTR/ref..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               style={{ paddingLeft: '2.5rem', padding: '0.65rem 1rem 0.65rem 2.5rem', fontSize: '0.85rem', borderRadius: '14px' }}
             />
           </div>
+
+          {/* Date Filter Dropdown */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+            <Filter size={15} style={{ color: 'var(--text-muted)' }} />
+            <select
+              className="input-field"
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value as any)}
+              style={{ borderRadius: '12px', padding: '0.45rem 0.75rem', fontSize: '0.8rem', fontWeight: '700', backgroundColor: 'var(--bg-card)' }}
+            >
+              <option value="all">All Dates</option>
+              <option value="today">Today</option>
+              <option value="week">This Week (Last 7 Days)</option>
+              <option value="month">This Month (Last 30 Days)</option>
+            </select>
+          </div>
         </div>
 
-        {/* Method Filter Chips */}
-        <div style={{ display: 'flex', gap: '0.35rem', overflowX: 'auto' }}>
+        {/* Method Filter Pills */}
+        <div style={{ display: 'flex', gap: '0.4rem', overflowX: 'auto' }}>
           {[
-            { id: 'all', label: 'All Modes' },
+            { id: 'all', label: 'All Methods' },
             { id: 'cash', label: 'Cash' },
             { id: 'phonepe', label: 'PhonePe' },
             { id: 'gpay', label: 'Google Pay' },
             { id: 'paytm', label: 'Paytm' },
             { id: 'bank_transfer', label: 'Bank Transfer' },
-          ].map((m) => (
+          ].map((tab) => (
             <button
-              key={m.id}
-              onClick={() => setSelectedMethod(m.id)}
+              key={tab.id}
+              onClick={() => setSelectedMethod(tab.id)}
               style={{
-                padding: '0.35rem 0.75rem',
-                borderRadius: '10px',
-                fontSize: '0.775rem',
-                fontWeight: selectedMethod === m.id ? '700' : '500',
-                backgroundColor: selectedMethod === m.id ? 'var(--primary)' : 'var(--bg-secondary)',
-                color: selectedMethod === m.id ? '#FFFFFF' : 'var(--text-body)',
-                border: 'none',
+                padding: '0.4rem 0.85rem',
+                borderRadius: '12px',
+                fontSize: '0.8rem',
+                fontWeight: selectedMethod === tab.id ? '800' : '600',
+                color: selectedMethod === tab.id ? 'var(--primary)' : 'var(--text-body)',
+                backgroundColor: selectedMethod === tab.id ? 'var(--primary-light)' : 'transparent',
+                border: selectedMethod === tab.id ? '1.5px solid var(--primary)' : '1px solid var(--border-color)',
                 cursor: 'pointer',
                 whiteSpace: 'nowrap'
               }}
             >
-              {m.label}
+              {tab.label}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Payments Cards Grid */}
+      {/* Payments Grid */}
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-sm">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="skeleton" style={{ height: '130px', borderRadius: '18px' }} />
+            <div key={i} className="skeleton" style={{ height: '120px', borderRadius: '18px' }} />
           ))}
         </div>
       ) : filteredPayments.length === 0 ? (
@@ -183,91 +280,133 @@ const PaymentsListPage: React.FC = () => {
         }}>
           <CreditCard size={40} style={{ color: 'var(--text-muted)', marginBottom: '0.75rem' }} />
           <h3 style={{ fontSize: '1.1rem', fontWeight: '800', color: 'var(--text-heading)' }}>
-            No Payments Received Yet
+            No Payment Records Found
           </h3>
           <p style={{ color: 'var(--text-body)', fontSize: '0.85rem', marginTop: '0.2rem', marginBottom: '1.25rem' }}>
-            {searchQuery ? `No payment matching "${searchQuery}"` : 'Record customer payment collections to track your ledger'}
+            {searchQuery ? `No payments matching "${searchQuery}"` : 'Record customer payments to see them listed here'}
           </p>
           <button onClick={() => navigate('/payments/receive')} className="btn btn-primary" style={{ borderRadius: '14px', fontSize: '0.85rem' }}>
             <Plus size={16} /> Receive Payment Now
           </button>
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '0.85rem' }}>
-          {filteredPayments.map((payment) => {
-            const badge = getMethodBadge(payment.paymentMethod);
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(290px, 1fr))', gap: '0.85rem' }}>
+          {filteredPayments.map((p) => {
+            const methodInfo = getMethodBadge(p.paymentMethod);
+            const MethodIcon = methodInfo.icon;
 
             return (
               <div
-                key={payment.id}
+                key={p.id}
+                onClick={() => setSelectedPaymentForDetails(p)}
                 style={{
                   backgroundColor: 'var(--bg-card)',
-                  borderRadius: '18px',
+                  borderRadius: '20px',
                   padding: '1.15rem 1.25rem',
                   border: '1px solid var(--border-color)',
                   boxShadow: '0 2px 12px rgba(15, 23, 42, 0.03)',
                   display: 'flex',
                   flexDirection: 'column',
                   justifyContent: 'space-between',
-                  gap: '0.85rem'
+                  gap: '0.85rem',
+                  cursor: 'pointer',
+                  transition: 'transform 120ms ease, box-shadow 120ms ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,0,0,0.06)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'none';
+                  e.currentTarget.style.boxShadow = '0 2px 12px rgba(15, 23, 42, 0.03)';
                 }}
               >
-                {/* Header: Customer Name & Payment Method Badge */}
+                {/* Header: Customer & Amount */}
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '0.5rem' }}>
                   <div>
                     <h4 style={{ fontSize: '0.95rem', fontWeight: '800', color: 'var(--text-heading)' }}>
-                      {payment.customerName || 'Shop Customer'}
+                      {p.customerName || 'Customer'}
                     </h4>
-                    {payment.referenceNo && (
-                      <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: '600' }}>
-                        Ref: {payment.referenceNo}
+                    {p.customerPhone && (
+                      <span style={{ fontSize: '0.725rem', color: 'var(--text-muted)' }}>
+                        📱 {p.customerPhone}
                       </span>
                     )}
                   </div>
 
-                  <div style={{
-                    backgroundColor: badge.bg,
-                    color: badge.color,
-                    padding: '0.25rem 0.65rem',
-                    borderRadius: '12px',
-                    fontSize: '0.75rem',
-                    fontWeight: '800'
-                  }}>
-                    {badge.label}
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: '1.25rem', fontWeight: '900', color: '#10B981' }}>
+                      +₹{p.amount}
+                    </div>
+                    <span style={{ fontSize: '0.675rem', fontWeight: '800', color: '#047857', backgroundColor: '#DCFCE7', padding: '0.15rem 0.45rem', borderRadius: '6px' }}>
+                      JAMA / GOT
+                    </span>
                   </div>
                 </div>
 
-                {/* Amount Row */}
+                {/* Method & UTR Banner */}
                 <div style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  padding: '0.55rem 0.85rem', backgroundColor: 'var(--bg-secondary)', borderRadius: '14px'
+                  padding: '0.5rem 0.75rem', backgroundColor: 'var(--bg-secondary)', borderRadius: '12px',
+                  fontSize: '0.775rem'
                 }}>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: '600' }}>
-                    Amount Collected:
-                  </span>
-                  <div style={{ fontSize: '1.15rem', fontWeight: '800', color: '#10B981' }}>
-                    + ₹{payment.amount}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: methodInfo.color, fontWeight: '800' }}>
+                    <MethodIcon size={14} />
+                    <span>{methodInfo.label}</span>
                   </div>
+
+                  {p.referenceNo ? (
+                    <span style={{ fontSize: '0.725rem', color: '#2563EB', fontWeight: '700' }}>
+                      UTR: {p.referenceNo}
+                    </span>
+                  ) : (
+                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Verified</span>
+                  )}
                 </div>
 
-                {/* Date & Actions */}
+                {/* Date & Action */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: '0.725rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
-                    <Calendar size={12} /> {new Date(payment.paymentDate).toLocaleDateString('en-IN')}
+                  <span style={{ fontSize: '0.725rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                    <Calendar size={12} /> {new Date(p.paymentDate || p.createdAt).toLocaleDateString('en-IN')}
                   </span>
 
-                  <button
-                    onClick={() => handleDeletePayment(payment.id, payment.amount)}
-                    style={{ color: '#EF4444', border: 'none', background: 'none', cursor: 'pointer', padding: '0.2rem' }}
-                    title="Delete Payment Record"
-                  >
-                    <Trash2 size={14} />
-                  </button>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedPaymentForDetails(p);
+                      }}
+                      className="btn btn-secondary"
+                      style={{ borderRadius: '8px', padding: '0.25rem 0.5rem', fontSize: '0.725rem', display: 'flex', alignItems: 'center', gap: '0.2rem' }}
+                    >
+                      <Eye size={12} />
+                      <span>Receipt</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={(e) => handleDeletePayment(e, p.id, p.amount)}
+                      style={{ color: '#EF4444', border: 'none', background: 'none', cursor: 'pointer', padding: '0.25rem' }}
+                      title="Delete Payment Record"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
                 </div>
               </div>
             );
           })}
         </div>
+      )}
+
+      {/* Payment Details / Receipt Modal */}
+      {selectedPaymentForDetails && (
+        <PaymentDetailsModal
+          isOpen={!!selectedPaymentForDetails}
+          onClose={() => setSelectedPaymentForDetails(null)}
+          payment={selectedPaymentForDetails}
+        />
       )}
 
     </div>
