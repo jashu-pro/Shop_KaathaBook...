@@ -3,6 +3,7 @@ import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../../stores/authStore';
 import { WeeklyChart } from '../components/WeeklyChart';
+import { UpiQrModal } from '../components/UpiQrModal';
 import { useCustomers } from '../../customers/hooks/useCustomers';
 import { useSales } from '../../sales/hooks/useSales';
 import { usePayments } from '../../payments/hooks/usePayments';
@@ -572,86 +573,12 @@ const Dashboard: React.FC = () => {
       <WeeklyChart data={weeklyChartData} />
 
       {/* ------------------------------------------------------------- */}
-      {/* UPI QR CODE MODAL POPUP                                       */}
+      {/* AUTO-GENERATED UPI QR CODE MODAL POPUP                        */}
       {/* ------------------------------------------------------------- */}
-      {showQrModal && (
-        <div className="modal-overlay" onClick={() => setShowQrModal(false)}>
-          <div 
-            className="glass-panel modal-content"
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              padding: '1.75rem',
-              maxWidth: '420px',
-              textAlign: 'center',
-              backgroundColor: 'var(--bg-card)',
-              borderRadius: '24px'
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <QrCode size={20} style={{ color: 'var(--primary)' }} />
-                <h3 style={{ fontSize: '1.1rem', fontWeight: '800', color: 'var(--text-heading)' }}>
-                  Merchant UPI QR
-                </h3>
-              </div>
-              <button onClick={() => setShowQrModal(false)} className="btn btn-secondary btn-icon" style={{ borderRadius: '50%', padding: '0.35rem' }}>
-                <X size={16} />
-              </button>
-            </div>
-
-            {/* Generated QR Code Card */}
-            <div style={{
-              backgroundColor: '#FFFFFF',
-              padding: '1.25rem',
-              borderRadius: '20px',
-              border: '2px solid var(--primary-light)',
-              boxShadow: '0 8px 24px rgba(16, 185, 129, 0.1)',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              gap: '0.85rem',
-              marginBottom: '1.25rem'
-            }}>
-              <img
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=upi://pay?pa=${encodeURIComponent(upiId)}%26pn=${encodeURIComponent(shopName)}`}
-                alt="UPI QR Code"
-                style={{ width: '160px', height: '160px', borderRadius: '12px' }}
-              />
-
-              <div>
-                <h4 style={{ fontSize: '1rem', fontWeight: '800', color: '#0F172A' }}>
-                  {shopName}
-                </h4>
-                <p style={{ fontSize: '0.8rem', color: '#475569', fontWeight: '600', marginTop: '0.15rem' }}>
-                  UPI ID: {upiId}
-                </p>
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', gap: '0.6rem' }}>
-              <button
-                type="button"
-                onClick={() => {
-                  navigator.clipboard.writeText(upiId);
-                  alert('UPI ID copied to clipboard!');
-                }}
-                className="btn btn-secondary"
-                style={{ flex: 1, borderRadius: '16px', fontSize: '0.85rem' }}
-              >
-                Copy UPI ID
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowQrModal(false)}
-                className="btn btn-primary"
-                style={{ flex: 1, borderRadius: '16px', fontSize: '0.85rem' }}
-              >
-                Done
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <UpiQrModal 
+        isOpen={showQrModal} 
+        onClose={() => setShowQrModal(false)} 
+      />
 
     </div>
   );
