@@ -1,6 +1,6 @@
 /* features/customers/components/CustomerProfileCard.tsx */
 import React from 'react';
-import { PhoneCall, Send, CreditCard, BookOpen, AlertTriangle } from 'lucide-react';
+import { PhoneCall, Send, CreditCard, BookOpen, AlertTriangle, Edit3 } from 'lucide-react';
 import type { Customer } from '../types';
 import { useAuthStore } from '../../../stores/authStore';
 
@@ -8,12 +8,14 @@ interface CustomerProfileCardProps {
   customer: Customer;
   onSelect: (customer: Customer) => void;
   onCollectPayment: (customerId: string) => void;
+  onEdit?: (customer: Customer) => void;
 }
 
 export const CustomerProfileCard: React.FC<CustomerProfileCardProps> = ({
   customer,
   onSelect,
-  onCollectPayment
+  onCollectPayment,
+  onEdit
 }) => {
   const { shop } = useAuthStore();
   const shopName = shop?.name || 'Shop KhattaBook Store';
@@ -62,7 +64,7 @@ export const CustomerProfileCard: React.FC<CustomerProfileCardProps> = ({
         position: 'relative'
       }}
     >
-      {/* Top Header: Avatar, Name, Phone & Tag Badge */}
+      {/* Top Header: Avatar, Name, Phone & Tag Badge + Edit Button */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '0.75rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', cursor: 'pointer' }} onClick={() => onSelect(customer)}>
           <div style={{
@@ -90,15 +92,45 @@ export const CustomerProfileCard: React.FC<CustomerProfileCardProps> = ({
           </div>
         </div>
 
-        {/* Tag Badge */}
-        <span
-          className={`badge ${
-            customer.tag === 'risk' ? 'badge-error' : customer.tag === 'vip' ? 'badge-success' : 'badge-neutral'
-          }`}
-          style={{ textTransform: 'uppercase', fontSize: '0.65rem', fontWeight: '800', letterSpacing: '0.05em' }}
-        >
-          {customer.tag || 'REGULAR'}
-        </span>
+        {/* Tag Badge & Edit Action */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+          <span
+            className={`badge ${
+              customer.tag === 'risk' ? 'badge-error' : customer.tag === 'vip' ? 'badge-success' : 'badge-neutral'
+            }`}
+            style={{ textTransform: 'uppercase', fontSize: '0.65rem', fontWeight: '800', letterSpacing: '0.05em' }}
+          >
+            {customer.tag || 'REGULAR'}
+          </span>
+
+          {onEdit && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit(customer);
+              }}
+              style={{
+                border: '1px solid var(--border-color)',
+                backgroundColor: 'var(--bg-secondary)',
+                color: 'var(--text-heading)',
+                padding: '0.25rem 0.55rem',
+                borderRadius: '10px',
+                fontSize: '0.725rem',
+                fontWeight: '700',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.25rem',
+                transition: 'all 150ms ease'
+              }}
+              title={`Edit ${customer.name}'s Profile`}
+            >
+              <Edit3 size={13} style={{ color: 'var(--primary)' }} />
+              <span>Edit</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Financial Udhaar & Balance Display */}

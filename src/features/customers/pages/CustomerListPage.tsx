@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { useCustomers } from '../hooks/useCustomers';
 import { AddCustomerModal } from '../components/AddCustomerModal';
+import { EditCustomerModal } from '../components/EditCustomerModal';
 import { CustomerDetailsModal } from '../components/CustomerDetailsModal';
 import { CustomerProfileCard } from '../components/CustomerProfileCard';
 import { RecordCreditSaleModal } from '../../sales/components/RecordCreditSaleModal';
@@ -26,6 +27,7 @@ export const CustomerListPage: React.FC = () => {
 
   // Modal Control States
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [detailsCustomer, setDetailsCustomer] = useState<Customer | null>(null);
   const [receivePaymentCustomerId, setReceivePaymentCustomerId] = useState<string | null>(null);
 
@@ -254,6 +256,7 @@ export const CustomerListPage: React.FC = () => {
               customer={customer}
               onSelect={(cust) => setDetailsCustomer(cust)}
               onCollectPayment={(id) => setReceivePaymentCustomerId(id)}
+              onEdit={(cust) => setEditingCustomer(cust)}
             />
           ))}
         </div>
@@ -271,6 +274,19 @@ export const CustomerListPage: React.FC = () => {
         />
       )}
 
+      {/* Edit Customer Modal */}
+      {editingCustomer && (
+        <EditCustomerModal
+          customer={editingCustomer}
+          isOpen={!!editingCustomer}
+          onClose={() => setEditingCustomer(null)}
+          onSuccess={() => {
+            setEditingCustomer(null);
+            refetch();
+          }}
+        />
+      )}
+
       {/* Customer Details & Khatta Ledger Modal */}
       {detailsCustomer && (
         <CustomerDetailsModal
@@ -279,6 +295,10 @@ export const CustomerListPage: React.FC = () => {
           onClose={() => setDetailsCustomer(null)}
           onNewBill={(id) => setReceivePaymentCustomerId(id)}
           onCollectPayment={(id) => setReceivePaymentCustomerId(id)}
+          onEdit={(cust) => {
+            setDetailsCustomer(null);
+            setEditingCustomer(cust);
+          }}
         />
       )}
 

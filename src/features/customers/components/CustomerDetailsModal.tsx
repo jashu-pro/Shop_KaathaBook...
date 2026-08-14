@@ -8,7 +8,8 @@ import {
   CreditCard, 
   FileText, 
   User,
-  MessageSquare
+  MessageSquare,
+  Edit3
 } from 'lucide-react';
 import type { Customer } from '../types';
 import { useSales } from '../../sales/hooks/useSales';
@@ -21,6 +22,7 @@ interface CustomerDetailsModalProps {
   onClose: () => void;
   onNewBill: (customerId: string) => void;
   onCollectPayment: (customerId: string) => void;
+  onEdit?: (customer: Customer) => void;
 }
 
 export const CustomerDetailsModal: React.FC<CustomerDetailsModalProps> = ({
@@ -28,7 +30,8 @@ export const CustomerDetailsModal: React.FC<CustomerDetailsModalProps> = ({
   isOpen,
   onClose,
   onNewBill,
-  onCollectPayment
+  onCollectPayment,
+  onEdit
 }) => {
   const { shop } = useAuthStore();
   const shopName = shop?.name || 'Shop KhattaBook Store';
@@ -129,7 +132,7 @@ export const CustomerDetailsModal: React.FC<CustomerDetailsModalProps> = ({
         flexDirection: 'column'
       }}>
         
-        {/* Modal Header: Avatar, Name, Tag & Close */}
+        {/* Modal Header: Avatar, Name, Tag & Actions */}
         <div style={{
           padding: '1.25rem 1.5rem',
           display: 'flex',
@@ -176,13 +179,27 @@ export const CustomerDetailsModal: React.FC<CustomerDetailsModalProps> = ({
             </div>
           </div>
 
-          <button
-            onClick={onClose}
-            className="btn btn-secondary btn-icon"
-            style={{ width: '36px', height: '36px', borderRadius: '12px' }}
-          >
-            <X size={20} />
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            {onEdit && (
+              <button
+                onClick={() => onEdit(customer)}
+                className="btn btn-secondary"
+                style={{ borderRadius: '12px', fontSize: '0.8rem', padding: '0.45rem 0.85rem', fontWeight: '700', gap: '0.3rem' }}
+                title="Edit Customer Details"
+              >
+                <Edit3 size={15} style={{ color: 'var(--primary)' }} />
+                <span>Edit Profile</span>
+              </button>
+            )}
+
+            <button
+              onClick={onClose}
+              className="btn btn-secondary btn-icon"
+              style={{ width: '36px', height: '36px', borderRadius: '12px' }}
+            >
+              <X size={20} />
+            </button>
+          </div>
         </div>
 
         {/* Scrollable Body */}
