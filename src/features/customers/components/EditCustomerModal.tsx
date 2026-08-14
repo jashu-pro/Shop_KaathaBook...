@@ -197,24 +197,15 @@ export const EditCustomerModal: React.FC<EditCustomerModalProps> = ({
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose} style={{ zIndex: 1000 }}>
-      {/* Hidden File Inputs */}
-      <input
-        type="file"
-        ref={cameraInputRef}
-        accept="image/*"
-        capture="user"
-        onChange={handleFileChange}
-        style={{ display: 'none' }}
-      />
-      <input
-        type="file"
-        ref={galleryInputRef}
-        accept="image/*"
-        onChange={handleFileChange}
-        style={{ display: 'none' }}
-      />
-
+    <div 
+      className="modal-overlay" 
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }} 
+      style={{ zIndex: 1000 }}
+    >
       <div 
         className="glass-panel modal-content"
         onClick={(e) => e.stopPropagation()}
@@ -290,10 +281,14 @@ export const EditCustomerModal: React.FC<EditCustomerModalProps> = ({
               Customer Profile Photo
             </h4>
 
-            <div style={{ display: 'flex', gap: '0.6rem' }}>
+            <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', alignItems: 'center' }}>
+              {/* Take Photo Button */}
               <button
                 type="button"
-                onClick={handleTakePhotoClick}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleTakePhotoClick();
+                }}
                 style={{
                   backgroundColor: '#3B82F6',
                   color: '#FFFFFF',
@@ -312,9 +307,8 @@ export const EditCustomerModal: React.FC<EditCustomerModalProps> = ({
                 <span>Take Photo</span>
               </button>
 
-              <button
-                type="button"
-                onClick={() => galleryInputRef.current?.click()}
+              {/* Native Upload Button via Label */}
+              <label
                 style={{
                   backgroundColor: '#FFFFFF',
                   color: '#0F172A',
@@ -328,10 +322,53 @@ export const EditCustomerModal: React.FC<EditCustomerModalProps> = ({
                   alignItems: 'center',
                   gap: '0.4rem'
                 }}
+                onClick={(e) => e.stopPropagation()}
               >
                 <Upload size={15} />
                 <span>Upload</span>
-              </button>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/jpg,image/png,image/webp,image/heic"
+                  onChange={(e) => {
+                    e.stopPropagation();
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      handlePhotoFile(file);
+                      e.target.value = '';
+                    }
+                  }}
+                  style={{ display: 'none' }}
+                />
+              </label>
+
+              {/* Hidden System Camera fallback */}
+              <input
+                type="file"
+                ref={cameraInputRef}
+                accept="image/*"
+                capture="user"
+                onChange={handleFileChange}
+                style={{ display: 'none' }}
+              />
+
+              {/* Remove Photo if present */}
+              {photoUrl && (
+                <button
+                  type="button"
+                  onClick={() => setPhotoUrl(null)}
+                  style={{
+                    backgroundColor: 'transparent',
+                    color: '#EF4444',
+                    border: 'none',
+                    fontSize: '0.75rem',
+                    fontWeight: '700',
+                    cursor: 'pointer',
+                    padding: '0.4rem'
+                  }}
+                >
+                  Remove
+                </button>
+              )}
             </div>
           </div>
         </div>
