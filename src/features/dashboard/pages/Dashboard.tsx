@@ -1,9 +1,12 @@
 /* features/dashboard/pages/Dashboard.tsx */
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../../stores/authStore';
 import { WeeklyChart } from '../components/WeeklyChart';
 import { useCustomers } from '../../customers/hooks/useCustomers';
+import { useSales } from '../../sales/hooks/useSales';
+import { usePayments } from '../../payments/hooks/usePayments';
+import { useLedger } from '../../ledger/hooks/useLedger';
 import { 
   QrCode, 
   TrendingUp, 
@@ -24,15 +27,92 @@ const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const { shop } = useAuthStore();
   const { customers } = useCustomers();
+  const { sales } = useSales();
+  const { payments } = usePayments();
+  const { entries: ledgerEntries } = useLedger();
+
   const [showQrModal, setShowQrModal] = useState(false);
 
   const shopName = shop?.name || 'My KhattaBook Store';
   const upiId = shop?.upiId || '';
   const activeCustomersCount = customers.length;
-  const totalTransactionsCount = 0;
+
   const totalUdhaar = customers.reduce((acc, c) => acc + (c.currentBalance > 0 ? c.currentBalance : 0), 0);
-  const todaysSales = 0;
-  const todaysCollections = 0;
+
+  const isToday = (dateString?: string) => {
+    if (!dateString) return false;
+    const d = new Date(dateString);
+    const today = new Date();
+    return (
+      d.getDate() === today.getDate() &&
+      d.getMonth() === today.getMonth() &&
+      d.getFullYear() === today.getFullYear()
+    );
+  };
+
+  // Today's Credit Sales (sum of debit entries recorded today)
+  const todaysSales = useMemo(() => {
+    return ledgerEntries
+      .filter((e) => e.entryType === 'debit' && isToday(e.entryDate))
+      .reduce((acc, e) => acc + e.amount, 0);
+  }, [ledgerEntries]);
+
+  // Today's Collections (sum of credit entries recorded today)
+  const todaysCollections = useMemo(() => {
+    return ledgerEntries
+      .filter((e) => e.entryType === 'credit' && isToday(e.entryDate))
+      .reduce((acc, e) => acc + e.amount, 0);
+  }, [ledgerEntries]);
+
+  // Total Transactions Count
+  const totalTransactionsCount = ledgerEntries.length > 0 ? ledgerEntries.length : (sales.length + payments.length);
+
+  // Weekly Performance Analytics Chart Data (Mon - Sun)
+  const weeklyChartData = useMemo(() => {
+    const today = new Date();
+    const currentDayOfWeek = today.getDay(); // 0: Sun, 1: Mon...
+    const distanceToMon = currentDayOfWeek === 0 ? 6 : currentDayOfWeek - 1;
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - distanceToMon);
+    monday.setHours(0, 0, 0, 0);
+
+    const weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+    return weekDays.map((dayName, idx) => {
+      const dayDate = new Date(monday);
+      dayDate.setDate(monday.getDate() + idx);
+
+      const daySales = ledgerEntries
+        .filter((e) => {
+          const d = new Date(e.entryDate);
+          return (
+            e.entryType === 'debit' &&
+            d.getDate() === dayDate.getDate() &&
+            d.getMonth() === dayDate.getMonth() &&
+            d.getFullYear() === dayDate.getFullYear()
+          );
+        })
+        .reduce((acc, e) => acc + e.amount, 0);
+
+      const dayCollections = ledgerEntries
+        .filter((e) => {
+          const d = new Date(e.entryDate);
+          return (
+            e.entryType === 'credit' &&
+            d.getDate() === dayDate.getDate() &&
+            d.getMonth() === dayDate.getMonth() &&
+            d.getFullYear() === dayDate.getFullYear()
+          );
+        })
+        .reduce((acc, e) => acc + e.amount, 0);
+
+      return {
+        day: dayName,
+        sales: daySales,
+        collections: dayCollections,
+      };
+    });
+  }, [ledgerEntries]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', animation: 'modal-slide 0.3s ease' }}>
@@ -397,45 +477,99 @@ const Dashboard: React.FC = () => {
         </div>
 
         {/* Recent Activity Item */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '0.75rem 1rem',
-          borderRadius: '14px',
-          backgroundColor: 'var(--bg-secondary)',
-          border: '1px solid var(--border-color)'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <div style={{
-              width: '36px', height: '36px', borderRadius: '50%',
-              backgroundColor: 'var(--primary-light)', color: 'var(--primary)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center'
-            }}>
-              <Receipt size={18} />
+        {ledgerEntries.length === 0 ? (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '0.75rem 1rem',
+            borderRadius: '14px',
+            backgroundColor: 'var(--bg-secondary)',
+            border: '1px solid var(--border-color)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <div style={{
+                width: '36px', height: '36px', borderRadius: '50%',
+                backgroundColor: 'rgba(16, 185, 129, 0.1)', color: '#10B981',
+                display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}>
+                <Receipt size={18} />
+              </div>
+              <div>
+                <h4 style={{ fontWeight: '700', fontSize: '0.875rem', color: 'var(--text-heading)' }}>
+                  Account Initialized
+                </h4>
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>
+                  Digital ledger created for {shopName}
+                </p>
+              </div>
             </div>
-            <div>
-              <h4 style={{ fontWeight: '700', fontSize: '0.875rem', color: 'var(--text-heading)' }}>
-                Account Initialized
-              </h4>
-              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>
-                Digital ledger created for {shopName}
-              </p>
-            </div>
-          </div>
 
-          <div style={{ textAlign: 'right' }}>
-            <span className="badge badge-success" style={{ fontSize: '0.7rem' }}>
-              Active
-            </span>
+            <div style={{ textAlign: 'right' }}>
+              <span className="badge badge-success" style={{ fontSize: '0.7rem' }}>
+                Active
+              </span>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            {ledgerEntries.slice(0, 5).map((entry) => {
+              const isDebit = entry.entryType === 'debit';
+              return (
+                <div
+                  key={entry.id}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '0.75rem 1rem',
+                    borderRadius: '14px',
+                    backgroundColor: 'var(--bg-secondary)',
+                    border: '1px solid var(--border-color)'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <div style={{
+                      width: '36px', height: '36px', borderRadius: '50%',
+                      backgroundColor: isDebit ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)',
+                      color: isDebit ? '#EF4444' : '#10B981',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center'
+                    }}>
+                      {isDebit ? <TrendingUp size={18} /> : <TrendingDown size={18} />}
+                    </div>
+                    <div>
+                      <h4 style={{ fontWeight: '700', fontSize: '0.875rem', color: 'var(--text-heading)' }}>
+                        {entry.customerName || 'Customer'}
+                      </h4>
+                      <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>
+                        {entry.description || (isDebit ? 'Credit Sale' : 'Payment Collection')} • {new Date(entry.entryDate).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div style={{ textAlign: 'right' }}>
+                    <span style={{
+                      fontWeight: '800',
+                      fontSize: '0.9rem',
+                      color: isDebit ? '#EF4444' : '#10B981'
+                    }}>
+                      {isDebit ? `+₹${entry.amount}` : `-₹${entry.amount}`}
+                    </span>
+                    <span style={{ display: 'block', fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                      {isDebit ? 'Udhaar' : 'Jama'}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* ------------------------------------------------------------- */}
       {/* ROW 6: WEEKLY SALES & COLLECTIONS PERFORMANCE CHART           */}
       {/* ------------------------------------------------------------- */}
-      <WeeklyChart />
+      <WeeklyChart data={weeklyChartData} />
 
       {/* ------------------------------------------------------------- */}
       {/* UPI QR CODE MODAL POPUP                                       */}
