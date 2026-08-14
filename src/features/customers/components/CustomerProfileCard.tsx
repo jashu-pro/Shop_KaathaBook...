@@ -1,6 +1,6 @@
 /* features/customers/components/CustomerProfileCard.tsx */
 import React from 'react';
-import { PhoneCall, Send, CreditCard, ChevronRight, Edit3, Receipt, AlertTriangle } from 'lucide-react';
+import { PhoneCall, Send, CreditCard, ChevronRight, Edit3, Receipt } from 'lucide-react';
 import type { Customer } from '../types';
 import { useAuthStore } from '../../../stores/authStore';
 
@@ -61,29 +61,29 @@ export const CustomerProfileCard: React.FC<CustomerProfileCardProps> = ({
       onClick={() => onSelect(customer)}
       style={{
         backgroundColor: '#FFFFFF',
-        borderRadius: '24px',
+        borderRadius: '16px',
         border: '1px solid #E2E8F0',
-        padding: '1.25rem 1.35rem',
+        padding: '0.8rem 1rem',
         display: 'flex',
         flexDirection: 'column',
-        gap: '0.9rem',
-        boxShadow: '0 2px 12px rgba(15, 23, 42, 0.04)',
+        gap: '0.45rem',
+        boxShadow: '0 1px 4px rgba(15, 23, 42, 0.04)',
         cursor: 'pointer',
-        transition: 'all 200ms cubic-bezier(0.4, 0, 0.2, 1)',
+        transition: 'all 150ms ease',
         position: 'relative'
       }}
       className="customer-card-hover"
     >
-      {/* Top Header: Avatar + Customer Name + Subtitle (Hostel/Village) + Status Tag */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '0.75rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-          {/* Avatar / Initials Square Container */}
+      {/* Top Header: Avatar + Customer Name + Village + Status Tag & Edit */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+          {/* Compact Avatar Square */}
           <div style={{
-            width: '48px', height: '48px', borderRadius: '16px',
+            width: '38px', height: '38px', borderRadius: '12px',
             backgroundColor: '#EFF6FF',
             color: '#2563EB',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontWeight: '800', fontSize: '1.05rem', overflow: 'hidden', flexShrink: 0,
+            fontWeight: '800', fontSize: '0.9rem', overflow: 'hidden', flexShrink: 0,
             border: '1px solid #DBEAFE'
           }}>
             {customer.photoUrl ? (
@@ -94,34 +94,34 @@ export const CustomerProfileCard: React.FC<CustomerProfileCardProps> = ({
           </div>
 
           <div>
-            <h4 style={{ fontSize: '1.05rem', fontWeight: '800', color: '#0F172A', lineHeight: 1.2 }}>
+            <h4 style={{ fontSize: '0.925rem', fontWeight: '800', color: '#0F172A', lineHeight: 1.15 }}>
               {customer.name}
             </h4>
-            <p style={{ fontSize: '0.8rem', color: '#64748B', marginTop: '0.15rem' }}>
+            <p style={{ fontSize: '0.725rem', color: '#64748B', marginTop: '0.1rem' }}>
               {customer.village || customer.address || 'Khatta Customer'}
             </p>
           </div>
         </div>
 
-        {/* Status Pill Tag with colored bullet */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+        {/* Status Pill Tag & Edit Button */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
           <span
             style={{
               display: 'inline-flex',
               alignItems: 'center',
-              gap: '0.35rem',
-              padding: '0.3rem 0.65rem',
+              gap: '0.25rem',
+              padding: '0.2rem 0.45rem',
               borderRadius: '999px',
               backgroundColor: tagColor.bg,
               color: tagColor.text,
               border: `1px solid ${tagColor.border}`,
-              fontSize: '0.725rem',
+              fontSize: '0.65rem',
               fontWeight: '800',
               textTransform: 'uppercase',
-              letterSpacing: '0.04em'
+              letterSpacing: '0.02em'
             }}
           >
-            <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: tagColor.dot }} />
+            <span style={{ width: '5px', height: '5px', borderRadius: '50%', backgroundColor: tagColor.dot }} />
             {customer.tag || 'REGULAR'}
           </span>
 
@@ -136,18 +136,18 @@ export const CustomerProfileCard: React.FC<CustomerProfileCardProps> = ({
                 border: '1px solid #E2E8F0',
                 backgroundColor: '#F8FAFC',
                 color: '#475569',
-                padding: '0.25rem 0.5rem',
-                borderRadius: '10px',
-                fontSize: '0.725rem',
+                padding: '0.2rem 0.4rem',
+                borderRadius: '8px',
+                fontSize: '0.675rem',
                 fontWeight: '700',
                 cursor: 'pointer',
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '0.25rem'
+                gap: '0.2rem'
               }}
               title={`Edit ${customer.name}'s Profile`}
             >
-              <Edit3 size={13} style={{ color: '#3B82F6' }} />
+              <Edit3 size={11} style={{ color: '#3B82F6' }} />
               <span>Edit</span>
             </button>
           )}
@@ -155,26 +155,26 @@ export const CustomerProfileCard: React.FC<CustomerProfileCardProps> = ({
       </div>
 
       {/* Middle Row: Phone Number */}
-      <div style={{ fontSize: '0.95rem', fontWeight: '700', color: '#1E293B', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-        <span>{formattedPhone}</span>
+      <div style={{ fontSize: '0.85rem', fontWeight: '700', color: '#1E293B' }}>
+        {formattedPhone}
       </div>
 
-      {/* Balance Pill & Credit Limit Progress */}
+      {/* Compact Balance Banner */}
       <div style={{
         backgroundColor: isUdhaar ? '#FEF2F2' : isAdvance ? '#F0FDF4' : '#F8FAFC',
         border: `1px solid ${isUdhaar ? '#FEE2E2' : isAdvance ? '#DCFCE7' : '#E2E8F0'}`,
-        borderRadius: '16px',
-        padding: '0.75rem 0.9rem',
+        borderRadius: '12px',
+        padding: '0.45rem 0.65rem',
         display: 'flex',
         flexDirection: 'column',
-        gap: '0.4rem'
+        gap: '0.25rem'
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontSize: '0.725rem', fontWeight: '700', color: '#64748B', textTransform: 'uppercase' }}>
-            {isUdhaar ? 'Outstanding Udhaar' : isAdvance ? 'Advance Balance' : 'Settled Balance'}
+          <span style={{ fontSize: '0.675rem', fontWeight: '700', color: '#64748B', textTransform: 'uppercase' }}>
+            {isUdhaar ? 'OUTSTANDING UDHAAR' : isAdvance ? 'ADVANCE BALANCE' : 'SETTLED'}
           </span>
           <span style={{
-            fontSize: '0.95rem',
+            fontSize: '0.875rem',
             fontWeight: '800',
             color: isUdhaar ? '#DC2626' : isAdvance ? '#16A34A' : '#0F172A'
           }}>
@@ -182,55 +182,55 @@ export const CustomerProfileCard: React.FC<CustomerProfileCardProps> = ({
           </span>
         </div>
 
-        {/* Credit Limit bar */}
-        <div style={{ width: '100%', height: '5px', backgroundColor: '#E2E8F0', borderRadius: '8px', overflow: 'hidden' }}>
+        {/* Slim Progress Bar */}
+        <div style={{ width: '100%', height: '4px', backgroundColor: '#E2E8F0', borderRadius: '4px', overflow: 'hidden' }}>
           <div style={{
             height: '100%',
             width: `${usedPercentage}%`,
             backgroundColor: isLimitExceeded ? '#DC2626' : usedPercentage > 85 ? '#F59E0B' : '#10B981',
-            borderRadius: '8px',
-            transition: 'width 300ms ease'
+            borderRadius: '4px',
+            transition: 'width 250ms ease'
           }} />
         </div>
       </div>
 
-      {/* Bottom Actions Row: Call | WhatsApp | + Bill | Pay | Open Details (❯) */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '0.2rem', gap: '0.4rem' }}>
-        <div style={{ fontSize: '0.75rem', color: '#94A3B8', fontWeight: '600' }}>
+      {/* Bottom Actions Row: Limit info + Compact Buttons */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '0.1rem' }}>
+        <div style={{ fontSize: '0.7rem', color: '#94A3B8', fontWeight: '600' }}>
           Limit: ₹{creditLimit.toLocaleString('en-IN')}
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
           {/* Call Icon Button */}
           <a
             href={cleanPhone ? `tel:${cleanPhone}` : '#'}
             onClick={(e) => e.stopPropagation()}
             style={{
-              width: '36px', height: '36px', borderRadius: '12px',
+              width: '30px', height: '30px', borderRadius: '9px',
               backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0',
               color: '#3B82F6', display: 'flex', alignItems: 'center', justifyContent: 'center',
               textDecoration: 'none', cursor: 'pointer'
             }}
             title={`Call ${customer.name}`}
           >
-            <PhoneCall size={16} />
+            <PhoneCall size={14} />
           </a>
 
-          {/* WhatsApp / Chat Icon Button */}
+          {/* WhatsApp Icon Button */}
           <a
             href={cleanPhone ? `https://wa.me/91${cleanPhone}?text=${whatsappMsg}` : '#'}
             target="_blank"
             rel="noreferrer"
             onClick={(e) => e.stopPropagation()}
             style={{
-              width: '36px', height: '36px', borderRadius: '12px',
+              width: '30px', height: '30px', borderRadius: '9px',
               backgroundColor: '#F0FDF4', border: '1px solid #DCFCE7',
               color: '#16A34A', display: 'flex', alignItems: 'center', justifyContent: 'center',
               textDecoration: 'none', cursor: 'pointer'
             }}
             title={`WhatsApp message to ${customer.name}`}
           >
-            <Send size={15} />
+            <Send size={13} />
           </a>
 
           {/* + Bill Button */}
@@ -242,14 +242,14 @@ export const CustomerProfileCard: React.FC<CustomerProfileCardProps> = ({
                 onNewBill(customer.id);
               }}
               style={{
-                height: '36px', padding: '0 0.65rem', borderRadius: '12px',
+                height: '30px', padding: '0 0.5rem', borderRadius: '9px',
                 backgroundColor: '#059669', color: '#FFFFFF', border: 'none',
-                fontSize: '0.75rem', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '0.25rem',
+                fontSize: '0.7rem', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '0.2rem',
                 cursor: 'pointer'
               }}
               title={`Record New Bill for ${customer.name}`}
             >
-              <Receipt size={14} />
+              <Receipt size={12} />
               <span>+ Bill</span>
             </button>
           )}
@@ -262,14 +262,14 @@ export const CustomerProfileCard: React.FC<CustomerProfileCardProps> = ({
               onCollectPayment(customer.id);
             }}
             style={{
-              height: '36px', padding: '0 0.65rem', borderRadius: '12px',
+              height: '30px', padding: '0 0.5rem', borderRadius: '9px',
               backgroundColor: '#10B981', color: '#FFFFFF', border: 'none',
-              fontSize: '0.75rem', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '0.25rem',
+              fontSize: '0.7rem', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '0.2rem',
               cursor: 'pointer'
             }}
             title={`Collect Payment from ${customer.name}`}
           >
-            <CreditCard size={14} />
+            <CreditCard size={12} />
             <span>Pay</span>
           </button>
 
@@ -281,14 +281,14 @@ export const CustomerProfileCard: React.FC<CustomerProfileCardProps> = ({
               onSelect(customer);
             }}
             style={{
-              width: '36px', height: '36px', borderRadius: '12px',
+              width: '30px', height: '30px', borderRadius: '9px',
               backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0',
               color: '#64748B', display: 'flex', alignItems: 'center', justifyContent: 'center',
               cursor: 'pointer'
             }}
             title={`View full details of ${customer.name}`}
           >
-            <ChevronRight size={18} />
+            <ChevronRight size={15} />
           </button>
         </div>
       </div>
