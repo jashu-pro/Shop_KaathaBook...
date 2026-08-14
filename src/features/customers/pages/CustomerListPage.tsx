@@ -34,44 +34,60 @@ export const CustomerListPage: React.FC = () => {
 
   // Multi-field Search, Filter, and Sort Processing
   const processedCustomers = useMemo(() => {
-    let result = customers.filter((c) => {
-      // Search matching across Name, Phone, Village, Address
-      const q = searchQuery.toLowerCase().trim();
+    let result = (customers || []).filter((c) => {
+      if (!c) return false;
+      const q = (searchQuery || '').toLowerCase().trim();
+      const name = (c.name || '').toLowerCase();
+      const phone = (c.phone || '');
+      const village = (c.village || '').toLowerCase();
+      const address = (c.address || '').toLowerCase();
+      const balance = Number(c.currentBalance) || 0;
+      const tag = (c.tag || '').toLowerCase();
+
       const matchesSearch =
         !q ||
-        c.name.toLowerCase().includes(q) ||
-        (c.phone && c.phone.includes(q)) ||
-        (c.village && c.village.toLowerCase().includes(q)) ||
-        (c.address && c.address.toLowerCase().includes(q));
+        name.includes(q) ||
+        phone.includes(q) ||
+        village.includes(q) ||
+        address.includes(q);
 
-      // Filter matching
       let matchesFilter = true;
-      if (filterTab === 'udhaar') matchesFilter = c.currentBalance > 0;
-      else if (filterTab === 'settled') matchesFilter = c.currentBalance === 0;
-      else if (filterTab === 'advance') matchesFilter = c.currentBalance < 0;
-      else if (filterTab === 'vip') matchesFilter = c.tag?.toLowerCase() === 'vip';
-      else if (filterTab === 'risk') matchesFilter = c.tag?.toLowerCase() === 'risk';
+      if (filterTab === 'udhaar') matchesFilter = balance > 0;
+      else if (filterTab === 'settled') matchesFilter = balance === 0;
+      else if (filterTab === 'advance') matchesFilter = balance < 0;
+      else if (filterTab === 'vip') matchesFilter = tag === 'vip';
+      else if (filterTab === 'risk') matchesFilter = tag === 'risk';
 
       return matchesSearch && matchesFilter;
     });
 
     // Sort processing
     return result.sort((a, b) => {
+      const balanceA = Number(a?.currentBalance) || 0;
+      const balanceB = Number(b?.currentBalance) || 0;
+      const nameA = a?.name || '';
+      const nameB = b?.name || '';
+
       if (sortOption === 'highest_udhaar') {
-        return b.currentBalance - a.currentBalance;
+        return balanceB - balanceA;
       }
       if (sortOption === 'name_asc') {
-        return a.name.localeCompare(b.name);
+        return nameA.localeCompare(nameB);
       }
       if (sortOption === 'recent') {
-        return new Date(b.updatedAt || b.createdAt).getTime() - new Date(a.updatedAt || a.createdAt).getTime();
+        const dateA = new Date(a?.updatedAt || a?.createdAt || 0).getTime();
+        const dateB = new Date(b?.updatedAt || b?.createdAt || 0).getTime();
+        return dateB - dateA;
       }
       return 0;
     });
   }, [customers, searchQuery, filterTab, sortOption]);
 
   const totalUdhaarBalance = useMemo(() => {
-    return customers.reduce((acc, c) => acc + (c.currentBalance > 0 ? c.currentBalance : 0), 0);
+    return (customers || []).reduce((acc, c) => {
+      const bal = Number(c?.currentBalance) || 0;
+      return acc + (bal > 0 ? bal : 0);
+    }, 0);
   }, [customers]);
 
   return (

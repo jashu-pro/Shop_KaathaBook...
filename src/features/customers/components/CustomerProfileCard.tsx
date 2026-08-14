@@ -22,38 +22,44 @@ export const CustomerProfileCard: React.FC<CustomerProfileCardProps> = ({
   const { shop } = useAuthStore();
   const shopName = shop?.name || 'Shop KhattaBook Store';
 
+  if (!customer) return null;
+
+  const customerName = customer.name || 'Unnamed Customer';
+  const currentBalance = Number(customer.currentBalance) || 0;
+  const creditLimit = Number(customer.creditLimit) || 50000;
+  const currentTag = customer.tag || 'Regular';
+
   // Normalize Indian phone numbers
-  const cleanPhone = customer.phone ? customer.phone.replace(/\D/g, '') : '';
+  const cleanPhone = customer.phone ? String(customer.phone).replace(/\D/g, '') : '';
   const formattedPhone = cleanPhone.length === 10 ? `+91 ${cleanPhone}` : customer.phone || 'No Phone';
 
   // Financial Balance Definitions from Repository Data
-  const isUdhaar = customer.currentBalance > 0;
-  const isAdvance = customer.currentBalance < 0;
+  const isUdhaar = currentBalance > 0;
+  const isAdvance = currentBalance < 0;
 
   // Credit Limit Percentage calculation
-  const creditLimit = customer.creditLimit || 50000;
-  const usedPercentage = Math.min(Math.round((Math.max(customer.currentBalance, 0) / creditLimit) * 100), 100);
-  const isLimitExceeded = customer.currentBalance > creditLimit;
+  const usedPercentage = Math.min(Math.round((Math.max(currentBalance, 0) / creditLimit) * 100), 100);
+  const isLimitExceeded = currentBalance > creditLimit;
 
-  // Avatar Initials
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map((n) => n[0])
-      .join('')
-      .substring(0, 2)
-      .toUpperCase();
+  // Avatar Initials safely
+  const getInitials = (name?: string) => {
+    if (!name) return 'CU';
+    const parts = name.trim().split(/\s+/).filter(Boolean);
+    if (parts.length === 0) return 'CU';
+    if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+    return (parts[0][0] + parts[1][0]).toUpperCase();
   };
 
   // WhatsApp Message Generator
   const whatsappMsg = encodeURIComponent(
-    `🙏 ${shopName}\n\nHello ${customer.name},\n\nYour current Khatta balance is ₹${Math.abs(customer.currentBalance).toLocaleString('en-IN')}.\n\nPlease clear the pending amount at your convenience.\n\nThank you!`
+    `🙏 ${shopName}\n\nHello ${customerName},\n\nYour current Khatta balance is ₹${Math.abs(currentBalance).toLocaleString('en-IN')}.\n\nPlease clear the pending amount at your convenience.\n\nThank you!`
   );
 
+  const tagLower = currentTag.toLowerCase();
   const tagColor = 
-    customer.tag?.toLowerCase() === 'vip' ? { bg: '#EFF6FF', text: '#2563EB', dot: '#3B82F6', border: '#DBEAFE' } :
-    customer.tag?.toLowerCase() === 'risk' ? { bg: '#FEF2F2', text: '#DC2626', dot: '#EF4444', border: '#FEE2E2' } :
-    customer.tag?.toLowerCase() === 'new' ? { bg: '#F0FDF4', text: '#16A34A', dot: '#22C55E', border: '#DCFCE7' } :
+    tagLower === 'vip' ? { bg: '#EFF6FF', text: '#2563EB', dot: '#3B82F6', border: '#DBEAFE' } :
+    tagLower === 'risk' ? { bg: '#FEF2F2', text: '#DC2626', dot: '#EF4444', border: '#FEE2E2' } :
+    tagLower === 'new' ? { bg: '#F0FDF4', text: '#16A34A', dot: '#22C55E', border: '#DCFCE7' } :
     { bg: '#F8FAFC', text: '#475569', dot: '#64748B', border: '#E2E8F0' };
 
   return (
@@ -87,15 +93,15 @@ export const CustomerProfileCard: React.FC<CustomerProfileCardProps> = ({
             border: '1px solid #DBEAFE'
           }}>
             {customer.photoUrl ? (
-              <img src={customer.photoUrl} alt={customer.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              <img src={customer.photoUrl} alt={customerName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             ) : (
-              <span>{getInitials(customer.name)}</span>
+              <span>{getInitials(customerName)}</span>
             )}
           </div>
 
           <div>
             <h4 style={{ fontSize: '0.925rem', fontWeight: '800', color: '#0F172A', lineHeight: 1.15 }}>
-              {customer.name}
+              {customerName}
             </h4>
             <p style={{ fontSize: '0.725rem', color: '#64748B', marginTop: '0.1rem' }}>
               {customer.village || customer.address || 'Khatta Customer'}
@@ -122,7 +128,7 @@ export const CustomerProfileCard: React.FC<CustomerProfileCardProps> = ({
             }}
           >
             <span style={{ width: '5px', height: '5px', borderRadius: '50%', backgroundColor: tagColor.dot }} />
-            {customer.tag || 'REGULAR'}
+            {currentTag}
           </span>
 
           {onEdit && (
@@ -145,7 +151,7 @@ export const CustomerProfileCard: React.FC<CustomerProfileCardProps> = ({
                 alignItems: 'center',
                 gap: '0.2rem'
               }}
-              title={`Edit ${customer.name}'s Profile`}
+              title={`Edit ${customerName}'s Profile`}
             >
               <Edit3 size={11} style={{ color: '#3B82F6' }} />
               <span>Edit</span>
@@ -178,7 +184,7 @@ export const CustomerProfileCard: React.FC<CustomerProfileCardProps> = ({
             fontWeight: '800',
             color: isUdhaar ? '#DC2626' : isAdvance ? '#16A34A' : '#0F172A'
           }}>
-            ₹{Math.abs(customer.currentBalance).toLocaleString('en-IN')}
+            ₹{Math.abs(currentBalance).toLocaleString('en-IN')}
           </span>
         </div>
 
@@ -211,7 +217,7 @@ export const CustomerProfileCard: React.FC<CustomerProfileCardProps> = ({
               color: '#3B82F6', display: 'flex', alignItems: 'center', justifyContent: 'center',
               textDecoration: 'none', cursor: 'pointer'
             }}
-            title={`Call ${customer.name}`}
+            title={`Call ${customerName}`}
           >
             <PhoneCall size={14} />
           </a>
@@ -228,7 +234,7 @@ export const CustomerProfileCard: React.FC<CustomerProfileCardProps> = ({
               color: '#16A34A', display: 'flex', alignItems: 'center', justifyContent: 'center',
               textDecoration: 'none', cursor: 'pointer'
             }}
-            title={`WhatsApp message to ${customer.name}`}
+            title={`WhatsApp message to ${customerName}`}
           >
             <Send size={13} />
           </a>
@@ -247,7 +253,7 @@ export const CustomerProfileCard: React.FC<CustomerProfileCardProps> = ({
                 fontSize: '0.7rem', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '0.2rem',
                 cursor: 'pointer'
               }}
-              title={`Record New Bill for ${customer.name}`}
+              title={`Record New Bill for ${customerName}`}
             >
               <Receipt size={12} />
               <span>+ Bill</span>
@@ -267,7 +273,7 @@ export const CustomerProfileCard: React.FC<CustomerProfileCardProps> = ({
               fontSize: '0.7rem', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '0.2rem',
               cursor: 'pointer'
             }}
-            title={`Collect Payment from ${customer.name}`}
+            title={`Collect Payment from ${customerName}`}
           >
             <CreditCard size={12} />
             <span>Pay</span>
@@ -286,7 +292,7 @@ export const CustomerProfileCard: React.FC<CustomerProfileCardProps> = ({
               color: '#64748B', display: 'flex', alignItems: 'center', justifyContent: 'center',
               cursor: 'pointer'
             }}
-            title={`View full details of ${customer.name}`}
+            title={`View full details of ${customerName}`}
           >
             <ChevronRight size={15} />
           </button>

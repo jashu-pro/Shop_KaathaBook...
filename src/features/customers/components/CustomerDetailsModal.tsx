@@ -7,7 +7,6 @@ import {
   Receipt, 
   CreditCard, 
   FileText, 
-  User, 
   Edit3,
   ChevronDown
 } from 'lucide-react';
@@ -52,6 +51,10 @@ export const CustomerDetailsModal: React.FC<CustomerDetailsModalProps> = ({
 
   if (!isOpen || !customer) return null;
 
+  const customerName = customer.name || 'Unnamed Customer';
+  const currentBalance = Number(customer.currentBalance) || 0;
+  const creditLimit = Number(customer.creditLimit) || 50000;
+
   const handleStatusChange = async (newTag: string) => {
     setCurrentTag(newTag);
     try {
@@ -61,29 +64,29 @@ export const CustomerDetailsModal: React.FC<CustomerDetailsModalProps> = ({
     }
   };
 
-  // Filter sales & payments for this customer
-  const customerSales = sales.filter((s) => s.customerId === customer.id);
-  const customerPayments = payments.filter((p) => p.customerId === customer.id);
+  // Filter sales & payments safely for this customer
+  const customerSales = (sales || []).filter((s) => s && s.customerId === customer.id);
+  const customerPayments = (payments || []).filter((p) => p && p.customerId === customer.id);
 
   // Financial Summaries from Repository Data
-  const totalPurchases = customerSales.reduce((acc, s) => acc + s.totalAmount, 0);
-  const totalPaid = customerPayments.reduce((acc, p) => acc + p.amount, 0);
+  const totalPurchases = customerSales.reduce((acc, s) => acc + (Number(s?.totalAmount) || 0), 0);
+  const totalPaid = customerPayments.reduce((acc, p) => acc + (Number(p?.amount) || 0), 0);
 
   // Combine into Khatta Bahi Ledger Entries
   const rawLedgerEntries = [
     ...customerSales.map((s) => ({
       id: s.id,
-      date: s.saleDate || s.createdAt,
+      date: s.saleDate || s.createdAt || new Date().toISOString(),
       details: `Credit Bill (${s.invoiceNo || 'Sale'})`,
       jama: 0,
-      udhaar: s.totalAmount,
+      udhaar: Number(s.totalAmount) || 0,
       type: 'sale' as const
     })),
     ...customerPayments.map((p) => ({
       id: p.id,
-      date: p.paymentDate || p.createdAt,
-      details: `Payment Received (${p.paymentMethod.toUpperCase()}) ${p.referenceNo ? `#${p.referenceNo}` : ''}`,
-      jama: p.amount,
+      date: p.paymentDate || p.createdAt || new Date().toISOString(),
+      details: `Payment Received (${(p.paymentMethod || 'CASH').toUpperCase()}) ${p.referenceNo ? `#${p.referenceNo}` : ''}`,
+      jama: Number(p.amount) || 0,
       udhaar: 0,
       type: 'payment' as const
     }))
@@ -106,25 +109,25 @@ export const CustomerDetailsModal: React.FC<CustomerDetailsModalProps> = ({
   });
 
   // Normalized Indian Phone Number
-  const cleanPhone = customer.phone ? customer.phone.replace(/\D/g, '') : '';
+  const cleanPhone = customer.phone ? String(customer.phone).replace(/\D/g, '') : '';
   const formattedPhone = cleanPhone.length === 10 ? `+91 ${cleanPhone}` : customer.phone || 'No Phone';
 
   // Dynamic WhatsApp Reminder Text
-  const reminderText = `🙏 ${shopName}\n\nHello ${customer.name},\n\nYour current Khatta balance is ₹${Math.abs(customer.currentBalance).toLocaleString('en-IN')}.\n\nPlease clear the pending amount at your convenience.\n\nThank you!`;
+  const reminderText = `🙏 ${shopName}\n\nHello ${customerName},\n\nYour current Khatta balance is ₹${Math.abs(currentBalance).toLocaleString('en-IN')}.\n\nPlease clear the pending amount at your convenience.\n\nThank you!`;
 
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map((n) => n[0])
-      .join('')
-      .substring(0, 2)
-      .toUpperCase();
+  const getInitials = (name?: string) => {
+    if (!name) return 'CU';
+    const parts = name.trim().split(/\s+/).filter(Boolean);
+    if (parts.length === 0) return 'CU';
+    if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+    return (parts[0][0] + parts[1][0]).toUpperCase();
   };
 
+  const tagLower = (currentTag || '').toLowerCase();
   const tagColor = 
-    currentTag.toLowerCase() === 'vip' ? { bg: '#EFF6FF', text: '#2563EB', dot: '#3B82F6', border: '#DBEAFE' } :
-    currentTag.toLowerCase() === 'risk' ? { bg: '#FEF2F2', text: '#DC2626', dot: '#EF4444', border: '#FEE2E2' } :
-    currentTag.toLowerCase() === 'new' ? { bg: '#F0FDF4', text: '#16A34A', dot: '#22C55E', border: '#DCFCE7' } :
+    tagLower === 'vip' ? { bg: '#EFF6FF', text: '#2563EB', dot: '#3B82F6', border: '#DBEAFE' } :
+    tagLower === 'risk' ? { bg: '#FEF2F2', text: '#DC2626', dot: '#EF4444', border: '#FEE2E2' } :
+    tagLower === 'new' ? { bg: '#F0FDF4', text: '#16A34A', dot: '#22C55E', border: '#DCFCE7' } :
     { bg: '#F8FAFC', text: '#475569', dot: '#64748B', border: '#E2E8F0' };
 
   const handleDownloadPassbook = () => {
@@ -188,15 +191,15 @@ export const CustomerDetailsModal: React.FC<CustomerDetailsModalProps> = ({
               border: '1px solid #DBEAFE'
             }}>
               {customer.photoUrl ? (
-                <img src={customer.photoUrl} alt={customer.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <img src={customer.photoUrl} alt={customerName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               ) : (
-                <span>{getInitials(customer.name)}</span>
+                <span>{getInitials(customerName)}</span>
               )}
             </div>
 
             <div>
               <h3 style={{ fontSize: '1.35rem', fontWeight: '800', color: '#0F172A', lineHeight: 1.2 }}>
-                {customer.name}
+                {customerName}
               </h3>
               <div style={{ marginTop: '0.25rem' }}>
                 <span
@@ -333,7 +336,7 @@ export const CustomerDetailsModal: React.FC<CustomerDetailsModalProps> = ({
             </a>
           </div>
 
-          {/* DETAILS SECTION (Matching Image 2 Reference) */}
+          {/* DETAILS SECTION */}
           <div>
             <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '800', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.4rem' }}>
               DETAILS
@@ -349,7 +352,7 @@ export const CustomerDetailsModal: React.FC<CustomerDetailsModalProps> = ({
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: '0.85rem', color: '#64748B', fontWeight: '600' }}>Customer Name</span>
-                <span style={{ fontSize: '0.95rem', color: '#0F172A', fontWeight: '800' }}>{customer.name}</span>
+                <span style={{ fontSize: '0.95rem', color: '#0F172A', fontWeight: '800' }}>{customerName}</span>
               </div>
 
               <div style={{ height: '1px', backgroundColor: '#EDF2F7' }} />
@@ -373,7 +376,7 @@ export const CustomerDetailsModal: React.FC<CustomerDetailsModalProps> = ({
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: '0.85rem', color: '#64748B', fontWeight: '600' }}>Credit Limit</span>
                 <span style={{ fontSize: '0.95rem', color: '#0F172A', fontWeight: '800' }}>
-                  ₹{(customer.creditLimit || 50000).toLocaleString('en-IN')}
+                  ₹{creditLimit.toLocaleString('en-IN')}
                 </span>
               </div>
 
@@ -384,9 +387,9 @@ export const CustomerDetailsModal: React.FC<CustomerDetailsModalProps> = ({
                 <span style={{
                   fontSize: '1rem',
                   fontWeight: '800',
-                  color: customer.currentBalance > 0 ? '#DC2626' : customer.currentBalance < 0 ? '#16A34A' : '#0F172A'
+                  color: currentBalance > 0 ? '#DC2626' : currentBalance < 0 ? '#16A34A' : '#0F172A'
                 }}>
-                  ₹{Math.abs(customer.currentBalance).toLocaleString('en-IN')} {customer.currentBalance > 0 ? '(Udhaar)' : customer.currentBalance < 0 ? '(Advance)' : '(Settled)'}
+                  ₹{Math.abs(currentBalance).toLocaleString('en-IN')} {currentBalance > 0 ? '(Udhaar)' : currentBalance < 0 ? '(Advance)' : '(Settled)'}
                 </span>
               </div>
 
