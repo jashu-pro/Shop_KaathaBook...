@@ -18,6 +18,7 @@ interface AuthState {
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
   registerShop: (shopData: CreateShopDTO) => Promise<void>;
+  updateShop: (updates: Partial<Shop>) => Promise<Shop>;
 }
 
 const authRepo = RepositoryFactory.getAuthRepository();
@@ -155,6 +156,27 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       });
     } catch (err: any) {
       Logger.error('AuthStore: Registering shop failed', err);
+      set({ error: err.message, isLoading: false });
+      throw err;
+    }
+  },
+
+  updateShop: async (updates) => {
+    const { shop } = get();
+    if (!shop) {
+      throw new Error('No active shop found to update');
+    }
+    set({ isLoading: true, error: null });
+    try {
+      const updated = await shopRepo.updateShop(shop.id, updates);
+      Logger.info(`AuthStore: Updated shop "${updated.name}"`);
+      set({
+        shop: updated,
+        isLoading: false,
+      });
+      return updated;
+    } catch (err: any) {
+      Logger.error('AuthStore: Updating shop failed', err);
       set({ error: err.message, isLoading: false });
       throw err;
     }

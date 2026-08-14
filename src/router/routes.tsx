@@ -24,6 +24,8 @@ import { NewSale, SalesListPage } from '../features/sales';
 import { ReceivePaymentPage, PaymentsListPage } from '../features/payments';
 import { LedgerPage } from '../features/ledger';
 import Reports from '../features/reports/pages/Reports';
+import { SettingsPage } from '../features/settings';
+import { AIAssistantPage } from '../features/dashboard/pages/AIAssistantPage';
 
 // Guard for routes that require authentication
 export const ProtectedRoute: React.FC<{ requireShop?: boolean }> = ({ requireShop = true }) => {
@@ -100,6 +102,8 @@ export const AppRouter: React.FC = () => {
             <Route path="/payments/receive" element={<ReceivePaymentPage />} />
             <Route path="/ledger" element={<LedgerPage />} />
             <Route path="/reports" element={<Reports />} />
+            <Route path="/ai-assistant" element={<AIAssistantPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
           </Route>
         </Route>
 
