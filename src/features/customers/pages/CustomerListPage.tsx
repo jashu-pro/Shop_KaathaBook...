@@ -1,5 +1,5 @@
-/* features/customers/pages/CustomerListPage.tsx */
 import React, { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Search, 
   UserPlus, 
@@ -18,6 +18,7 @@ import { RecordCreditSaleModal } from '../../sales/components/RecordCreditSaleMo
 import type { Customer } from '../types';
 
 export const CustomerListPage: React.FC = () => {
+  const navigate = useNavigate();
   const { customers, isLoading, error, refetch } = useCustomers();
 
   // Search, Filter & Sort State
@@ -29,7 +30,7 @@ export const CustomerListPage: React.FC = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [detailsCustomer, setDetailsCustomer] = useState<Customer | null>(null);
-  const [receivePaymentCustomerId, setReceivePaymentCustomerId] = useState<string | null>(null);
+  const [recordSaleCustomerId, setRecordSaleCustomerId] = useState<string | null>(null);
 
   // Multi-field Search, Filter, and Sort Processing
   const processedCustomers = useMemo(() => {
@@ -255,7 +256,8 @@ export const CustomerListPage: React.FC = () => {
               key={customer.id}
               customer={customer}
               onSelect={(cust) => setDetailsCustomer(cust)}
-              onCollectPayment={(id) => setReceivePaymentCustomerId(id)}
+              onNewBill={(id) => setRecordSaleCustomerId(id)}
+              onCollectPayment={(id) => navigate(`/payments/receive?customerId=${id}`)}
               onEdit={(cust) => setEditingCustomer(cust)}
             />
           ))}
@@ -293,8 +295,8 @@ export const CustomerListPage: React.FC = () => {
           customer={detailsCustomer}
           isOpen={!!detailsCustomer}
           onClose={() => setDetailsCustomer(null)}
-          onNewBill={(id) => setReceivePaymentCustomerId(id)}
-          onCollectPayment={(id) => setReceivePaymentCustomerId(id)}
+          onNewBill={(id) => setRecordSaleCustomerId(id)}
+          onCollectPayment={(id) => navigate(`/payments/receive?customerId=${id}`)}
           onEdit={(cust) => {
             setDetailsCustomer(null);
             setEditingCustomer(cust);
@@ -302,14 +304,14 @@ export const CustomerListPage: React.FC = () => {
         />
       )}
 
-      {/* Record Credit Sale / Payment Modal Integration */}
-      {receivePaymentCustomerId && (
+      {/* Record Credit Sale Modal Integration */}
+      {recordSaleCustomerId && (
         <RecordCreditSaleModal
-          isOpen={!!receivePaymentCustomerId}
-          onClose={() => setReceivePaymentCustomerId(null)}
-          initialCustomerId={receivePaymentCustomerId}
+          isOpen={!!recordSaleCustomerId}
+          onClose={() => setRecordSaleCustomerId(null)}
+          initialCustomerId={recordSaleCustomerId}
           onSuccess={() => {
-            setReceivePaymentCustomerId(null);
+            setRecordSaleCustomerId(null);
             refetch();
           }}
         />

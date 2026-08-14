@@ -1,6 +1,6 @@
 /* features/customers/components/CustomerProfileCard.tsx */
 import React from 'react';
-import { PhoneCall, Send, CreditCard, BookOpen, AlertTriangle, Edit3 } from 'lucide-react';
+import { PhoneCall, Send, CreditCard, BookOpen, AlertTriangle, Edit3, Receipt } from 'lucide-react';
 import type { Customer } from '../types';
 import { useAuthStore } from '../../../stores/authStore';
 
@@ -8,6 +8,7 @@ interface CustomerProfileCardProps {
   customer: Customer;
   onSelect: (customer: Customer) => void;
   onCollectPayment: (customerId: string) => void;
+  onNewBill?: (customerId: string) => void;
   onEdit?: (customer: Customer) => void;
 }
 
@@ -15,6 +16,7 @@ export const CustomerProfileCard: React.FC<CustomerProfileCardProps> = ({
   customer,
   onSelect,
   onCollectPayment,
+  onNewBill,
   onEdit
 }) => {
   const { shop } = useAuthStore();
@@ -196,15 +198,15 @@ export const CustomerProfileCard: React.FC<CustomerProfileCardProps> = ({
         )}
       </div>
 
-      {/* Quick Actions Grid: Call | WhatsApp | Payment | Ledger */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem', paddingTop: '0.25rem' }}>
+      {/* Quick Actions Grid: Call | WhatsApp | + Bill | Payment | Ledger */}
+      <div style={{ display: 'grid', gridTemplateColumns: onNewBill ? 'repeat(5, 1fr)' : 'repeat(4, 1fr)', gap: '0.45rem', paddingTop: '0.25rem' }}>
         <a
           href={cleanPhone ? `tel:${cleanPhone}` : '#'}
           className="btn btn-secondary btn-icon"
-          style={{ textDecoration: 'none', padding: '0.55rem', borderRadius: '14px', fontSize: '0.75rem', fontWeight: '700', gap: '0.35rem' }}
+          style={{ textDecoration: 'none', padding: '0.55rem 0.2rem', borderRadius: '14px', fontSize: '0.75rem', fontWeight: '700', gap: '0.25rem' }}
           title={`Call ${customer.name}`}
         >
-          <PhoneCall size={16} style={{ color: 'var(--primary)' }} />
+          <PhoneCall size={15} style={{ color: 'var(--primary)' }} />
           <span>Call</span>
         </a>
 
@@ -213,27 +215,58 @@ export const CustomerProfileCard: React.FC<CustomerProfileCardProps> = ({
           target="_blank"
           rel="noreferrer"
           className="btn btn-secondary btn-icon"
-          style={{ textDecoration: 'none', padding: '0.55rem', borderRadius: '14px', fontSize: '0.75rem', fontWeight: '700', gap: '0.35rem', color: '#047857' }}
+          style={{ textDecoration: 'none', padding: '0.55rem 0.2rem', borderRadius: '14px', fontSize: '0.75rem', fontWeight: '700', gap: '0.25rem', color: '#047857' }}
           title={`Send WhatsApp reminder to ${customer.name}`}
         >
-          <Send size={16} />
+          <Send size={15} />
           <span>Chat</span>
         </a>
 
+        {onNewBill && (
+          <button
+            type="button"
+            onClick={() => onNewBill(customer.id)}
+            className="btn btn-primary"
+            style={{
+              padding: '0.55rem 0.2rem',
+              borderRadius: '14px',
+              fontSize: '0.75rem',
+              fontWeight: '800',
+              gap: '0.2rem',
+              backgroundColor: '#059669',
+              color: '#FFFFFF'
+            }}
+            title={`Record New Bill for ${customer.name}`}
+          >
+            <Receipt size={15} />
+            <span>+ Bill</span>
+          </button>
+        )}
+
         <button
+          type="button"
           onClick={() => onCollectPayment(customer.id)}
           className="btn btn-primary"
-          style={{ padding: '0.55rem 0.2rem', borderRadius: '14px', fontSize: '0.75rem', fontWeight: '700', gap: '0.25rem' }}
-          title="Collect Payment"
+          style={{
+            padding: '0.55rem 0.2rem',
+            borderRadius: '14px',
+            fontSize: '0.75rem',
+            fontWeight: '800',
+            gap: '0.2rem',
+            backgroundColor: '#10B981',
+            color: '#FFFFFF'
+          }}
+          title={`Collect Payment from ${customer.name}`}
         >
           <CreditCard size={15} />
           <span>Pay</span>
         </button>
 
         <button
+          type="button"
           onClick={() => onSelect(customer)}
           className="btn btn-secondary"
-          style={{ padding: '0.55rem 0.2rem', borderRadius: '14px', fontSize: '0.75rem', fontWeight: '700', gap: '0.25rem' }}
+          style={{ padding: '0.55rem 0.2rem', borderRadius: '14px', fontSize: '0.75rem', fontWeight: '700', gap: '0.2rem' }}
           title="View Customer Ledger"
         >
           <BookOpen size={15} />
