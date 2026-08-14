@@ -10,6 +10,7 @@ import {
   Zap
 } from 'lucide-react';
 import { useCustomers } from '../../customers/hooks/useCustomers';
+import { CustomerSearchSelect } from '../../customers/components/CustomerSearchSelect';
 import { usePayments } from '../hooks/usePayments';
 import { ImageUploader } from '../../../components/common/ImageUploader';
 import type { PaymentMode } from '../types';
@@ -133,7 +134,7 @@ const ReceivePaymentPage: React.FC = () => {
 
       <form onSubmit={handleSubmitPayment} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
         
-        {/* Customer Selection Card */}
+        {/* Customer Selection Card with Search Bar */}
         <div style={{
           backgroundColor: 'var(--bg-card)',
           borderRadius: '20px',
@@ -143,31 +144,14 @@ const ReceivePaymentPage: React.FC = () => {
           flexDirection: 'column',
           gap: '0.85rem'
         }}>
-          <div>
-            <label style={{ display: 'block', fontSize: '0.825rem', fontWeight: '700', color: 'var(--text-heading)', marginBottom: '0.35rem' }}>
-              Select Customer *
-            </label>
-            <select
-              className="input-field"
-              value={selectedCustomerId}
-              onChange={(e) => setSelectedCustomerId(e.target.value)}
-              style={{
-                borderRadius: '14px',
-                padding: '0.7rem 1rem',
-                border: '1px solid var(--border-color)',
-                fontSize: '0.875rem',
-                fontWeight: '700',
-                backgroundColor: 'var(--bg-card)'
-              }}
-            >
-              <option value="">-- Choose Customer --</option>
-              {customers.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name} {c.village ? `(${c.village})` : ''} - ₹{c.currentBalance} Udhaar
-                </option>
-              ))}
-            </select>
-          </div>
+          <CustomerSearchSelect
+            label="Select Customer"
+            required
+            value={selectedCustomerId}
+            onChange={(id) => setSelectedCustomerId(id)}
+            customers={customers}
+            placeholder="Type to search by customer name, phone, or village..."
+          />
 
           {/* Customer Debt Banner */}
           {selectedCustomer && (

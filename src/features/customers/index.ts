@@ -6,3 +6,4 @@ export { default as CustomerListPage } from './pages/CustomerListPage';
 export { AddCustomerModal } from './components/AddCustomerModal';
 export { EditCustomerModal } from './components/EditCustomerModal';
 export { CustomerDetailsModal } from './components/CustomerDetailsModal';
+export { CustomerSearchSelect } from './components/CustomerSearchSelect';
