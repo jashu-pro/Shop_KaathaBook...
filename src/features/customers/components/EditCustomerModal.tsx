@@ -35,9 +35,7 @@ export const EditCustomerModal: React.FC<EditCustomerModalProps> = ({
 
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
-
   const cameraInputRef = useRef<HTMLInputElement>(null);
-  const galleryInputRef = useRef<HTMLInputElement>(null);
 
   // Pre-fill form when customer changes
   useEffect(() => {

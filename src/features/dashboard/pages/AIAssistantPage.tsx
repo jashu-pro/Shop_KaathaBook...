@@ -1,6 +1,6 @@
 /* features/dashboard/pages/AIAssistantPage.tsx */
 import React, { useState } from 'react';
-import { Sparkles, Send, Bot, User, ArrowRight, TrendingUp, AlertCircle, Users, Receipt } from 'lucide-react';
+import { Sparkles, Send, Bot } from 'lucide-react';
 import { useCustomers } from '../../customers/hooks/useCustomers';
 import { useSales } from '../../sales/hooks/useSales';
 import { usePayments } from '../../payments/hooks/usePayments';

@@ -6,34 +6,44 @@ import {
   Plus, 
   Search, 
   Calendar, 
-  Trash2
+  Trash2,
+  Filter,
+  Eye
 } from 'lucide-react';
 import { useSales } from '../hooks/useSales';
-import type { SalesFilterTab } from '../types';
+import { InvoiceDetailsModal } from '../components/InvoiceDetailsModal';
+import type { Sale, SalesFilterTab } from '../types';
 
-const SalesListPage: React.FC = () => {
+export const SalesListPage: React.FC = () => {
   const navigate = useNavigate();
   const { sales, isLoading, removeSale, refetch } = useSales();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<SalesFilterTab>('all');
+  const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'week' | 'month'>('all');
+  const [selectedSaleForDetails, setSelectedSaleForDetails] = useState<Sale | null>(null);
 
   const totalSalesCount = sales.length;
 
   const totalRevenue = useMemo(() => {
-    return sales.reduce((acc, s) => acc + s.totalAmount, 0);
+    return sales.reduce((acc, s) => acc + (Number(s.totalAmount) || 0), 0);
   }, [sales]);
 
   const totalUdhaarPending = useMemo(() => {
-    return sales.reduce((acc, s) => acc + Math.max(0, s.totalAmount - s.amountPaid), 0);
+    return sales.reduce((acc, s) => acc + Math.max(0, (Number(s.totalAmount) || 0) - (Number(s.amountPaid) || 0)), 0);
   }, [sales]);
 
   const filteredSales = useMemo(() => {
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const weekAgo = todayStart - 7 * 24 * 60 * 60 * 1000;
+    const monthAgo = todayStart - 30 * 24 * 60 * 60 * 1000;
+
     return sales.filter((s) => {
       const q = searchQuery.toLowerCase().trim();
       const matchesSearch = 
         !q ||
-        s.invoiceNo.toLowerCase().includes(q) ||
+        (s.invoiceNo && s.invoiceNo.toLowerCase().includes(q)) ||
         (s.customerName && s.customerName.toLowerCase().includes(q)) ||
         (s.customerPhone && s.customerPhone.includes(q));
 
@@ -42,11 +52,22 @@ const SalesListPage: React.FC = () => {
       else if (activeTab === 'partially_paid') matchesTab = s.paymentStatus === 'partially_paid';
       else if (activeTab === 'paid') matchesTab = s.paymentStatus === 'paid';
 
-      return matchesSearch && matchesTab;
-    });
-  }, [sales, searchQuery, activeTab]);
+      let matchesDate = true;
+      const saleTime = new Date(s.saleDate || s.createdAt).getTime();
+      if (dateFilter === 'today') {
+        matchesDate = saleTime >= todayStart;
+      } else if (dateFilter === 'week') {
+        matchesDate = saleTime >= weekAgo;
+      } else if (dateFilter === 'month') {
+        matchesDate = saleTime >= monthAgo;
+      }
 
-  const handleDeleteSale = async (id: string, invoiceNo: string) => {
+      return matchesSearch && matchesTab && matchesDate;
+    });
+  }, [sales, searchQuery, activeTab, dateFilter]);
+
+  const handleDeleteSale = async (e: React.MouseEvent, id: string, invoiceNo: string) => {
+    e.stopPropagation();
     if (window.confirm(`Are you sure you want to delete sale invoice ${invoiceNo}?`)) {
       await removeSale(id);
       refetch();
@@ -82,7 +103,7 @@ const SalesListPage: React.FC = () => {
             </span>
           </div>
           <p style={{ color: 'var(--text-body)', fontSize: '0.825rem' }}>
-            Track Kirana credit sales, customer billing history, and paper receipt photos.
+            Track Kirana credit sales, customer billing history, itemized receipts & paper photos.
           </p>
         </div>
 
@@ -103,16 +124,16 @@ const SalesListPage: React.FC = () => {
           <button
             onClick={() => navigate('/sales/new')}
             className="btn btn-primary"
-            style={{ borderRadius: '14px', padding: '0.65rem 1.25rem', fontWeight: '700', fontSize: '0.85rem', backgroundColor: '#059669' }}
+            style={{ borderRadius: '14px', padding: '0.65rem 1.25rem', fontWeight: '800', fontSize: '0.875rem', backgroundColor: '#059669' }}
           >
             <Plus size={18} />
-            <span>+ New Credit Sale</span>
+            <span>+ New Sale (POS)</span>
           </button>
         </div>
       </div>
 
       {/* ------------------------------------------------------------- */}
-      {/* SEARCH & FILTER TABS                                          */}
+      {/* SEARCH, STATUS TABS & DATE RANGE FILTERS                      */}
       {/* ------------------------------------------------------------- */}
       <div style={{
         backgroundColor: 'var(--bg-card)',
@@ -123,7 +144,7 @@ const SalesListPage: React.FC = () => {
         flexDirection: 'column',
         gap: '0.85rem'
       }}>
-        <div style={{ display: 'flex', gap: '0.85rem', flexWrap: 'wrap', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '0.85rem', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ flex: 1, minWidth: '240px', position: 'relative', display: 'flex', alignItems: 'center' }}>
             <Search size={16} style={{ position: 'absolute', left: '1rem', color: 'var(--text-muted)' }} />
             <input
@@ -135,9 +156,25 @@ const SalesListPage: React.FC = () => {
               style={{ paddingLeft: '2.5rem', padding: '0.65rem 1rem 0.65rem 2.5rem', fontSize: '0.85rem', borderRadius: '14px' }}
             />
           </div>
+
+          {/* Date Filter Dropdown */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+            <Filter size={15} style={{ color: 'var(--text-muted)' }} />
+            <select
+              className="input-field"
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value as any)}
+              style={{ borderRadius: '12px', padding: '0.45rem 0.75rem', fontSize: '0.8rem', fontWeight: '700', backgroundColor: 'var(--bg-card)' }}
+            >
+              <option value="all">All Dates</option>
+              <option value="today">Today</option>
+              <option value="week">This Week (Last 7 Days)</option>
+              <option value="month">This Month (Last 30 Days)</option>
+            </select>
+          </div>
         </div>
 
-        {/* Tabs */}
+        {/* Status Filter Tabs */}
         <div style={{ display: 'flex', gap: '0.4rem', overflowX: 'auto' }}>
           {[
             { id: 'all', label: `All Sales (${totalSalesCount})` },
@@ -152,10 +189,10 @@ const SalesListPage: React.FC = () => {
                 padding: '0.4rem 0.85rem',
                 borderRadius: '12px',
                 fontSize: '0.8rem',
-                fontWeight: activeTab === tab.id ? '700' : '500',
+                fontWeight: activeTab === tab.id ? '800' : '600',
                 color: activeTab === tab.id ? 'var(--primary)' : 'var(--text-body)',
                 backgroundColor: activeTab === tab.id ? 'var(--primary-light)' : 'transparent',
-                border: activeTab === tab.id ? '1px solid rgba(16, 185, 129, 0.2)' : '1px solid transparent',
+                border: activeTab === tab.id ? '1.5px solid var(--primary)' : '1px solid var(--border-color)',
                 cursor: 'pointer',
                 whiteSpace: 'nowrap'
               }}
@@ -192,25 +229,36 @@ const SalesListPage: React.FC = () => {
           </button>
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '0.85rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '0.85rem' }}>
           {filteredSales.map((sale) => {
             const isUnpaid = sale.paymentStatus === 'unpaid';
             const isPartial = sale.paymentStatus === 'partially_paid';
-            const dueAmount = sale.totalAmount - sale.amountPaid;
+            const dueAmount = Math.max(0, (Number(sale.totalAmount) || 0) - (Number(sale.amountPaid) || 0));
 
             return (
               <div
                 key={sale.id}
+                onClick={() => setSelectedSaleForDetails(sale)}
                 style={{
                   backgroundColor: 'var(--bg-card)',
-                  borderRadius: '18px',
+                  borderRadius: '20px',
                   padding: '1.15rem 1.25rem',
                   border: '1px solid var(--border-color)',
                   boxShadow: '0 2px 12px rgba(15, 23, 42, 0.03)',
                   display: 'flex',
                   flexDirection: 'column',
                   justifyContent: 'space-between',
-                  gap: '0.85rem'
+                  gap: '0.85rem',
+                  cursor: 'pointer',
+                  transition: 'transform 120ms ease, box-shadow 120ms ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,0,0,0.06)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'none';
+                  e.currentTarget.style.boxShadow = '0 2px 12px rgba(15, 23, 42, 0.03)';
                 }}
               >
                 {/* Header: Invoice No & Payment Status Badge */}
@@ -222,6 +270,11 @@ const SalesListPage: React.FC = () => {
                     <h4 style={{ fontSize: '0.95rem', fontWeight: '800', color: 'var(--text-heading)', marginTop: '0.15rem' }}>
                       {sale.customerName || 'Walk-in Customer'}
                     </h4>
+                    {sale.customerPhone && (
+                      <span style={{ fontSize: '0.725rem', color: 'var(--text-muted)' }}>
+                        📱 {sale.customerPhone}
+                      </span>
+                    )}
                   </div>
 
                   <div style={{
@@ -230,7 +283,7 @@ const SalesListPage: React.FC = () => {
                       : isPartial
                       ? 'rgba(245, 158, 11, 0.1)'
                       : 'rgba(16, 185, 129, 0.1)',
-                    color: isUnpaid ? '#EF4444' : isPartial ? '#F59E0B' : '#10B981',
+                    color: isUnpaid ? '#EF4444' : isPartial ? '#D97706' : '#10B981',
                     padding: '0.25rem 0.65rem',
                     borderRadius: '12px',
                     fontSize: '0.75rem',
@@ -243,44 +296,69 @@ const SalesListPage: React.FC = () => {
                 {/* Amount Breakdown Row */}
                 <div style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  padding: '0.55rem 0.85rem', backgroundColor: 'var(--bg-secondary)', borderRadius: '14px',
+                  padding: '0.65rem 0.85rem', backgroundColor: 'var(--bg-secondary)', borderRadius: '14px',
                   fontSize: '0.8rem'
                 }}>
                   <div>
                     <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Total Bill:</span>
-                    <div style={{ fontSize: '1.1rem', fontWeight: '800', color: 'var(--text-heading)' }}>
+                    <div style={{ fontSize: '1.15rem', fontWeight: '900', color: 'var(--text-heading)' }}>
                       ₹{sale.totalAmount}
                     </div>
                   </div>
 
-                  {dueAmount > 0 && (
-                    <div style={{ textAlign: 'right' }}>
-                      <span style={{ fontSize: '0.7rem', color: '#EF4444', fontWeight: '700' }}>Pending Udhaar:</span>
-                      <div style={{ fontSize: '0.95rem', fontWeight: '800', color: '#EF4444' }}>
-                        ₹{dueAmount}
-                      </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <span style={{ fontSize: '0.7rem', color: dueAmount > 0 ? '#EF4444' : '#10B981', fontWeight: '700' }}>
+                      {dueAmount > 0 ? 'Pending Udhaar:' : 'Settled:'}
+                    </span>
+                    <div style={{ fontSize: '1rem', fontWeight: '900', color: dueAmount > 0 ? '#EF4444' : '#10B981' }}>
+                      {dueAmount > 0 ? `₹${dueAmount}` : '₹0'}
                     </div>
-                  )}
+                  </div>
                 </div>
 
-                {/* Date & Action */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: '0.725rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
-                    <Calendar size={12} /> {new Date(sale.saleDate).toLocaleDateString('en-IN')}
+                {/* Date, Items count & Actions */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '0.25rem' }}>
+                  <span style={{ fontSize: '0.725rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                    <Calendar size={12} /> {new Date(sale.saleDate || sale.createdAt).toLocaleDateString('en-IN')}
                   </span>
 
-                  <button
-                    onClick={() => handleDeleteSale(sale.id, sale.invoiceNo)}
-                    style={{ color: '#EF4444', border: 'none', background: 'none', cursor: 'pointer', padding: '0.2rem' }}
-                    title="Delete Sale Record"
-                  >
-                    <Trash2 size={14} />
-                  </button>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedSaleForDetails(sale);
+                      }}
+                      className="btn btn-secondary"
+                      style={{ borderRadius: '8px', padding: '0.25rem 0.5rem', fontSize: '0.725rem', display: 'flex', alignItems: 'center', gap: '0.2rem' }}
+                    >
+                      <Eye size={12} />
+                      <span>View</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={(e) => handleDeleteSale(e, sale.id, sale.invoiceNo)}
+                      style={{ color: '#EF4444', border: 'none', background: 'none', cursor: 'pointer', padding: '0.25rem' }}
+                      title="Delete Sale Record"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
                 </div>
               </div>
             );
           })}
         </div>
+      )}
+
+      {/* Invoice Details Modal */}
+      {selectedSaleForDetails && (
+        <InvoiceDetailsModal
+          isOpen={!!selectedSaleForDetails}
+          onClose={() => setSelectedSaleForDetails(null)}
+          sale={selectedSaleForDetails}
+        />
       )}
 
     </div>

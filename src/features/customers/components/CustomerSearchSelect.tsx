@@ -1,6 +1,6 @@
 /* features/customers/components/CustomerSearchSelect.tsx */
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { Search, X, Check, User, ChevronDown, Phone, MapPin } from 'lucide-react';
+import { Search, X, Check, ChevronDown } from 'lucide-react';
 import type { Customer } from '../types';
 
 interface CustomerSearchSelectProps {

@@ -68,10 +68,6 @@ export const CustomerDetailsModal: React.FC<CustomerDetailsModalProps> = ({
   const customerSales = (sales || []).filter((s) => s && s.customerId === customer.id);
   const customerPayments = (payments || []).filter((p) => p && p.customerId === customer.id);
 
-  // Financial Summaries from Repository Data
-  const totalPurchases = customerSales.reduce((acc, s) => acc + (Number(s?.totalAmount) || 0), 0);
-  const totalPaid = customerPayments.reduce((acc, p) => acc + (Number(p?.amount) || 0), 0);
-
   // Combine into Khatta Bahi Ledger Entries
   const rawLedgerEntries = [
     ...customerSales.map((s) => ({

@@ -12,12 +12,7 @@ import {
   Moon, 
   Sun, 
   Download, 
-  Sparkles,
-  Phone,
-  MapPin,
-  QrCode,
-  ShieldCheck,
-  AlertCircle
+  QrCode
 } from 'lucide-react';
 import { useAuthStore } from '../../../stores/authStore';
 import { useTheme } from '../../../providers/ThemeProvider';

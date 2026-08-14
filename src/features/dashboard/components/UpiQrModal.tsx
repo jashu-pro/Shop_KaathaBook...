@@ -13,7 +13,6 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '../../../stores/authStore';
 import { useCustomers } from '../../customers/hooks/useCustomers';
-import type { Customer } from '../../customers/types';
 
 interface UpiQrModalProps {
   isOpen: boolean;

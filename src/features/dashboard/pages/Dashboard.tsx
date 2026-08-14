@@ -20,7 +20,6 @@ import {
   BookOpen, 
   Mic, 
   ArrowRight,
-  X,
   Receipt
 } from 'lucide-react';
 
