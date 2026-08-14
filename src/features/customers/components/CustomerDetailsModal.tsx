@@ -7,13 +7,14 @@ import {
   Receipt, 
   CreditCard, 
   FileText, 
-  User,
-  MessageSquare,
-  Edit3
+  User, 
+  Edit3,
+  ChevronDown
 } from 'lucide-react';
 import type { Customer } from '../types';
 import { useSales } from '../../sales/hooks/useSales';
 import { usePayments } from '../../payments/hooks/usePayments';
+import { useCustomers } from '../hooks/useCustomers';
 import { useAuthStore } from '../../../stores/authStore';
 
 interface CustomerDetailsModalProps {
@@ -38,17 +39,27 @@ export const CustomerDetailsModal: React.FC<CustomerDetailsModalProps> = ({
 
   const { sales } = useSales();
   const { payments } = usePayments();
+  const { editCustomer } = useCustomers();
 
-  const [tag, setTag] = useState<'regular' | 'vip' | 'risk'>('regular');
+  const [currentTag, setCurrentTag] = useState('Regular');
   const [dateFilter, setDateFilter] = useState<'all' | 'this_month' | 'last_30'>('all');
 
   useEffect(() => {
     if (customer?.tag) {
-      setTag(customer.tag as any);
+      setCurrentTag(customer.tag);
     }
   }, [customer]);
 
   if (!isOpen || !customer) return null;
+
+  const handleStatusChange = async (newTag: string) => {
+    setCurrentTag(newTag);
+    try {
+      await editCustomer(customer.id, { tag: newTag });
+    } catch (e) {
+      console.error('Failed to update customer status tag', e);
+    }
+  };
 
   // Filter sales & payments for this customer
   const customerSales = sales.filter((s) => s.customerId === customer.id);
@@ -78,7 +89,7 @@ export const CustomerDetailsModal: React.FC<CustomerDetailsModalProps> = ({
     }))
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-  // Apply Date Filtering (Read-only view filtering)
+  // Apply Date Filtering
   const filteredLedgerEntries = rawLedgerEntries.filter((entry) => {
     const entryDate = new Date(entry.date).getTime();
     const now = Date.now();
@@ -98,8 +109,23 @@ export const CustomerDetailsModal: React.FC<CustomerDetailsModalProps> = ({
   const cleanPhone = customer.phone ? customer.phone.replace(/\D/g, '') : '';
   const formattedPhone = cleanPhone.length === 10 ? `+91 ${cleanPhone}` : customer.phone || 'No Phone';
 
-  // Dynamic WhatsApp & SMS Reminder Text using Authenticated Shop Name
+  // Dynamic WhatsApp Reminder Text
   const reminderText = `🙏 ${shopName}\n\nHello ${customer.name},\n\nYour current Khatta balance is ₹${Math.abs(customer.currentBalance).toLocaleString('en-IN')}.\n\nPlease clear the pending amount at your convenience.\n\nThank you!`;
+
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .substring(0, 2)
+      .toUpperCase();
+  };
+
+  const tagColor = 
+    currentTag.toLowerCase() === 'vip' ? { bg: '#EFF6FF', text: '#2563EB', dot: '#3B82F6', border: '#DBEAFE' } :
+    currentTag.toLowerCase() === 'risk' ? { bg: '#FEF2F2', text: '#DC2626', dot: '#EF4444', border: '#FEE2E2' } :
+    currentTag.toLowerCase() === 'new' ? { bg: '#F0FDF4', text: '#16A34A', dot: '#22C55E', border: '#DCFCE7' } :
+    { bg: '#F8FAFC', text: '#475569', dot: '#64748B', border: '#E2E8F0' };
 
   const handleDownloadPassbook = () => {
     window.print();
@@ -116,38 +142,42 @@ export const CustomerDetailsModal: React.FC<CustomerDetailsModalProps> = ({
       justifyContent: 'center',
       zIndex: 1000,
       padding: '1rem'
-    }}>
-      <div style={{
-        backgroundColor: 'var(--bg-card)',
-        color: 'var(--text-body)',
-        borderRadius: 'var(--radius-card, 28px)',
-        maxWidth: '640px',
-        width: '100%',
-        boxShadow: 'var(--glass-shadow)',
-        border: '1px solid var(--border-color)',
-        overflow: 'hidden',
-        animation: 'modal-slide 0.25s ease',
-        maxHeight: '92vh',
-        display: 'flex',
-        flexDirection: 'column'
-      }}>
+    }}
+    onClick={onClose}
+    >
+      <div 
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          backgroundColor: '#FFFFFF',
+          color: '#0F172A',
+          borderRadius: '28px',
+          maxWidth: '580px',
+          width: '100%',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+          border: '1px solid #E2E8F0',
+          overflow: 'hidden',
+          maxHeight: '92vh',
+          display: 'flex',
+          flexDirection: 'column'
+        }}
+      >
         
-        {/* Modal Header: Avatar, Name, Tag & Actions */}
+        {/* Header Bar */}
         <div style={{
           padding: '1.25rem 1.5rem',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          borderBottom: '1px solid var(--border-color)',
-          backgroundColor: 'var(--bg-secondary)'
+          borderBottom: '1px solid #F1F5F9'
         }}>
+          {/* Avatar + Customer Name + Status Pill */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
             <div style={{
               width: '52px',
               height: '52px',
               borderRadius: '16px',
-              backgroundColor: 'var(--primary-light)',
-              color: 'var(--primary)',
+              backgroundColor: '#EFF6FF',
+              color: '#2563EB',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -155,47 +185,75 @@ export const CustomerDetailsModal: React.FC<CustomerDetailsModalProps> = ({
               flexShrink: 0,
               fontWeight: '800',
               fontSize: '1.2rem',
-              border: '1px solid var(--border-color)'
+              border: '1px solid #DBEAFE'
             }}>
               {customer.photoUrl ? (
                 <img src={customer.photoUrl} alt={customer.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               ) : (
-                <User size={24} />
+                <span>{getInitials(customer.name)}</span>
               )}
             </div>
 
             <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <h3 style={{ fontSize: '1.3rem', fontWeight: '800', color: 'var(--text-heading)', lineHeight: 1.1 }}>
-                  {customer.name}
-                </h3>
-                <span className={`badge ${tag === 'risk' ? 'badge-error' : tag === 'vip' ? 'badge-success' : 'badge-neutral'}`} style={{ textTransform: 'uppercase', fontSize: '0.65rem' }}>
-                  {tag}
+              <h3 style={{ fontSize: '1.35rem', fontWeight: '800', color: '#0F172A', lineHeight: 1.2 }}>
+                {customer.name}
+              </h3>
+              <div style={{ marginTop: '0.25rem' }}>
+                <span
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.35rem',
+                    padding: '0.2rem 0.6rem',
+                    borderRadius: '999px',
+                    backgroundColor: tagColor.bg,
+                    color: tagColor.text,
+                    border: `1px solid ${tagColor.border}`,
+                    fontSize: '0.725rem',
+                    fontWeight: '800',
+                    textTransform: 'uppercase'
+                  }}
+                >
+                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: tagColor.dot }} />
+                  {currentTag}
                 </span>
               </div>
-              <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
-                📱 {formattedPhone} {customer.village ? `• 📍 ${customer.village}` : ''}
-              </p>
             </div>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             {onEdit && (
               <button
+                type="button"
                 onClick={() => onEdit(customer)}
-                className="btn btn-secondary"
-                style={{ borderRadius: '12px', fontSize: '0.8rem', padding: '0.45rem 0.85rem', fontWeight: '700', gap: '0.3rem' }}
+                style={{
+                  border: '1px solid #E2E8F0',
+                  backgroundColor: '#F8FAFC',
+                  color: '#0F172A',
+                  padding: '0.45rem 0.85rem',
+                  borderRadius: '12px',
+                  fontSize: '0.8rem',
+                  fontWeight: '700',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.35rem'
+                }}
                 title="Edit Customer Details"
               >
-                <Edit3 size={15} style={{ color: 'var(--primary)' }} />
+                <Edit3 size={15} style={{ color: '#3B82F6' }} />
                 <span>Edit Profile</span>
               </button>
             )}
 
             <button
               onClick={onClose}
-              className="btn btn-secondary btn-icon"
-              style={{ width: '36px', height: '36px', borderRadius: '12px' }}
+              style={{
+                width: '36px', height: '36px', borderRadius: '12px',
+                backgroundColor: '#F1F5F9', border: 'none', color: '#64748B',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer'
+              }}
             >
               <X size={20} />
             </button>
@@ -205,72 +263,207 @@ export const CustomerDetailsModal: React.FC<CustomerDetailsModalProps> = ({
         {/* Scrollable Body */}
         <div style={{ padding: '1.25rem 1.5rem', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           
-          {/* Quick Contact Action Bar: Call | WhatsApp | SMS */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem' }}>
+          {/* STATUS SECTION */}
+          <div>
+            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '800', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.4rem' }}>
+              STATUS
+            </label>
+            <div style={{ position: 'relative' }}>
+              <select
+                value={currentTag}
+                onChange={(e) => handleStatusChange(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '0.75rem 1rem',
+                  borderRadius: '16px',
+                  border: '1px solid #E2E8F0',
+                  backgroundColor: '#F8FAFC',
+                  color: '#0F172A',
+                  fontWeight: '700',
+                  fontSize: '0.9rem',
+                  appearance: 'none',
+                  cursor: 'pointer'
+                }}
+              >
+                <option value="New">NEW</option>
+                <option value="Regular">REGULAR</option>
+                <option value="VIP">VIP</option>
+                <option value="Wholesale">WHOLESALE</option>
+                <option value="Contacted">CONTACTED</option>
+                <option value="Onboarding">ONBOARDING</option>
+                <option value="Demo Scheduled">DEMO SCHEDULED</option>
+                <option value="Risk">RISK</option>
+              </select>
+              <ChevronDown size={18} style={{ position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#64748B' }} />
+            </div>
+          </div>
+
+          {/* Quick Action Buttons: Call | WhatsApp */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
             <a
               href={cleanPhone ? `tel:${cleanPhone}` : '#'}
-              className="btn btn-secondary"
-              style={{ textDecoration: 'none', justifyContent: 'center', fontWeight: '700', fontSize: '0.85rem' }}
+              style={{
+                textDecoration: 'none',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+                padding: '0.8rem', borderRadius: '16px',
+                border: '1px solid #E2E8F0', backgroundColor: '#FFFFFF',
+                color: '#0F172A', fontWeight: '700', fontSize: '0.9rem',
+                boxShadow: '0 2px 6px rgba(0,0,0,0.02)'
+              }}
             >
-              <PhoneCall size={16} style={{ color: 'var(--primary)' }} /> Call
+              <PhoneCall size={18} style={{ color: '#3B82F6' }} />
+              <span>Call</span>
             </a>
 
             <a
               href={cleanPhone ? `https://wa.me/91${cleanPhone}?text=${encodeURIComponent(reminderText)}` : '#'}
               target="_blank"
               rel="noreferrer"
-              className="btn btn-secondary"
-              style={{ textDecoration: 'none', justifyContent: 'center', fontWeight: '700', fontSize: '0.85rem', color: '#047857' }}
+              style={{
+                textDecoration: 'none',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+                padding: '0.8rem', borderRadius: '16px',
+                border: '1px solid #DCFCE7', backgroundColor: '#F0FDF4',
+                color: '#16A34A', fontWeight: '700', fontSize: '0.9rem',
+                boxShadow: '0 2px 6px rgba(0,0,0,0.02)'
+              }}
             >
-              <Send size={16} /> WhatsApp
-            </a>
-
-            <a
-              href={cleanPhone ? `sms:${cleanPhone}?body=${encodeURIComponent(reminderText)}` : '#'}
-              className="btn btn-secondary"
-              style={{ textDecoration: 'none', justifyContent: 'center', fontWeight: '700', fontSize: '0.85rem' }}
-            >
-              <MessageSquare size={16} /> SMS
+              <Send size={18} />
+              <span>WhatsApp</span>
             </a>
           </div>
 
-          {/* FINANCIAL SUMMARY CARDS */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem' }}>
-            <div style={{ padding: '0.85rem', borderRadius: '16px', backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}>
-              <span style={{ fontSize: '0.7rem', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Total Purchases</span>
-              <div style={{ fontSize: '1.1rem', fontWeight: '800', color: 'var(--text-heading)', marginTop: '0.15rem' }}>
-                ₹{totalPurchases.toLocaleString('en-IN')}
-              </div>
-            </div>
-
-            <div style={{ padding: '0.85rem', borderRadius: '16px', backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}>
-              <span style={{ fontSize: '0.7rem', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Total Paid</span>
-              <div style={{ fontSize: '1.1rem', fontWeight: '800', color: 'var(--primary)', marginTop: '0.15rem' }}>
-                ₹{totalPaid.toLocaleString('en-IN')}
-              </div>
-            </div>
-
+          {/* DETAILS SECTION (Matching Image 2 Reference) */}
+          <div>
+            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '800', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.4rem' }}>
+              DETAILS
+            </label>
             <div style={{
-              padding: '0.85rem', borderRadius: '16px',
-              backgroundColor: customer.currentBalance > 0 ? 'var(--error-light)' : 'var(--primary-light)',
-              border: `1px solid ${customer.currentBalance > 0 ? 'rgba(239, 68, 68, 0.3)' : 'rgba(16, 185, 129, 0.3)'}`
+              backgroundColor: '#F8FAFC',
+              border: '1px solid #E2E8F0',
+              borderRadius: '20px',
+              padding: '1.15rem 1.35rem',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.85rem'
             }}>
-              <span style={{ fontSize: '0.7rem', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Current Udhaar</span>
-              <div style={{
-                fontSize: '1.1rem', fontWeight: '800',
-                color: customer.currentBalance > 0 ? 'var(--error)' : 'var(--primary)',
-                marginTop: '0.15rem'
-              }}>
-                ₹{Math.abs(customer.currentBalance).toLocaleString('en-IN')}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.85rem', color: '#64748B', fontWeight: '600' }}>Customer Name</span>
+                <span style={{ fontSize: '0.95rem', color: '#0F172A', fontWeight: '800' }}>{customer.name}</span>
               </div>
+
+              <div style={{ height: '1px', backgroundColor: '#EDF2F7' }} />
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.85rem', color: '#64748B', fontWeight: '600' }}>Village / Location</span>
+                <span style={{ fontSize: '0.95rem', color: '#0F172A', fontWeight: '700' }}>
+                  {customer.village || customer.address || 'Not Specified'}
+                </span>
+              </div>
+
+              <div style={{ height: '1px', backgroundColor: '#EDF2F7' }} />
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.85rem', color: '#64748B', fontWeight: '600' }}>Phone Number</span>
+                <span style={{ fontSize: '0.95rem', color: '#0F172A', fontWeight: '800' }}>{formattedPhone}</span>
+              </div>
+
+              <div style={{ height: '1px', backgroundColor: '#EDF2F7' }} />
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.85rem', color: '#64748B', fontWeight: '600' }}>Credit Limit</span>
+                <span style={{ fontSize: '0.95rem', color: '#0F172A', fontWeight: '800' }}>
+                  ₹{(customer.creditLimit || 50000).toLocaleString('en-IN')}
+                </span>
+              </div>
+
+              <div style={{ height: '1px', backgroundColor: '#EDF2F7' }} />
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.85rem', color: '#64748B', fontWeight: '600' }}>Current Udhaar</span>
+                <span style={{
+                  fontSize: '1rem',
+                  fontWeight: '800',
+                  color: customer.currentBalance > 0 ? '#DC2626' : customer.currentBalance < 0 ? '#16A34A' : '#0F172A'
+                }}>
+                  ₹{Math.abs(customer.currentBalance).toLocaleString('en-IN')} {customer.currentBalance > 0 ? '(Udhaar)' : customer.currentBalance < 0 ? '(Advance)' : '(Settled)'}
+                </span>
+              </div>
+
+              {customer.notes && (
+                <>
+                  <div style={{ height: '1px', backgroundColor: '#EDF2F7' }} />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <span style={{ fontSize: '0.85rem', color: '#64748B', fontWeight: '600' }}>Notes / Remarks</span>
+                    <span style={{ fontSize: '0.9rem', color: '#0F172A', fontWeight: '600', maxWidth: '60%', textAlign: 'right' }}>
+                      {customer.notes}
+                    </span>
+                  </div>
+                </>
+              )}
             </div>
+          </div>
+
+          {/* Primary Action Buttons: + New Bill & Receive Payment */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem' }}>
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                onNewBill(customer.id);
+              }}
+              style={{
+                backgroundColor: '#059669',
+                color: '#FFFFFF',
+                padding: '0.85rem',
+                borderRadius: '16px',
+                fontWeight: '800',
+                fontSize: '0.9rem',
+                border: 'none',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.45rem',
+                boxShadow: '0 4px 12px rgba(5, 150, 105, 0.2)'
+              }}
+            >
+              <Receipt size={18} />
+              <span>+ New Credit Bill</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                onCollectPayment(customer.id);
+              }}
+              style={{
+                backgroundColor: '#10B981',
+                color: '#FFFFFF',
+                padding: '0.85rem',
+                borderRadius: '16px',
+                fontWeight: '800',
+                fontSize: '0.9rem',
+                border: 'none',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.45rem',
+                boxShadow: '0 4px 12px rgba(16, 185, 129, 0.2)'
+              }}
+            >
+              <CreditCard size={18} />
+              <span>Receive Payment</span>
+            </button>
           </div>
 
           {/* KHATTA LEDGER TIMELINE SECTION */}
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.65rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-              <span style={{ fontSize: '0.85rem', fontWeight: '800', color: 'var(--text-heading)', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
-                Traditional Khatta Ledger ({filteredLedgerEntries.length})
+              <span style={{ fontSize: '0.85rem', fontWeight: '800', color: '#0F172A', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                Khatta Passbook ({filteredLedgerEntries.length})
               </span>
 
               {/* Date Filters */}
@@ -285,10 +478,10 @@ export const CustomerDetailsModal: React.FC<CustomerDetailsModalProps> = ({
                     onClick={() => setDateFilter(f.id as any)}
                     style={{
                       padding: '0.3rem 0.65rem',
-                      borderRadius: '12px',
-                      border: dateFilter === f.id ? '1.5px solid var(--primary)' : '1px solid var(--border-color)',
-                      backgroundColor: dateFilter === f.id ? 'var(--primary-light)' : 'transparent',
-                      color: dateFilter === f.id ? 'var(--primary)' : 'var(--text-muted)',
+                      borderRadius: '10px',
+                      border: dateFilter === f.id ? '1.5px solid #10B981' : '1px solid #E2E8F0',
+                      backgroundColor: dateFilter === f.id ? '#ECFDF5' : '#FFFFFF',
+                      color: dateFilter === f.id ? '#059669' : '#64748B',
                       fontSize: '0.725rem',
                       fontWeight: '700',
                       cursor: 'pointer'
@@ -302,7 +495,7 @@ export const CustomerDetailsModal: React.FC<CustomerDetailsModalProps> = ({
 
             {/* Khatta Header */}
             <div style={{
-              backgroundColor: 'var(--primary)',
+              backgroundColor: '#0F172A',
               color: '#FFFFFF',
               borderRadius: '14px',
               padding: '0.65rem 1rem',
@@ -312,14 +505,14 @@ export const CustomerDetailsModal: React.FC<CustomerDetailsModalProps> = ({
               fontSize: '0.8rem'
             }}>
               <span style={{ flex: 1.3 }}>Date & Transaction</span>
-              <span style={{ flex: 1, textAlign: 'center' }}>GOT (Payment Received)</span>
-              <span style={{ flex: 1, textAlign: 'right' }}>GAVE (Credit Owed)</span>
+              <span style={{ flex: 1, textAlign: 'center' }}>GOT (Jama)</span>
+              <span style={{ flex: 1, textAlign: 'right' }}>GAVE (Udhaar)</span>
             </div>
 
             {/* Khatta Entries */}
             {filteredLedgerEntries.length === 0 ? (
-              <div style={{ padding: '1.75rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.825rem' }}>
-                No transaction ledger entries match selected date range.
+              <div style={{ padding: '1.75rem', textAlign: 'center', color: '#94A3B8', fontSize: '0.825rem' }}>
+                No transaction ledger entries found.
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginTop: '0.4rem', maxHeight: '200px', overflowY: 'auto' }}>
@@ -331,24 +524,24 @@ export const CustomerDetailsModal: React.FC<CustomerDetailsModalProps> = ({
                       justifyContent: 'space-between',
                       alignItems: 'center',
                       padding: '0.65rem 1rem',
-                      backgroundColor: 'var(--bg-secondary)',
+                      backgroundColor: '#F8FAFC',
                       borderRadius: '14px',
                       fontSize: '0.8rem',
-                      border: '1px solid var(--border-color)'
+                      border: '1px solid #E2E8F0'
                     }}
                   >
                     <div style={{ flex: 1.3 }}>
-                      <span style={{ fontWeight: '700', color: 'var(--text-heading)', display: 'block' }}>{entry.details}</span>
-                      <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                      <span style={{ fontWeight: '700', color: '#0F172A', display: 'block' }}>{entry.details}</span>
+                      <span style={{ fontSize: '0.7rem', color: '#64748B' }}>
                         {new Date(entry.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
                       </span>
                     </div>
 
-                    <div style={{ flex: 1, textAlign: 'center', color: 'var(--primary)', fontWeight: '800' }}>
+                    <div style={{ flex: 1, textAlign: 'center', color: '#10B981', fontWeight: '800' }}>
                       {entry.jama > 0 ? `+ ₹${entry.jama.toLocaleString('en-IN')}` : '-'}
                     </div>
 
-                    <div style={{ flex: 1, textAlign: 'right', color: 'var(--error)', fontWeight: '800' }}>
+                    <div style={{ flex: 1, textAlign: 'right', color: '#DC2626', fontWeight: '800' }}>
                       {entry.udhaar > 0 ? `- ₹${entry.udhaar.toLocaleString('en-IN')}` : '-'}
                     </div>
                   </div>
@@ -357,40 +550,28 @@ export const CustomerDetailsModal: React.FC<CustomerDetailsModalProps> = ({
             )}
           </div>
 
-          {/* Bottom Primary Actions: Record Bill | Receive Payment | PDF Passbook */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem', paddingTop: '0.25rem' }}>
-            <button
-              type="button"
-              onClick={() => {
-                onClose();
-                onNewBill(customer.id);
-              }}
-              className="btn btn-secondary"
-              style={{ padding: '0.8rem', borderRadius: '16px', fontWeight: '800', fontSize: '0.875rem', gap: '0.4rem' }}
-            >
-              <Receipt size={16} /> + New Credit Bill
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                onClose();
-                onCollectPayment(customer.id);
-              }}
-              className="btn btn-primary"
-              style={{ padding: '0.8rem', borderRadius: '16px', fontWeight: '800', fontSize: '0.875rem', gap: '0.4rem' }}
-            >
-              <CreditCard size={16} /> Receive Payment
-            </button>
-          </div>
-
+          {/* Print / Export Button */}
           <button
             type="button"
             onClick={handleDownloadPassbook}
-            className="btn btn-secondary"
-            style={{ width: '100%', padding: '0.65rem', borderRadius: '14px', fontWeight: '700', fontSize: '0.8rem', gap: '0.35rem' }}
+            style={{
+              width: '100%',
+              padding: '0.7rem',
+              borderRadius: '14px',
+              fontWeight: '700',
+              fontSize: '0.825rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.4rem',
+              backgroundColor: '#F8FAFC',
+              border: '1px solid #E2E8F0',
+              color: '#475569',
+              cursor: 'pointer'
+            }}
           >
-            <FileText size={15} /> Print / Export PDF Khatta Passbook
+            <FileText size={15} />
+            <span>Print / Export PDF Khatta Passbook</span>
           </button>
 
         </div>
