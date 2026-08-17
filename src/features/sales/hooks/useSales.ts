@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import type { Sale, CreateSaleDTO } from '../types';
 import { RepositoryFactory } from '../../../repositories/RepositoryFactory';
 import { useAuthStore } from '../../../stores/authStore';
+import { EventBus } from '../../../services/EventBus';
 
 export const useSales = () => {
   const { shop } = useAuthStore();
@@ -32,12 +33,21 @@ export const useSales = () => {
 
   useEffect(() => {
     loadSales();
+    const unsubSales = EventBus.subscribe('sales:changed', () => loadSales());
+    const unsubSync = EventBus.subscribe('data:sync', () => loadSales());
+    return () => {
+      unsubSales();
+      unsubSync();
+    };
   }, [loadSales]);
 
   const createSale = async (dto: CreateSaleDTO): Promise<Sale> => {
     if (!shop?.id) throw new Error('Shop identifier missing');
     const created = await saleRepo.createSale(shop.id, dto);
     setSales((prev) => [created, ...prev]);
+    EventBus.publish('sales:changed', created);
+    EventBus.publish('ledger:changed');
+    EventBus.publish('customers:changed');
     return created;
   };
 
@@ -48,6 +58,9 @@ export const useSales = () => {
   const removeSale = async (id: string): Promise<void> => {
     await saleRepo.deleteSale(id);
     setSales((prev) => prev.filter((s) => s.id !== id));
+    EventBus.publish('sales:changed');
+    EventBus.publish('ledger:changed');
+    EventBus.publish('customers:changed');
   };
 
   return {

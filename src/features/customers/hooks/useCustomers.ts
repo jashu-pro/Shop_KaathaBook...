@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import type { Customer, CreateCustomerDTO, UpdateCustomerDTO } from '../types';
 import { RepositoryFactory } from '../../../repositories/RepositoryFactory';
 import { useAuthStore } from '../../../stores/authStore';
+import { EventBus } from '../../../services/EventBus';
 
 export const useCustomers = () => {
   const { shop } = useAuthStore();
@@ -37,18 +38,27 @@ export const useCustomers = () => {
       localStorage.removeItem('db_customers');
     }
     loadCustomers();
+
+    const unsubCust = EventBus.subscribe('customers:changed', () => loadCustomers());
+    const unsubSync = EventBus.subscribe('data:sync', () => loadCustomers());
+    return () => {
+      unsubCust();
+      unsubSync();
+    };
   }, [loadCustomers]);
 
   const addCustomer = async (data: CreateCustomerDTO): Promise<Customer> => {
     if (!shop?.id) throw new Error('Shop identifier missing');
     const newCust = await customerRepo.createCustomer(shop.id, data);
     setCustomers((prev) => [newCust, ...prev]);
+    EventBus.publish('customers:changed', newCust);
     return newCust;
   };
 
   const editCustomer = async (id: string, updates: UpdateCustomerDTO): Promise<Customer> => {
     const updated = await customerRepo.updateCustomer(id, updates);
     setCustomers((prev) => prev.map((c) => (c.id === id ? updated : c)));
+    EventBus.publish('customers:changed', updated);
     return updated;
   };
 
@@ -56,6 +66,7 @@ export const useCustomers = () => {
     const success = await customerRepo.deleteCustomer(id);
     if (success) {
       setCustomers((prev) => prev.filter((c) => c.id !== id));
+      EventBus.publish('customers:changed');
     }
     return success;
   };

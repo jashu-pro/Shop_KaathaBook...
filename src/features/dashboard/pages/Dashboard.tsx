@@ -1,13 +1,16 @@
 /* features/dashboard/pages/Dashboard.tsx */
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../../stores/authStore';
 import { WeeklyChart } from '../components/WeeklyChart';
+import type { DayData, ChartTimeRange } from '../components/WeeklyChart';
 import { UpiQrModal } from '../components/UpiQrModal';
+import { RecordCreditSaleModal } from '../../sales/components/RecordCreditSaleModal';
 import { useCustomers } from '../../customers/hooks/useCustomers';
 import { useSales } from '../../sales/hooks/useSales';
 import { usePayments } from '../../payments/hooks/usePayments';
 import { useLedger } from '../../ledger/hooks/useLedger';
+import { EventBus } from '../../../services/EventBus';
 import { 
   QrCode, 
   TrendingUp, 
@@ -23,53 +26,214 @@ import {
   Receipt
 } from 'lucide-react';
 
-const Dashboard: React.FC = () => {
+export const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const { shop } = useAuthStore();
-  const { customers } = useCustomers();
-  const { sales } = useSales();
-  const { payments } = usePayments();
-  const { entries: ledgerEntries } = useLedger();
+  const { customers, refetch: refetchCustomers, addCustomer } = useCustomers();
+  const { sales, refetch: refetchSales, createSale } = useSales();
+  const { payments, refetch: refetchPayments, createPayment } = usePayments();
+  const { entries: ledgerEntries, refetch: refetchLedger } = useLedger();
 
   const [showQrModal, setShowQrModal] = useState(false);
+  const [isRecordSaleOpen, setIsRecordSaleOpen] = useState(false);
+  const [timeRange, setTimeRange] = useState<ChartTimeRange>('thisWeek');
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const shopName = shop?.name || 'My KhattaBook Store';
-  const upiId = shop?.upiId || '';
+  const upiId = shop?.upiId || 'shop@upi';
   const activeCustomersCount = customers.length;
 
-  const totalUdhaar = customers.reduce((acc, c) => acc + (c.currentBalance > 0 ? c.currentBalance : 0), 0);
+  // Realtime Live Refresh Trigger
+  const handleFullRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    try {
+      await Promise.all([
+        refetchCustomers(),
+        refetchSales(),
+        refetchPayments(),
+        refetchLedger()
+      ]);
+    } finally {
+      setTimeout(() => setIsRefreshing(false), 500);
+    }
+  }, [refetchCustomers, refetchSales, refetchPayments, refetchLedger]);
 
-  const isToday = (dateString?: string) => {
-    if (!dateString) return false;
-    const d = new Date(dateString);
-    const today = new Date();
+  // Subscribe to live events
+  useEffect(() => {
+    const unsubSales = EventBus.subscribe('sales:changed', handleFullRefresh);
+    const unsubPayments = EventBus.subscribe('payments:changed', handleFullRefresh);
+    const unsubLedger = EventBus.subscribe('ledger:changed', handleFullRefresh);
+    const unsubCustomers = EventBus.subscribe('customers:changed', handleFullRefresh);
+    const unsubSync = EventBus.subscribe('data:sync', handleFullRefresh);
+
+    return () => {
+      unsubSales();
+      unsubPayments();
+      unsubLedger();
+      unsubCustomers();
+      unsubSync();
+    };
+  }, [handleFullRefresh]);
+
+  const totalUdhaar = useMemo(() => {
+    return customers.reduce((acc, c) => acc + (Number(c.currentBalance) > 0 ? Number(c.currentBalance) : 0), 0);
+  }, [customers]);
+
+  // Robust Date Matching Helper (Local Date Comparison)
+  const isSameCalendarDay = (dateInput: string | Date | undefined, targetDate: Date): boolean => {
+    if (!dateInput) return false;
+    const d = new Date(dateInput);
+    if (isNaN(d.getTime())) return false;
     return (
-      d.getDate() === today.getDate() &&
-      d.getMonth() === today.getMonth() &&
-      d.getFullYear() === today.getFullYear()
+      d.getDate() === targetDate.getDate() &&
+      d.getMonth() === targetDate.getMonth() &&
+      d.getFullYear() === targetDate.getFullYear()
     );
   };
 
-  // Today's Credit Sales (sum of debit entries recorded today)
-  const todaysSales = useMemo(() => {
-    return ledgerEntries
-      .filter((e) => e.entryType === 'debit' && isToday(e.entryDate))
-      .reduce((acc, e) => acc + e.amount, 0);
-  }, [ledgerEntries]);
+  const isToday = (dateInput?: string | Date) => {
+    return isSameCalendarDay(dateInput, new Date());
+  };
 
-  // Today's Collections (sum of credit entries recorded today)
+  // Today's Sales Calculation (from sales or ledger debits)
+  const todaysSales = useMemo(() => {
+    const fromLedger = ledgerEntries
+      .filter((e) => e.entryType === 'debit' && isToday(e.entryDate))
+      .reduce((acc, e) => acc + (Number(e.amount) || 0), 0);
+
+    const fromSales = sales
+      .filter((s) => isToday(s.saleDate || s.createdAt))
+      .reduce((acc, s) => acc + (Number(s.totalAmount) || 0), 0);
+
+    return Math.max(fromLedger, fromSales);
+  }, [ledgerEntries, sales]);
+
+  // Today's Collections (from payments or ledger credits)
   const todaysCollections = useMemo(() => {
-    return ledgerEntries
+    const fromLedger = ledgerEntries
       .filter((e) => e.entryType === 'credit' && isToday(e.entryDate))
-      .reduce((acc, e) => acc + e.amount, 0);
-  }, [ledgerEntries]);
+      .reduce((acc, e) => acc + (Number(e.amount) || 0), 0);
+
+    const fromPayments = payments
+      .filter((p) => isToday(p.paymentDate || p.createdAt))
+      .reduce((acc, p) => acc + (Number(p.amount) || 0), 0);
+
+    return Math.max(fromLedger, fromPayments);
+  }, [ledgerEntries, payments]);
 
   // Total Transactions Count
-  const totalTransactionsCount = ledgerEntries.length > 0 ? ledgerEntries.length : (sales.length + payments.length);
+  const totalTransactionsCount = useMemo(() => {
+    const rawCount = ledgerEntries.length;
+    const fallbackCount = sales.length + payments.length;
+    return Math.max(rawCount, fallbackCount);
+  }, [ledgerEntries, sales, payments]);
 
-  // Weekly Performance Analytics Chart Data (Mon - Sun)
-  const weeklyChartData = useMemo(() => {
+  // Dynamic Chart Data Calculation based on selected TimeRange
+  const chartData: DayData[] = useMemo(() => {
     const today = new Date();
+
+    if (timeRange === 'past7Days') {
+      // Rolling Past 7 Days (e.g. today - 6 days -> today)
+      const daysList: DayData[] = [];
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date(today);
+        d.setDate(today.getDate() - i);
+        const dayLabel = d.toLocaleDateString('en-IN', { weekday: 'short' });
+        const formatted = d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+
+        const daySalesLedger = ledgerEntries
+          .filter((e) => e.entryType === 'debit' && isSameCalendarDay(e.entryDate, d))
+          .reduce((acc, e) => acc + (Number(e.amount) || 0), 0);
+        const daySalesDirect = sales
+          .filter((s) => isSameCalendarDay(s.saleDate || s.createdAt, d))
+          .reduce((acc, s) => acc + (Number(s.totalAmount) || 0), 0);
+
+        const dayColLedger = ledgerEntries
+          .filter((e) => e.entryType === 'credit' && isSameCalendarDay(e.entryDate, d))
+          .reduce((acc, e) => acc + (Number(e.amount) || 0), 0);
+        const dayColDirect = payments
+          .filter((p) => isSameCalendarDay(p.paymentDate || p.createdAt, d))
+          .reduce((acc, p) => acc + (Number(p.amount) || 0), 0);
+
+        daysList.push({
+          day: dayLabel,
+          formattedDate: `${dayLabel}, ${formatted}`,
+          sales: Math.max(daySalesLedger, daySalesDirect),
+          collections: Math.max(dayColLedger, dayColDirect),
+        });
+      }
+      return daysList;
+    }
+
+    if (timeRange === 'thisMonth') {
+      // 4 Weeks of Current Month
+      const daysList: DayData[] = [];
+      for (let w = 1; w <= 4; w++) {
+        const startDay = (w - 1) * 7 + 1;
+        const endDay = Math.min(w * 7, 31);
+        const weekLabel = `Wk ${w}`;
+
+        const weekSalesLedger = ledgerEntries
+          .filter((e) => {
+            const entryD = new Date(e.entryDate);
+            return (
+              e.entryType === 'debit' &&
+              entryD.getMonth() === today.getMonth() &&
+              entryD.getFullYear() === today.getFullYear() &&
+              entryD.getDate() >= startDay &&
+              entryD.getDate() <= endDay
+            );
+          })
+          .reduce((acc, e) => acc + (Number(e.amount) || 0), 0);
+
+        const weekSalesDirect = sales
+          .filter((s) => {
+            const entryD = new Date(s.saleDate || s.createdAt);
+            return (
+              entryD.getMonth() === today.getMonth() &&
+              entryD.getFullYear() === today.getFullYear() &&
+              entryD.getDate() >= startDay &&
+              entryD.getDate() <= endDay
+            );
+          })
+          .reduce((acc, s) => acc + (Number(s.totalAmount) || 0), 0);
+
+        const weekColLedger = ledgerEntries
+          .filter((e) => {
+            const entryD = new Date(e.entryDate);
+            return (
+              e.entryType === 'credit' &&
+              entryD.getMonth() === today.getMonth() &&
+              entryD.getFullYear() === today.getFullYear() &&
+              entryD.getDate() >= startDay &&
+              entryD.getDate() <= endDay
+            );
+          })
+          .reduce((acc, e) => acc + (Number(e.amount) || 0), 0);
+
+        const weekColDirect = payments
+          .filter((p) => {
+            const entryD = new Date(p.paymentDate || p.createdAt);
+            return (
+              entryD.getMonth() === today.getMonth() &&
+              entryD.getFullYear() === today.getFullYear() &&
+              entryD.getDate() >= startDay &&
+              entryD.getDate() <= endDay
+            );
+          })
+          .reduce((acc, p) => acc + (Number(p.amount) || 0), 0);
+
+        daysList.push({
+          day: weekLabel,
+          formattedDate: `Days ${startDay}-${endDay} ${today.toLocaleDateString('en-IN', { month: 'short' })}`,
+          sales: Math.max(weekSalesLedger, weekSalesDirect),
+          collections: Math.max(weekColLedger, weekColDirect),
+        });
+      }
+      return daysList;
+    }
+
+    // Default: This Week (Mon - Sun)
     const currentDayOfWeek = today.getDay(); // 0: Sun, 1: Mon...
     const distanceToMon = currentDayOfWeek === 0 ? 6 : currentDayOfWeek - 1;
     const monday = new Date(today);
@@ -81,38 +245,70 @@ const Dashboard: React.FC = () => {
     return weekDays.map((dayName, idx) => {
       const dayDate = new Date(monday);
       dayDate.setDate(monday.getDate() + idx);
+      const formatted = dayDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
 
-      const daySales = ledgerEntries
-        .filter((e) => {
-          const d = new Date(e.entryDate);
-          return (
-            e.entryType === 'debit' &&
-            d.getDate() === dayDate.getDate() &&
-            d.getMonth() === dayDate.getMonth() &&
-            d.getFullYear() === dayDate.getFullYear()
-          );
-        })
-        .reduce((acc, e) => acc + e.amount, 0);
+      const daySalesLedger = ledgerEntries
+        .filter((e) => e.entryType === 'debit' && isSameCalendarDay(e.entryDate, dayDate))
+        .reduce((acc, e) => acc + (Number(e.amount) || 0), 0);
+      const daySalesDirect = sales
+        .filter((s) => isSameCalendarDay(s.saleDate || s.createdAt, dayDate))
+        .reduce((acc, s) => acc + (Number(s.totalAmount) || 0), 0);
 
-      const dayCollections = ledgerEntries
-        .filter((e) => {
-          const d = new Date(e.entryDate);
-          return (
-            e.entryType === 'credit' &&
-            d.getDate() === dayDate.getDate() &&
-            d.getMonth() === dayDate.getMonth() &&
-            d.getFullYear() === dayDate.getFullYear()
-          );
-        })
-        .reduce((acc, e) => acc + e.amount, 0);
+      const dayColLedger = ledgerEntries
+        .filter((e) => e.entryType === 'credit' && isSameCalendarDay(e.entryDate, dayDate))
+        .reduce((acc, e) => acc + (Number(e.amount) || 0), 0);
+      const dayColDirect = payments
+        .filter((p) => isSameCalendarDay(p.paymentDate || p.createdAt, dayDate))
+        .reduce((acc, p) => acc + (Number(p.amount) || 0), 0);
 
       return {
         day: dayName,
-        sales: daySales,
-        collections: dayCollections,
+        formattedDate: `${dayName}, ${formatted}`,
+        sales: Math.max(daySalesLedger, daySalesDirect),
+        collections: Math.max(dayColLedger, dayColDirect),
       };
     });
-  }, [ledgerEntries]);
+  }, [timeRange, ledgerEntries, sales, payments]);
+
+  // Demo Sample Data Generator for testing live chart
+  const handleSeedSampleWeekData = async () => {
+    setIsRefreshing(true);
+    try {
+      let activeCustomer = customers[0];
+      if (!activeCustomer) {
+        activeCustomer = await addCustomer({
+          name: 'Ramesh Patel',
+          phone: '9876543210',
+          village: 'Main Market',
+          creditLimit: 50000,
+        });
+      }
+
+      // Record a live sale
+      await createSale({
+        customerId: activeCustomer.id,
+        subtotal: 3500,
+        totalAmount: 3500,
+        amountPaid: 1500,
+        paymentStatus: 'partially_paid',
+        paymentMethod: 'cash',
+        items: [{ productId: 'item-1', quantity: 2, unitPrice: 1750, totalPrice: 3500 }],
+        notes: 'Live demo transaction entry',
+      });
+
+      // Record a live payment
+      await createPayment({
+        customerId: activeCustomer.id,
+        amount: 2000,
+        paymentMethod: 'phonepe',
+        notes: 'Live demo UPI collection',
+      });
+
+      EventBus.triggerFullSync();
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', animation: 'modal-slide 0.3s ease' }}>
@@ -162,38 +358,60 @@ const Dashboard: React.FC = () => {
           </p>
         </div>
 
-        {/* UPI QR Code Trigger Button */}
-        <button
-          onClick={() => setShowQrModal(true)}
-          style={{
-            backgroundColor: '#FFFFFF',
-            color: '#064E3B',
-            padding: '0.55rem 1.15rem',
-            borderRadius: '14px',
-            fontWeight: '800',
-            fontSize: '0.85rem',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.4rem',
-            border: 'none',
-            cursor: 'pointer',
-            boxShadow: '0 4px 14px rgba(0, 0, 0, 0.12)',
-            transition: 'all 200ms'
-          }}
-        >
-          <QrCode size={18} />
-          <span>UPI QR</span>
-        </button>
+        {/* Action Buttons */}
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          <button
+            onClick={() => setIsRecordSaleOpen(true)}
+            style={{
+              backgroundColor: '#10B981',
+              color: '#FFFFFF',
+              padding: '0.55rem 1rem',
+              borderRadius: '14px',
+              fontWeight: '800',
+              fontSize: '0.85rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+              border: 'none',
+              cursor: 'pointer',
+              boxShadow: '0 4px 14px rgba(16, 185, 129, 0.3)',
+              transition: 'all 200ms'
+            }}
+          >
+            <Plus size={16} />
+            <span>+ New Sale</span>
+          </button>
+
+          <button
+            onClick={() => setShowQrModal(true)}
+            style={{
+              backgroundColor: '#FFFFFF',
+              color: '#064E3B',
+              padding: '0.55rem 1.15rem',
+              borderRadius: '14px',
+              fontWeight: '800',
+              fontSize: '0.85rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              border: 'none',
+              cursor: 'pointer',
+              boxShadow: '0 4px 14px rgba(0, 0, 0, 0.12)',
+              transition: 'all 200ms'
+            }}
+          >
+            <QrCode size={18} />
+            <span>UPI QR</span>
+          </button>
+        </div>
       </div>
 
       {/* ------------------------------------------------------------- */}
       {/* ROW 2 & 3: STAT CARDS GRID                                   */}
       {/* ------------------------------------------------------------- */}
-      
-      {/* DESKTOP & MOBILE ADAPTIVE GRID */}
       <div className="dashboard-main-grid">
         
-        {/* TOTAL CUSTOMER DEBT (UDHAAR) CARD — Spans 2 cols on Desktop & Mobile */}
+        {/* TOTAL CUSTOMER DEBT (UDHAAR) CARD */}
         <div 
           className="udhaar-card-span dashboard-udhaar-card"
           style={{
@@ -222,7 +440,7 @@ const Dashboard: React.FC = () => {
 
           <div>
             <div className="dashboard-udhaar-value" style={{ fontWeight: '800', letterSpacing: '-0.5px', lineHeight: 1.1 }}>
-              ₹{totalUdhaar}
+              ₹{totalUdhaar.toLocaleString('en-IN')}
             </div>
             <p style={{ fontSize: '0.775rem', opacity: '0.85', marginTop: '0.25rem' }}>
               Total pending collections across all villages
@@ -251,10 +469,13 @@ const Dashboard: React.FC = () => {
             }}>
               <TrendingUp size={18} />
             </div>
+            <span style={{ fontSize: '0.7rem', fontWeight: '700', color: '#10B981', backgroundColor: 'rgba(16, 185, 129, 0.1)', padding: '0.15rem 0.5rem', borderRadius: '8px' }}>
+              Live
+            </span>
           </div>
           <div>
             <div className="dashboard-stat-value" style={{ fontWeight: '800', color: 'var(--text-heading)', lineHeight: 1.1 }}>
-              ₹{todaysSales}
+              ₹{todaysSales.toLocaleString('en-IN')}
             </div>
             <span style={{ fontSize: '0.775rem', fontWeight: '600', color: 'var(--text-body)', marginTop: '0.2rem', display: 'block' }}>
               Today's Credit Sales
@@ -283,10 +504,13 @@ const Dashboard: React.FC = () => {
             }}>
               <TrendingDown size={18} />
             </div>
+            <span style={{ fontSize: '0.7rem', fontWeight: '700', color: '#F59E0B', backgroundColor: 'rgba(245, 158, 11, 0.1)', padding: '0.15rem 0.5rem', borderRadius: '8px' }}>
+              Live
+            </span>
           </div>
           <div>
             <div className="dashboard-stat-value" style={{ fontWeight: '800', color: 'var(--text-heading)', lineHeight: 1.1 }}>
-              ₹{todaysCollections}
+              ₹{todaysCollections.toLocaleString('en-IN')}
             </div>
             <span style={{ fontSize: '0.775rem', fontWeight: '600', color: 'var(--text-body)', marginTop: '0.2rem', display: 'block' }}>
               Today's Collections
@@ -361,7 +585,7 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* ------------------------------------------------------------- */}
-      {/* ROW 4: QUICK ACTIONS (Horizontal Scrollable Pills)            */}
+      {/* ROW 4: QUICK ACTIONS                                          */}
       {/* ------------------------------------------------------------- */}
       <div style={{ marginTop: '0.25rem' }}>
         <h3 style={{ fontSize: '0.9rem', fontWeight: '800', color: 'var(--text-heading)', marginBottom: '0.6rem' }}>
@@ -371,7 +595,7 @@ const Dashboard: React.FC = () => {
         <div className="quick-actions-scroll">
           {/* Action 1: New Credit Sale */}
           <button
-            onClick={() => navigate('/sales/new')}
+            onClick={() => setIsRecordSaleOpen(true)}
             className="quick-action-pill"
             style={{
               backgroundColor: 'rgba(16, 185, 129, 0.1)',
@@ -425,7 +649,7 @@ const Dashboard: React.FC = () => {
             <span>Open Ledger</span>
           </button>
 
-          {/* Action 5: AI Voice Entry */}
+          {/* Action 5: AI Assistant */}
           <button
             onClick={() => navigate('/ai-assistant')}
             className="quick-action-pill"
@@ -443,7 +667,20 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* ------------------------------------------------------------- */}
-      {/* ROW 5: RECENT ACTIVITY STREAM                                 */}
+      {/* ROW 5: PERFORMANCE ANALYTICS CHART (LIVE REAL-TIME)           */}
+      {/* ------------------------------------------------------------- */}
+      <WeeklyChart 
+        data={chartData} 
+        timeRange={timeRange}
+        onTimeRangeChange={(r) => setTimeRange(r)}
+        onRefresh={handleFullRefresh}
+        isRefreshing={isRefreshing}
+        onQuickAddSale={() => setIsRecordSaleOpen(true)}
+        onSeedSampleData={handleSeedSampleWeekData}
+      />
+
+      {/* ------------------------------------------------------------- */}
+      {/* ROW 6: RECENT ACTIVITY STREAM                                 */}
       {/* ------------------------------------------------------------- */}
       <div 
         style={{
@@ -456,9 +693,12 @@ const Dashboard: React.FC = () => {
         }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-          <h3 style={{ fontSize: '0.95rem', fontWeight: '800', color: 'var(--text-heading)' }}>
-            Recent Activity Stream
-          </h3>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <h3 style={{ fontSize: '0.95rem', fontWeight: '800', color: 'var(--text-heading)', margin: 0 }}>
+              Recent Activity Stream
+            </h3>
+            <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#10B981', display: 'inline-block' }} />
+          </div>
           <button
             onClick={() => navigate('/ledger')}
             style={{
@@ -468,7 +708,9 @@ const Dashboard: React.FC = () => {
               display: 'flex',
               alignItems: 'center',
               gap: '0.25rem',
-              cursor: 'pointer'
+              cursor: 'pointer',
+              border: 'none',
+              background: 'none'
             }}
           >
             <span>View Full Ledger</span>
@@ -476,13 +718,13 @@ const Dashboard: React.FC = () => {
           </button>
         </div>
 
-        {/* Recent Activity Item */}
-        {ledgerEntries.length === 0 ? (
+        {/* Activity Items */}
+        {ledgerEntries.length === 0 && sales.length === 0 && payments.length === 0 ? (
           <div style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            padding: '0.75rem 1rem',
+            padding: '0.85rem 1rem',
             borderRadius: '14px',
             backgroundColor: 'var(--bg-secondary)',
             border: '1px solid var(--border-color)'
@@ -496,10 +738,10 @@ const Dashboard: React.FC = () => {
                 <Receipt size={18} />
               </div>
               <div>
-                <h4 style={{ fontWeight: '700', fontSize: '0.875rem', color: 'var(--text-heading)' }}>
-                  Account Initialized
+                <h4 style={{ fontWeight: '700', fontSize: '0.875rem', color: 'var(--text-heading)', margin: 0 }}>
+                  Account Initialized & Ready
                 </h4>
-                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '0.1rem 0 0 0' }}>
                   Digital ledger created for {shopName}
                 </p>
               </div>
@@ -525,7 +767,8 @@ const Dashboard: React.FC = () => {
                     padding: '0.75rem 1rem',
                     borderRadius: '14px',
                     backgroundColor: 'var(--bg-secondary)',
-                    border: '1px solid var(--border-color)'
+                    border: '1px solid var(--border-color)',
+                    transition: 'all 150ms'
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
@@ -538,10 +781,10 @@ const Dashboard: React.FC = () => {
                       {isDebit ? <TrendingUp size={18} /> : <TrendingDown size={18} />}
                     </div>
                     <div>
-                      <h4 style={{ fontWeight: '700', fontSize: '0.875rem', color: 'var(--text-heading)' }}>
+                      <h4 style={{ fontWeight: '700', fontSize: '0.875rem', color: 'var(--text-heading)', margin: 0 }}>
                         {entry.customerName || 'Customer'}
                       </h4>
-                      <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>
+                      <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '0.1rem 0 0 0' }}>
                         {entry.description || (isDebit ? 'Credit Sale' : 'Payment Collection')} • {new Date(entry.entryDate).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
                       </p>
                     </div>
@@ -553,7 +796,7 @@ const Dashboard: React.FC = () => {
                       fontSize: '0.9rem',
                       color: isDebit ? '#EF4444' : '#10B981'
                     }}>
-                      {isDebit ? `+₹${entry.amount}` : `-₹${entry.amount}`}
+                      {isDebit ? `+₹${entry.amount.toLocaleString('en-IN')}` : `-₹${entry.amount.toLocaleString('en-IN')}`}
                     </span>
                     <span style={{ display: 'block', fontSize: '0.7rem', color: 'var(--text-muted)' }}>
                       {isDebit ? 'Udhaar' : 'Jama'}
@@ -567,16 +810,19 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* ------------------------------------------------------------- */}
-      {/* ROW 6: WEEKLY SALES & COLLECTIONS PERFORMANCE CHART           */}
-      {/* ------------------------------------------------------------- */}
-      <WeeklyChart data={weeklyChartData} />
-
-      {/* ------------------------------------------------------------- */}
-      {/* AUTO-GENERATED UPI QR CODE MODAL POPUP                        */}
+      {/* MODALS: UPI QR & RECORD CREDIT SALE                           */}
       {/* ------------------------------------------------------------- */}
       <UpiQrModal 
         isOpen={showQrModal} 
         onClose={() => setShowQrModal(false)} 
+      />
+
+      <RecordCreditSaleModal
+        isOpen={isRecordSaleOpen}
+        onClose={() => setIsRecordSaleOpen(false)}
+        onSuccess={() => {
+          handleFullRefresh();
+        }}
       />
 
     </div>

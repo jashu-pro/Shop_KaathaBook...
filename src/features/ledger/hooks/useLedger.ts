@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import type { LedgerEntry, CreateLedgerEntryDTO } from '../types';
 import { RepositoryFactory } from '../../../repositories/RepositoryFactory';
 import { useAuthStore } from '../../../stores/authStore';
+import { EventBus } from '../../../services/EventBus';
 
 export const useLedger = (customerId?: string, startDate?: string, endDate?: string) => {
   const { shop } = useAuthStore();
@@ -32,18 +33,28 @@ export const useLedger = (customerId?: string, startDate?: string, endDate?: str
 
   useEffect(() => {
     loadLedger();
+    const unsubLedger = EventBus.subscribe('ledger:changed', () => loadLedger());
+    const unsubSync = EventBus.subscribe('data:sync', () => loadLedger());
+    return () => {
+      unsubLedger();
+      unsubSync();
+    };
   }, [loadLedger]);
 
   const createEntry = async (dto: CreateLedgerEntryDTO): Promise<LedgerEntry> => {
     if (!shop?.id) throw new Error('Shop identifier missing');
     const created = await ledgerRepo.createLedgerEntry(shop.id, dto);
     setEntries((prev) => [created, ...prev]);
+    EventBus.publish('ledger:changed', created);
+    EventBus.publish('customers:changed');
     return created;
   };
 
   const removeEntry = async (id: string): Promise<void> => {
     await ledgerRepo.deleteLedgerEntry(id);
     setEntries((prev) => prev.filter((e) => e.id !== id));
+    EventBus.publish('ledger:changed');
+    EventBus.publish('customers:changed');
   };
 
   return {

@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import type { Payment, CreatePaymentDTO } from '../types';
 import { RepositoryFactory } from '../../../repositories/RepositoryFactory';
 import { useAuthStore } from '../../../stores/authStore';
+import { EventBus } from '../../../services/EventBus';
 
 export const usePayments = () => {
   const { shop } = useAuthStore();
@@ -32,18 +33,30 @@ export const usePayments = () => {
 
   useEffect(() => {
     loadPayments();
+    const unsubPay = EventBus.subscribe('payments:changed', () => loadPayments());
+    const unsubSync = EventBus.subscribe('data:sync', () => loadPayments());
+    return () => {
+      unsubPay();
+      unsubSync();
+    };
   }, [loadPayments]);
 
   const createPayment = async (dto: CreatePaymentDTO): Promise<Payment> => {
     if (!shop?.id) throw new Error('Shop identifier missing');
     const created = await paymentRepo.createPayment(shop.id, dto);
     setPayments((prev) => [created, ...prev]);
+    EventBus.publish('payments:changed', created);
+    EventBus.publish('ledger:changed');
+    EventBus.publish('customers:changed');
     return created;
   };
 
   const removePayment = async (id: string): Promise<void> => {
     await paymentRepo.deletePayment(id);
     setPayments((prev) => prev.filter((p) => p.id !== id));
+    EventBus.publish('payments:changed');
+    EventBus.publish('ledger:changed');
+    EventBus.publish('customers:changed');
   };
 
   return {
