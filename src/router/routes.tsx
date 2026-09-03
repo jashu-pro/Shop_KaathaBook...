@@ -26,10 +26,23 @@ import { LedgerPage } from '../features/ledger';
 import Reports from '../features/reports/pages/Reports';
 import { SettingsPage } from '../features/settings';
 import { AIAssistantPage } from '../features/dashboard/pages/AIAssistantPage';
+import { 
+  WorkerLoginPage, 
+  WorkerPinSetupPage, 
+  WorkerDashboardPage, 
+  PermissionGuard,
+  useWorkerPermissions 
+} from '../features/staff';
+
+const DashboardRouter: React.FC = () => {
+  const { isWorker } = useWorkerPermissions();
+  return isWorker ? <WorkerDashboardPage /> : <Dashboard />;
+};
 
 // Guard for routes that require authentication
 export const ProtectedRoute: React.FC<{ requireShop?: boolean }> = ({ requireShop = true }) => {
   const { isAuthenticated, isOnboarded, isLoading } = useAuthStore();
+  const { isWorker } = useWorkerPermissions();
 
   if (isLoading) {
     return (
@@ -39,11 +52,12 @@ export const ProtectedRoute: React.FC<{ requireShop?: boolean }> = ({ requireSho
     );
   }
 
-  if (!isAuthenticated) {
+  // Allow active workers or authenticated owners
+  if (!isAuthenticated && !isWorker) {
     return <Navigate to="/login" replace />;
   }
 
-  if (requireShop && !isOnboarded) {
+  if (requireShop && !isOnboarded && !isWorker) {
     return <Navigate to="/shop-setup" replace />;
   }
 
@@ -53,6 +67,7 @@ export const ProtectedRoute: React.FC<{ requireShop?: boolean }> = ({ requireSho
 // Guard for routes that are public (login/register) and should redirect if already authenticated
 export const PublicRoute: React.FC = () => {
   const { isAuthenticated, isOnboarded, isLoading } = useAuthStore();
+  const { isWorker } = useWorkerPermissions();
 
   if (isLoading) {
     return (
@@ -62,8 +77,8 @@ export const PublicRoute: React.FC = () => {
     );
   }
 
-  if (isAuthenticated) {
-    if (!isOnboarded) {
+  if (isAuthenticated || isWorker) {
+    if (!isOnboarded && !isWorker) {
       return <Navigate to="/shop-setup" replace />;
     }
     return <Navigate to="/" replace />;
@@ -79,6 +94,8 @@ export const AppRouter: React.FC = () => {
         {/* Public Auth Routes */}
         <Route element={<PublicRoute />}>
           <Route path="/login" element={<Login />} />
+          <Route path="/worker-login" element={<WorkerLoginPage />} />
+          <Route path="/worker-activate" element={<WorkerPinSetupPage />} />
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
@@ -89,21 +106,74 @@ export const AppRouter: React.FC = () => {
           <Route path="/shop-setup" element={<ShopRegistration />} />
         </Route>
 
-        {/* Protected Application Routes - Requires login and active shop */}
+        {/* Protected Application Routes - Requires login and active shop (or worker session) */}
         <Route element={<ProtectedRoute requireShop={true} />}>
           <Route element={<MainLayout />}>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/customers" element={<CustomerListPage />} />
-            <Route path="/customers/:id" element={<CustomerListPage />} />
-            <Route path="/inventory" element={<ProductListPage />} />
-            <Route path="/sales" element={<SalesListPage />} />
-            <Route path="/sales/new" element={<NewSale />} />
-            <Route path="/payments" element={<PaymentsListPage />} />
-            <Route path="/payments/receive" element={<ReceivePaymentPage />} />
-            <Route path="/ledger" element={<LedgerPage />} />
-            <Route path="/reports" element={<Reports />} />
+            <Route path="/" element={<DashboardRouter />} />
+            
+            <Route path="/customers" element={
+              <PermissionGuard module="customers" action="view">
+                <CustomerListPage />
+              </PermissionGuard>
+            } />
+            <Route path="/customers/:id" element={
+              <PermissionGuard module="customers" action="view">
+                <CustomerListPage />
+              </PermissionGuard>
+            } />
+            
+            <Route path="/inventory" element={
+              <PermissionGuard module="inventory" action="view">
+                <ProductListPage />
+              </PermissionGuard>
+            } />
+            <Route path="/inventory/new" element={
+              <PermissionGuard module="inventory" action="add">
+                <ProductListPage />
+              </PermissionGuard>
+            } />
+
+            <Route path="/sales" element={
+              <PermissionGuard module="sales" action="view">
+                <SalesListPage />
+              </PermissionGuard>
+            } />
+            <Route path="/sales/new" element={
+              <PermissionGuard module="sales" action="create">
+                <NewSale />
+              </PermissionGuard>
+            } />
+
+            <Route path="/payments" element={
+              <PermissionGuard module="payments" action="view">
+                <PaymentsListPage />
+              </PermissionGuard>
+            } />
+            <Route path="/payments/receive" element={
+              <PermissionGuard module="payments" action="receive">
+                <ReceivePaymentPage />
+              </PermissionGuard>
+            } />
+
+            <Route path="/ledger" element={
+              <PermissionGuard module="customers" action="ledger">
+                <LedgerPage />
+              </PermissionGuard>
+            } />
+
+            <Route path="/reports" element={
+              <PermissionGuard module="reports">
+                <Reports />
+              </PermissionGuard>
+            } />
+
             <Route path="/ai-assistant" element={<AIAssistantPage />} />
-            <Route path="/settings" element={<SettingsPage />} />
+
+            <Route path="/settings" element={
+              <PermissionGuard module="settings">
+                <SettingsPage />
+              </PermissionGuard>
+            } />
           </Route>
         </Route>
 

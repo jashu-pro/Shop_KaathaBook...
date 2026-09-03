@@ -5,6 +5,8 @@ import { RepositoryFactory } from '../../../repositories/RepositoryFactory';
 import { useAuthStore } from '../../../stores/authStore';
 import { EventBus } from '../../../services/EventBus';
 
+import { useWorkerStore } from '../../staff/stores/workerStore';
+
 export const useSales = () => {
   const { shop } = useAuthStore();
   const [sales, setSales] = useState<Sale[]>([]);
@@ -48,6 +50,18 @@ export const useSales = () => {
     EventBus.publish('sales:changed', created);
     EventBus.publish('ledger:changed');
     EventBus.publish('customers:changed');
+
+    try {
+      await useWorkerStore.getState().recordWorkerActivity(
+        shop.id,
+        `Created Sale (${dto.items.length} items)`,
+        'sale',
+        dto.totalAmount
+      );
+    } catch {
+      // Non-blocking
+    }
+
     return created;
   };
 

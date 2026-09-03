@@ -35,9 +35,10 @@ export interface Sale {
   discountAmount: number;
   totalAmount: number;
   amountPaid: number;
-  paymentStatus: 'paid' | 'partially_paid' | 'unpaid';
+  paymentStatus: 'paid' | 'partially_paid' | 'unpaid' | 'voided';
   paymentMethod?: string;
   billImageUrl?: string;
+  billImageUrls?: string[];
   notes?: string;
   items?: SaleItem[];
   createdAt: string;
@@ -55,16 +56,19 @@ export interface CreateSaleItemDTO {
 export interface CreateSaleDTO {
   customerId?: string;
   invoiceNo?: string;
+  saleDate?: string;
   subtotal: number;
   discountAmount?: number;
   taxAmount?: number;
   totalAmount: number;
   amountPaid: number;
-  paymentStatus: 'paid' | 'partially_paid' | 'unpaid';
+  paymentStatus: 'paid' | 'partially_paid' | 'unpaid' | 'voided';
   paymentMethod?: string;
   billImageUrl?: string;
+  billImageUrls?: string[];
   notes?: string;
   items: CreateSaleItemDTO[];
 }
+
 
 export type SalesFilterTab = 'all' | 'unpaid' | 'partially_paid' | 'paid';

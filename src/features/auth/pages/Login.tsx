@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { Eye, EyeOff, Lock, Mail, Phone, ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { Eye, EyeOff, Lock, Mail } from 'lucide-react';
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
@@ -12,13 +12,6 @@ const Login: React.FC = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
-
-  // Phone Login Modal state
-  const [showPhoneModal, setShowPhoneModal] = useState(false);
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [otpCode, setOtpCode] = useState('');
-  const [otpSent, setOtpSent] = useState(false);
-  const [phoneSuccess, setPhoneSuccess] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,36 +35,6 @@ const Login: React.FC = () => {
       navigate('/');
     } catch (err: any) {
       setLocalError(err.message || 'Google Sign-In failed');
-    }
-  };
-
-  const handleSendOtp = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!phoneNumber || phoneNumber.length < 10) {
-      setLocalError('Please enter a valid 10-digit mobile number');
-      return;
-    }
-    setLocalError(null);
-    setOtpSent(true);
-  };
-
-  const handleVerifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!otpCode || otpCode.length < 4) {
-      setLocalError('Please enter valid 4-digit OTP code');
-      return;
-    }
-    setLocalError(null);
-    try {
-      // Log in demo merchant for phone OTP verification
-      await login('demo.merchant@khattabook.com', 'password123');
-      setPhoneSuccess(true);
-      setTimeout(() => {
-        setShowPhoneModal(false);
-        navigate('/');
-      }, 600);
-    } catch (err: any) {
-      setLocalError(err.message || 'OTP Verification failed');
     }
   };
 
@@ -197,15 +160,25 @@ const Login: React.FC = () => {
           <span>Continue with Google</span>
         </button>
 
-        {/* Continue with Phone */}
+        {/* Worker Space PIN Login */}
         <button
-          onClick={() => setShowPhoneModal(true)}
+          type="button"
+          onClick={() => navigate('/worker-login')}
           className="btn btn-secondary"
-          style={{ width: '100%', marginBottom: '1.75rem', padding: '0.75rem', gap: '0.65rem', justifyContent: 'center' }}
-          disabled={isLoading}
+          style={{
+            width: '100%',
+            marginBottom: '1.75rem',
+            padding: '0.75rem',
+            gap: '0.65rem',
+            justifyContent: 'center',
+            borderColor: '#0284C7',
+            backgroundColor: 'rgba(2, 132, 199, 0.06)',
+            color: '#0284C7',
+            fontWeight: '700',
+          }}
         >
-          <Phone size={18} style={{ color: 'var(--primary)' }} />
-          <span>Continue with Phone</span>
+          <span style={{ fontSize: '1.1rem' }}>👷</span>
+          <span>Worker Space (PIN Login)</span>
         </button>
 
         {/* Create Account Link */}
@@ -217,87 +190,6 @@ const Login: React.FC = () => {
         </div>
       </div>
 
-      {/* Phone OTP Modal */}
-      {showPhoneModal && (
-        <div className="modal-overlay">
-          <div className="modal-content glass-panel" style={{ padding: '2rem', backgroundColor: 'var(--bg-card)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-              <h3 style={{ fontSize: '1.15rem', fontWeight: '800', color: 'var(--text-heading)' }}>
-                Phone Number Verification
-              </h3>
-              <button onClick={() => setShowPhoneModal(false)} className="btn btn-ghost btn-icon">
-                ✕
-              </button>
-            </div>
-
-            {phoneSuccess ? (
-              <div style={{ textAlign: 'center', padding: '1.5rem 0' }}>
-                <CheckCircle2 size={48} style={{ color: 'var(--primary)', margin: '0 auto 0.75rem auto' }} />
-                <h4 style={{ fontSize: '1.1rem', fontWeight: '700', color: 'var(--text-heading)' }}>Verification Successful</h4>
-                <p style={{ color: 'var(--text-body)', fontSize: '0.85rem', marginTop: '0.25rem' }}>Logging into your shop...</p>
-              </div>
-            ) : !otpSent ? (
-              <form onSubmit={handleSendOtp}>
-                <p style={{ color: 'var(--text-body)', fontSize: '0.875rem', marginBottom: '1rem' }}>
-                  Enter your 10-digit mobile number to receive an instant OTP verification code.
-                </p>
-
-                <div className="form-group" style={{ marginBottom: '1.25rem' }}>
-                  <label className="form-label">Mobile Number</label>
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <div style={{
-                      padding: '0.85rem 1rem', borderRadius: '18px', backgroundColor: 'var(--bg-secondary)',
-                      border: '1px solid var(--border-color)', fontWeight: '700', fontSize: '0.95rem'
-                    }}>
-                      +91
-                    </div>
-                    <input
-                      type="tel"
-                      className="input-field"
-                      placeholder="98765 43210"
-                      maxLength={10}
-                      value={phoneNumber}
-                      onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ''))}
-                    />
-                  </div>
-                </div>
-
-                <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>
-                  Send OTP Code
-                </button>
-              </form>
-            ) : (
-              <form onSubmit={handleVerifyOtp}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-                  <button type="button" onClick={() => setOtpSent(false)} className="btn btn-ghost btn-icon" style={{ padding: '0.2rem' }}>
-                    <ArrowLeft size={16} />
-                  </button>
-                  <p style={{ color: 'var(--text-body)', fontSize: '0.875rem' }}>
-                    Enter 4-digit code sent to <strong>+91 {phoneNumber}</strong>
-                  </p>
-                </div>
-
-                <div className="form-group" style={{ marginBottom: '1.25rem' }}>
-                  <label className="form-label">OTP Verification Code</label>
-                  <input
-                    type="text"
-                    className="input-field"
-                    placeholder="e.g. 1234"
-                    maxLength={6}
-                    style={{ textAlign: 'center', letterSpacing: '0.25rem', fontSize: '1.2rem', fontWeight: '800' }}
-                    value={otpCode}
-                    onChange={(e) => setOtpCode(e.target.value)}
-                  />
-                </div>
-
-                <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>
-                  Verify & Sign In
-                </button>
-              </form>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 };

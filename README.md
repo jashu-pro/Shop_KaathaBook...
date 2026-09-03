@@ -1,5 +1,7 @@
 # Shop KhattaBook
 
+> Production requires Supabase. The browser-local fallback is intended only for demos and offline prototyping; it must not be used as the source of truth for real shop data, accounts, or worker access.
+
 Shop KhattaBook is a modern digital ledger (Khata Book) SaaS application designed for Indian shop owners (Kirana stores, clothing shops, medical stores, hardware, electronics, etc.). It replaces traditional paper notebooks used for customer credit (udhaar) management and expands into a complete retail business management platform.
 
 ## Key Features
@@ -39,3 +41,14 @@ npm run dev
 ```bash
 npm run build
 ```
+
+## Production setup
+
+1. Create a Supabase project and copy `.env.example` to `.env.local`.
+2. Fill `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`. Do not put the service-role key in the frontend.
+3. Run every SQL file in `database/migrations/` in numeric order, including `016_production_finance_and_inventory.sql`.
+4. Create the `shop-assets` Storage bucket and add owner-scoped upload/read policies before enabling image uploads. If you keep the current public-URL implementation, configure that bucket as public only for non-sensitive shop logos.
+5. Configure Supabase Auth email confirmation, password reset redirect URLs, and the Google provider only if Google sign-in is enabled.
+6. Verify a full sale, partial sale, payment, void sale, void payment, stock adjustment, and worker suspension in a staging project before launch.
+
+Financial operations in the Supabase path use database functions so each sale/payment updates its related records together. Do not write directly to `sales`, `payments`, `ledger_entries`, or product stock from external clients.

@@ -1,5 +1,5 @@
 /* features/sales/components/RecordCreditSaleModal.tsx */
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   ShoppingBag, 
   X, 
@@ -11,13 +11,16 @@ import {
   Barcode, 
   Mic, 
   Printer, 
-  CheckCircle2
+  CheckCircle2,
+  Camera,
+  Image as ImageIcon,
+  ZoomIn
 } from 'lucide-react';
 import { useCustomers } from '../../customers/hooks/useCustomers';
 import { useInventory } from '../../inventory/hooks/useInventory';
 import { useSales } from '../hooks/useSales';
 import { AddCustomerModal } from '../../customers/components/AddCustomerModal';
-import { ImageUploader } from '../../../components/common/ImageUploader';
+
 
 interface LineItem {
   id: string;
@@ -63,10 +66,36 @@ export const RecordCreditSaleModal: React.FC<RecordCreditSaleModalProps> = ({
   const [paidCashNow, setPaidCashNow] = useState<string>('0');
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'phonepe' | 'gpay' | 'paytm' | 'bank'>('cash');
 
-  // Notes & Photos
+  // Notes & Multi-Image Photos (Step 47-49)
   const [notes, setNotes] = useState<string>('');
-  const [billPhotoUrl, setBillPhotoUrl] = useState<string | null>(null);
+  const [billPhotos, setBillPhotos] = useState<string[]>([]);
+  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
+  const galleryInputRef = useRef<HTMLInputElement | null>(null);
+  const cameraInputRef = useRef<HTMLInputElement | null>(null);
   const [sendWhatsApp, setSendWhatsApp] = useState<boolean>(true);
+
+  const handleAddPhotos = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    Array.from(files).forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = (uploadEvent) => {
+        const result = uploadEvent.target?.result as string;
+        if (result) {
+          setBillPhotos((prev) => [...prev, result]);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+
+    e.target.value = '';
+  };
+
+  const handleRemovePhoto = (index: number) => {
+    setBillPhotos((prev) => prev.filter((_, i) => i !== index));
+  };
+
 
   // Submission & Success Confirmation State
   const [submitting, setSubmitting] = useState<boolean>(false);
@@ -182,7 +211,8 @@ export const RecordCreditSaleModal: React.FC<RecordCreditSaleModalProps> = ({
         amountPaid: actualPaid,
         paymentStatus: actualPaid >= grandTotal ? 'paid' : actualPaid > 0 ? 'partially_paid' : 'unpaid',
         paymentMethod: paymentMethod,
-        billImageUrl: billPhotoUrl || undefined,
+        billImageUrl: billPhotos[0] || undefined,
+        billImageUrls: billPhotos,
         notes: notes || undefined,
         items: validItems.map((item) => ({
           productId: item.productId || item.id,
@@ -708,13 +738,200 @@ export const RecordCreditSaleModal: React.FC<RecordCreditSaleModalProps> = ({
                   />
                 </div>
 
-                {/* Camera / Photo Attachment */}
-                <ImageUploader
-                  value={billPhotoUrl}
-                  onChange={(val) => setBillPhotoUrl(val)}
-                  variant="logo"
-                  label="📷 Capture Bill / 🖼 Gallery Photo"
-                />
+                {/* Multi-Image Attachments Studio (Step 47-49) */}
+                <div style={{ backgroundColor: '#F8FAFC', borderRadius: '16px', padding: '0.85rem', border: '1px solid #E2E8F0' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                    <label style={{ fontSize: '0.8rem', fontWeight: '800', color: '#334155', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                      <Camera size={14} style={{ color: '#059669' }} />
+                      Bill & Receipt Attachments ({billPhotos.length})
+                    </label>
+                    <span style={{ fontSize: '0.7rem', color: '#64748B' }}>Multiple images supported</span>
+                  </div>
+
+                  {/* Hidden inputs for Camera and Gallery */}
+                  <input
+                    ref={galleryInputRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    style={{ display: 'none' }}
+                    onChange={handleAddPhotos}
+                  />
+                  <input
+                    ref={cameraInputRef}
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    style={{ display: 'none' }}
+                    onChange={handleAddPhotos}
+                  />
+
+                  {/* Action buttons: Camera vs Gallery */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: billPhotos.length > 0 ? '0.75rem' : 0 }}>
+                    <button
+                      type="button"
+                      onClick={() => cameraInputRef.current?.click()}
+                      style={{
+                        padding: '0.55rem',
+                        borderRadius: '12px',
+                        border: '1.5px solid #10B981',
+                        backgroundColor: '#ECFDF5',
+                        color: '#047857',
+                        fontWeight: '700',
+                        fontSize: '0.775rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.35rem',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <Camera size={15} /> 📸 Camera
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => galleryInputRef.current?.click()}
+                      style={{
+                        padding: '0.55rem',
+                        borderRadius: '12px',
+                        border: '1.5px solid #CBD5E1',
+                        backgroundColor: '#FFFFFF',
+                        color: '#475569',
+                        fontWeight: '700',
+                        fontSize: '0.775rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.35rem',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <ImageIcon size={15} /> 🖼️ Gallery
+                    </button>
+                  </div>
+
+                  {/* Thumbnails Gallery Tray */}
+                  {billPhotos.length > 0 && (
+                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.4rem' }}>
+                      {billPhotos.map((photo, idx) => (
+                        <div
+                          key={idx}
+                          style={{
+                            position: 'relative',
+                            width: '64px',
+                            height: '64px',
+                            borderRadius: '12px',
+                            overflow: 'hidden',
+                            border: '1.5px solid #CBD5E1',
+                            backgroundColor: '#FFFFFF',
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.06)'
+                          }}
+                        >
+                          <img
+                            src={photo}
+                            alt={`Bill Attachment ${idx + 1}`}
+                            onClick={() => setLightboxImage(photo)}
+                            style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'pointer' }}
+                          />
+                          <button
+                            type="button"
+                            title="View Larger"
+                            onClick={() => setLightboxImage(photo)}
+                            style={{
+                              position: 'absolute',
+                              bottom: '2px',
+                              right: '2px',
+                              width: '18px',
+                              height: '18px',
+                              borderRadius: '4px',
+                              backgroundColor: 'rgba(15, 23, 42, 0.75)',
+                              color: '#FFFFFF',
+                              border: 'none',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              cursor: 'pointer',
+                              padding: 0
+                            }}
+                          >
+                            <ZoomIn size={11} />
+                          </button>
+                          <button
+                            type="button"
+                            title="Remove photo"
+                            onClick={() => handleRemovePhoto(idx)}
+                            style={{
+                              position: 'absolute',
+                              top: '2px',
+                              right: '2px',
+                              width: '18px',
+                              height: '18px',
+                              borderRadius: '50%',
+                              backgroundColor: '#EF4444',
+                              color: '#FFFFFF',
+                              border: 'none',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              cursor: 'pointer',
+                              padding: 0
+                            }}
+                          >
+                            <X size={11} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Lightbox Modal */}
+                {lightboxImage && (
+                  <div
+                    onClick={() => setLightboxImage(null)}
+                    style={{
+                      position: 'fixed',
+                      inset: 0,
+                      backgroundColor: 'rgba(0,0,0,0.85)',
+                      zIndex: 1100,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '1.5rem'
+                    }}
+                  >
+                    <div style={{ position: 'relative', maxWidth: '90vw', maxHeight: '90vh' }} onClick={(e) => e.stopPropagation()}>
+                      <img
+                        src={lightboxImage}
+                        alt="Enlarged Attachment"
+                        style={{ maxWidth: '100%', maxHeight: '80vh', borderRadius: '16px', objectFit: 'contain', display: 'block' }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setLightboxImage(null)}
+                        style={{
+                          position: 'absolute',
+                          top: '-12px',
+                          right: '-12px',
+                          width: '32px',
+                          height: '32px',
+                          borderRadius: '50%',
+                          backgroundColor: '#FFFFFF',
+                          color: '#0F172A',
+                          border: 'none',
+                          fontWeight: '800',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          cursor: 'pointer',
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
+                        }}
+                      >
+                        <X size={18} />
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 {/* 13. Auto WhatsApp Toggle (ON / OFF) */}
                 <div

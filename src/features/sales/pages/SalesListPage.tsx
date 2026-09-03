@@ -127,7 +127,7 @@ export const SalesListPage: React.FC = () => {
             style={{ borderRadius: '14px', padding: '0.65rem 1.25rem', fontWeight: '800', fontSize: '0.875rem', backgroundColor: '#059669' }}
           >
             <Plus size={18} />
-            <span>+ New Sale (POS)</span>
+            <span>New Sale (POS)</span>
           </button>
         </div>
       </div>

@@ -155,7 +155,7 @@ export const PaymentsListPage: React.FC = () => {
             style={{ borderRadius: '14px', padding: '0.65rem 1.25rem', fontWeight: '800', fontSize: '0.875rem', backgroundColor: '#059669' }}
           >
             <Plus size={18} />
-            <span>+ Receive Payment</span>
+            <span>Receive Payment</span>
           </button>
         </div>
       </div>

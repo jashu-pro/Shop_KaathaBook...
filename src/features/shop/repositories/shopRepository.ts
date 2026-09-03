@@ -5,6 +5,7 @@ import { LocalStorageDB } from '../../../services/localStorageDB';
 
 export interface IShopRepository {
   getShopByOwner(ownerId: string): Promise<Shop | null>;
+  getShopById(shopId: string): Promise<Shop | null>;
   createShop(ownerId: string, shopData: CreateShopDTO): Promise<Shop>;
   updateShop(shopId: string, updates: Partial<Shop>): Promise<Shop>;
 }
@@ -63,6 +64,18 @@ export class SupabaseShopRepository implements IShopRepository {
       .from('shops')
       .select('*')
       .eq('owner_id', ownerId)
+      .maybeSingle();
+
+    if (error || !data) return null;
+    return this.mapEntityToDomain(data);
+  }
+
+  async getShopById(shopId: string): Promise<Shop | null> {
+    if (!supabase) return null;
+    const { data, error } = await supabase
+      .from('shops')
+      .select('*')
+      .eq('id', shopId)
       .maybeSingle();
 
     if (error || !data) return null;
@@ -170,6 +183,12 @@ export class LocalShopRepository implements IShopRepository {
 
   async getShopByOwner(ownerId: string): Promise<Shop | null> {
     const data = await LocalStorageDB.selectOne('shops', (s: any) => s.owner_id === ownerId);
+    if (!data) return null;
+    return this.mapEntityToDomain(data);
+  }
+
+  async getShopById(shopId: string): Promise<Shop | null> {
+    const data = await LocalStorageDB.selectOne('shops', (s: any) => s.id === shopId);
     if (!data) return null;
     return this.mapEntityToDomain(data);
   }

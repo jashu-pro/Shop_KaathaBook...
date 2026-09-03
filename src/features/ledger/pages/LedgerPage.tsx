@@ -124,7 +124,7 @@ const LedgerPage: React.FC = () => {
             style={{ borderRadius: '14px', padding: '0.65rem 1rem', fontWeight: '700', fontSize: '0.825rem', backgroundColor: '#10B981' }}
           >
             <CreditCard size={16} />
-            <span>+ Got Payment (Jama)</span>
+            <span>Got Payment (Jama)</span>
           </button>
 
           <button
@@ -133,7 +133,7 @@ const LedgerPage: React.FC = () => {
             style={{ borderRadius: '14px', padding: '0.65rem 1.15rem', fontWeight: '700', fontSize: '0.85rem', backgroundColor: '#059669' }}
           >
             <Plus size={18} />
-            <span>+ Gave Credit (Udhaar)</span>
+            <span>Gave Credit (Udhaar)</span>
           </button>
         </div>
       </div>

@@ -1,6 +1,6 @@
 /* features/payments/types/index.ts */
 
-export type PaymentMode = 'cash' | 'phonepe' | 'gpay' | 'paytm' | 'bank_transfer';
+export type PaymentMode = 'cash' | 'phonepe' | 'gpay' | 'paytm' | 'bank_transfer' | 'upi' | 'card';
 export type PaymentType = 'full' | 'partial';
 
 export interface Payment {
@@ -22,6 +22,7 @@ export interface CreatePaymentDTO {
   customerId: string;
   amount: number;
   paymentMethod: PaymentMode;
+  paymentDate?: string;
   referenceNo?: string;
   proofImageUrl?: string;
   notes?: string;

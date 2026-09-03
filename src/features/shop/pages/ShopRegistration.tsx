@@ -43,9 +43,8 @@ export const ShopRegistration: React.FC = () => {
   const [pincode, setPincode] = useState('');
   const [phone, setPhone] = useState(user?.email ? '' : '');
 
-  // STEP 3 — Financial & Credit Rules
+  // STEP 3 — Financial & Tax Details
   const currency = 'INR';
-  const [creditPeriod, setCreditPeriod] = useState<number>(15);
   const [gstin, setGstin] = useState('');
 
   // STEP 4 — Payment & Digital UPI Setup
@@ -74,7 +73,7 @@ export const ShopRegistration: React.FC = () => {
   // STEP 1 Validation
   const validateStep1 = (): boolean => {
     if (!shopName.trim()) {
-      setLocalError('Please enter your Business / Shop Name');
+      setLocalError('Shop Name is required');
       return false;
     }
     if (!businessCategory) {
@@ -87,23 +86,23 @@ export const ShopRegistration: React.FC = () => {
   // STEP 2 Validation
   const validateStep2 = (): boolean => {
     if (!address.trim()) {
-      setLocalError('Please enter Shop Address');
+      setLocalError('Shop Address is required');
       return false;
     }
     if (!city.trim()) {
-      setLocalError('Please enter City / Town');
+      setLocalError('City / Town is required');
       return false;
     }
     if (!state) {
       setLocalError('Please select your State');
       return false;
     }
-    if (!pincode.trim() || !/^\d{6}$/.test(pincode.trim())) {
+    if (!pincode.trim() || pincode.trim().length !== 6) {
       setLocalError('Please enter a valid 6-digit Pincode');
       return false;
     }
     if (!phone.trim() || phone.trim().length < 10) {
-      setLocalError('Please enter a valid 10-digit primary phone number');
+      setLocalError('Please enter a valid 10-digit primary Phone Number');
       return false;
     }
     return true;
@@ -163,17 +162,15 @@ export const ShopRegistration: React.FC = () => {
       await registerShop({
         name: shopName.trim(),
         businessType: businessCategory,
-        address: address.trim(),
-        city: city.trim(),
-        state: state,
-        pincode: pincode.trim(),
-        phone: phone.trim(),
-        currency: currency,
-        defaultCreditPeriod: creditPeriod,
-        gstin: gstin.trim() ? gstin.trim().toUpperCase() : undefined,
+        phone: phone.trim() || undefined,
+        address: address.trim() || undefined,
+        city: city.trim() || undefined,
+        state: state || undefined,
+        pincode: pincode.trim() || undefined,
+        gstin: gstin.trim() || undefined,
         upiId: upiId.trim() || undefined,
-        logoUrl: qrCodePoster || undefined,
-        theme: 'light',
+        currency,
+        theme: 'dark',
         language: 'en',
       });
 
@@ -194,7 +191,7 @@ export const ShopRegistration: React.FC = () => {
   const stepTitles = [
     { number: 1, title: 'Business Identity', icon: Building2 },
     { number: 2, title: 'Location & Address', icon: MapPin },
-    { number: 3, title: 'Financial Rules', icon: CalendarDays },
+    { number: 3, title: 'Financial & Tax', icon: CalendarDays },
     { number: 4, title: 'UPI Setup', icon: QrCode },
     { number: 5, title: 'Review & Activate', icon: ShieldCheck },
   ];
@@ -464,15 +461,15 @@ export const ShopRegistration: React.FC = () => {
               )}
 
               {/* ======================================================== */}
-              {/* STEP 3: FINANCIAL & CREDIT RULES                         */}
+              {/* STEP 3: FINANCIAL & TAX DETAILS                          */}
               {/* ======================================================== */}
               {step === 3 && (
                 <div>
                   <h3 style={{ fontSize: '1.2rem', fontWeight: '800', color: 'var(--text-heading)', marginBottom: '0.35rem' }}>
-                    Step 3: Financial & Credit Rules
+                    Step 3: Financial & Tax Details
                   </h3>
                   <p style={{ color: 'var(--text-body)', fontSize: '0.875rem', marginBottom: '1.5rem' }}>
-                    Configure default credit rules for customer Udhaar calculations.
+                    Configure currency and optional tax registration details for your shop.
                   </p>
 
                   <div className="form-group" style={{ marginBottom: '1.25rem' }}>
@@ -483,35 +480,6 @@ export const ShopRegistration: React.FC = () => {
                       value="Indian Rupee (INR ₹)"
                       disabled
                     />
-                  </div>
-
-                  <div className="form-group" style={{ marginBottom: '1.5rem' }}>
-                    <label className="form-label">Default Customer Credit Period</label>
-                    <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
-                      {[7, 15, 30].map((days) => {
-                        const isSelected = creditPeriod === days;
-                        return (
-                          <button
-                            key={days}
-                            type="button"
-                            onClick={() => setCreditPeriod(days)}
-                            style={{
-                              flex: 1,
-                              padding: '0.85rem',
-                              borderRadius: '16px',
-                              border: isSelected ? '2px solid var(--primary)' : '1px solid var(--border-color)',
-                              backgroundColor: isSelected ? 'var(--primary-light)' : 'var(--bg-card)',
-                              color: isSelected ? 'var(--primary)' : 'var(--text-heading)',
-                              fontWeight: '700',
-                              cursor: 'pointer',
-                              fontSize: '0.95rem'
-                            }}
-                          >
-                            {days} Days
-                          </button>
-                        );
-                      })}
-                    </div>
                   </div>
 
                   <div className="form-group" style={{ marginBottom: '1rem' }}>
@@ -646,9 +614,8 @@ export const ShopRegistration: React.FC = () => {
                       >
                         <Edit3 size={14} /> Edit
                       </button>
-                      <h4 style={{ fontSize: '0.85rem', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>FINANCIAL</h4>
+                      <h4 style={{ fontSize: '0.85rem', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>FINANCIAL & TAX</h4>
                       <p style={{ fontWeight: '700', fontSize: '0.95rem', color: 'var(--text-heading)' }}>Currency: INR ₹</p>
-                      <p style={{ fontSize: '0.85rem', color: 'var(--text-body)', marginTop: '0.15rem' }}>Credit Period: {creditPeriod} Days</p>
                       <p style={{ fontSize: '0.85rem', color: 'var(--text-body)', marginTop: '0.15rem' }}>GSTIN: {gstin || 'Not Provided'}</p>
                     </div>
 

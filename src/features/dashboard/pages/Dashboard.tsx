@@ -365,13 +365,13 @@ export const Dashboard: React.FC = () => {
             style={{
               backgroundColor: '#10B981',
               color: '#FFFFFF',
-              padding: '0.55rem 1rem',
-              borderRadius: '14px',
-              fontWeight: '800',
+              padding: '0.55rem 1.15rem',
+              borderRadius: '12px',
+              fontWeight: '700',
               fontSize: '0.85rem',
               display: 'flex',
               alignItems: 'center',
-              gap: '0.35rem',
+              gap: '0.4rem',
               border: 'none',
               cursor: 'pointer',
               boxShadow: '0 4px 14px rgba(16, 185, 129, 0.3)',
@@ -379,7 +379,7 @@ export const Dashboard: React.FC = () => {
             }}
           >
             <Plus size={16} />
-            <span>+ New Sale</span>
+            <span>New Sale</span>
           </button>
 
           <button
@@ -604,7 +604,7 @@ export const Dashboard: React.FC = () => {
             }}
           >
             <Plus size={16} />
-            <span>+ New Credit Sale</span>
+            <span>New Credit Sale</span>
           </button>
 
           {/* Action 2: Receive Payment */}

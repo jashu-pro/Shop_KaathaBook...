@@ -3,7 +3,8 @@
 type LogLevel = 'DEBUG' | 'INFO' | 'WARN' | 'ERROR';
 
 class LoggerService {
-  private isDevelopment = import.meta.env.DEV;
+  private isDevelopment = typeof import.meta !== 'undefined' && (import.meta as any).env ? (import.meta as any).env.DEV : true;
+
 
   private formatMessage(level: LogLevel, message: string): string {
     const timestamp = new Date().toISOString();

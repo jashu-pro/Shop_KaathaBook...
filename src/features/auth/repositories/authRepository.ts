@@ -2,7 +2,6 @@
 import type { User } from '../types';
 import { supabase } from '../../../config/supabase';
 import { LocalStorageDB } from '../../../services/localStorageDB';
-import { Logger } from '../../../services/Logger';
 
 export interface IAuthRepository {
   getCurrentUser(): Promise<User | null>;
@@ -154,26 +153,7 @@ export class LocalAuthRepository implements IAuthRepository {
   }
 
   async signInWithGoogle(): Promise<User> {
-    const user: User = {
-      id: 'google-mock-user-123',
-      email: 'merchant.google@gmail.com',
-      fullName: 'Demo Google Merchant',
-      avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=merchant',
-    };
-
-    // Save profile to local storage DB if not existing
-    const existing = await LocalStorageDB.selectOne('profiles', (p: any) => p.id === user.id);
-    if (!existing) {
-      await LocalStorageDB.insert('profiles', {
-        id: user.id,
-        email: user.email,
-        full_name: user.fullName,
-        avatar_url: user.avatarUrl,
-      });
-    }
-
-    localStorage.setItem(this.activeUserKey, JSON.stringify(user));
-    return user;
+    throw new Error('Google sign-in requires a configured Supabase project.');
   }
 
   async signOut(): Promise<void> {
@@ -181,10 +161,8 @@ export class LocalAuthRepository implements IAuthRepository {
   }
 
   async resetPassword(email: string): Promise<void> {
-    const profile = await LocalStorageDB.selectOne('profiles', (p: any) => p.email === email);
-    if (!profile) {
-      throw new Error('Email not found');
-    }
-    Logger.info(`LocalAuth: Password reset link simulated to ${email}`);
+    void email;
+    // In local mode, simulate email dispatch with realistic delay
+    await new Promise(resolve => setTimeout(resolve, 400));
   }
 }

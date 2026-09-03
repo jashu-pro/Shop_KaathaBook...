@@ -132,7 +132,7 @@ export const ProductListPage: React.FC = () => {
             style={{ padding: '0.75rem 1.15rem', borderRadius: '18px', fontWeight: '700', gap: '0.4rem' }}
           >
             <FolderPlus size={18} />
-            <span>+ Category</span>
+            <span>Category</span>
           </button>
 
           <button
@@ -144,7 +144,7 @@ export const ProductListPage: React.FC = () => {
             style={{ padding: '0.75rem 1.35rem', borderRadius: '18px', fontWeight: '800', gap: '0.4rem' }}
           >
             <Plus size={18} />
-            <span>+ Add Product</span>
+            <span>Add Product</span>
           </button>
         </div>
       </div>

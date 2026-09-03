@@ -124,7 +124,7 @@ export const CustomerListPage: React.FC = () => {
           style={{ padding: '0.75rem 1.35rem', gap: '0.5rem', borderRadius: '18px', fontWeight: '800' }}
         >
           <UserPlus size={18} />
-          <span>+ Add Customer</span>
+          <span>Add Customer</span>
         </button>
       </div>
 

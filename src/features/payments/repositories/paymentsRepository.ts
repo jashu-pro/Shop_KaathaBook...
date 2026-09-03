@@ -55,49 +55,26 @@ export class SupabasePaymentRepository implements IPaymentRepository {
   async createPayment(shopId: string, dto: CreatePaymentDTO): Promise<Payment> {
     if (!supabase) throw new Error('Supabase client not initialized');
 
-    const { data, error } = await supabase
-      .from('payments')
-      .insert({
-        shop_id: shopId,
-        customer_id: dto.customerId,
-        amount: dto.amount,
-        payment_method: dto.paymentMethod,
-        reference_no: dto.referenceNo || null,
-        proof_image_url: dto.proofImageUrl || null,
-        notes: dto.notes || null,
-      })
-      .select('*, customers(name, phone)')
-      .single();
-
-    if (error || !data) throw error || new Error('Failed to record payment');
-
-    // Deduct payment amount from customer's current balance (Udhaar)
-    const { data: cust } = await supabase.from('customers').select('current_balance').eq('id', dto.customerId).maybeSingle();
-    let newBalance = 0;
-    if (cust) {
-      newBalance = Math.max(0, Number(cust.current_balance || 0) - dto.amount);
-      await supabase.from('customers').update({ current_balance: newBalance }).eq('id', dto.customerId);
-    }
-
-    // Insert Credit (Jama) entry into ledger_entries table
-    await supabase.from('ledger_entries').insert({
-      shop_id: shopId,
-      customer_id: dto.customerId,
-      entry_date: new Date().toISOString(),
-      entry_type: 'credit',
-      amount: dto.amount,
-      balance_after: newBalance,
-      description: dto.notes || `Payment Received (${(dto.paymentMethod || 'cash').toUpperCase()}) ${dto.referenceNo ? `#${dto.referenceNo}` : ''}`,
-      reference_type: 'payment',
-      reference_id: data.id,
+    const { data: paymentId, error } = await supabase.rpc('record_payment', {
+      p_shop_id: shopId,
+      p_customer_id: dto.customerId,
+      p_amount: dto.amount,
+      p_payment_method: dto.paymentMethod,
+      p_reference_no: dto.referenceNo || null,
+      p_proof_image_url: dto.proofImageUrl || null,
+      p_notes: dto.notes || null,
     });
+    if (error || !paymentId) throw error || new Error('Failed to record payment');
 
-    return this.mapPayment(data);
+    const payment = await this.getPaymentById(paymentId);
+    if (!payment) throw new Error('Payment was recorded but could not be loaded');
+    return payment;
   }
 
   async deletePayment(id: string): Promise<void> {
     if (!supabase) throw new Error('Supabase client not initialized');
-    await supabase.from('payments').delete().eq('id', id);
+    const { error } = await supabase.rpc('void_payment', { p_payment_id: id });
+    if (error) throw error;
   }
 }
 
@@ -131,6 +108,7 @@ export class LocalPaymentRepository implements IPaymentRepository {
   }
 
   async createPayment(shopId: string, dto: CreatePaymentDTO): Promise<Payment> {
+    if (dto.amount <= 0) throw new Error('Payment amount must be greater than zero');
     let customerName: string | undefined;
     let customerPhone: string | undefined;
     const cust = await LocalStorageDB.selectOne('customers', (c: any) => c.id === dto.customerId);
@@ -151,11 +129,9 @@ export class LocalPaymentRepository implements IPaymentRepository {
       notes: dto.notes || null,
     });
 
-    let newBalance = 0;
-    if (cust) {
-      newBalance = Math.max(0, Number(cust.current_balance || 0) - dto.amount);
-      await LocalStorageDB.update('customers', (c: any) => c.id === dto.customerId, { current_balance: newBalance });
-    }
+    if (!cust || cust.shop_id !== shopId) throw new Error('Customer does not belong to this shop');
+    const newBalance = Number(cust.current_balance || 0) - dto.amount;
+    await LocalStorageDB.update('customers', (c: any) => c.id === dto.customerId, { current_balance: newBalance });
 
     // Insert Credit (Jama) entry into ledger_entries
     await LocalStorageDB.insert('ledger_entries', {
@@ -176,6 +152,16 @@ export class LocalPaymentRepository implements IPaymentRepository {
   }
 
   async deletePayment(id: string): Promise<void> {
+    const payment: any = await LocalStorageDB.selectOne('payments', (p: any) => p.id === id);
+    if (!payment) throw new Error('Payment not found');
+    if (payment.sale_id) throw new Error('Void the associated sale instead of its immediate payment');
+    const customer: any = await LocalStorageDB.selectOne('customers', (c: any) => c.id === payment.customer_id);
+    if (customer) {
+      await LocalStorageDB.update('customers', (c: any) => c.id === payment.customer_id, {
+        current_balance: Number(customer.current_balance || 0) + Number(payment.amount || 0),
+      });
+    }
+    await LocalStorageDB.delete('ledger_entries', (entry: any) => entry.reference_id === id);
     await LocalStorageDB.delete('payments', (p: any) => p.id === id);
   }
 }

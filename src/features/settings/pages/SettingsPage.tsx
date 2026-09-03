@@ -12,8 +12,11 @@ import {
   Moon, 
   Sun, 
   Download, 
-  QrCode
+  QrCode,
+  Users,
+  Trash2
 } from 'lucide-react';
+import { LocalStorageDB } from '../../../services/localStorageDB';
 import { useAuthStore } from '../../../stores/authStore';
 import { useTheme } from '../../../providers/ThemeProvider';
 import { ImageUploader } from '../../../components/common/ImageUploader';
@@ -21,6 +24,7 @@ import { useCustomers } from '../../customers/hooks/useCustomers';
 import { useLedger } from '../../ledger/hooks/useLedger';
 import { useSales } from '../../sales/hooks/useSales';
 import { usePayments } from '../../payments/hooks/usePayments';
+import { StaffAccessSection } from '../../staff';
 
 export const SettingsPage: React.FC = () => {
   const { shop, user, updateShop, signOut } = useAuthStore();
@@ -30,7 +34,7 @@ export const SettingsPage: React.FC = () => {
   const { sales } = useSales();
   const { payments } = usePayments();
 
-  const [activeTab, setActiveTab] = useState<'profile' | 'appearance' | 'khatta' | 'backup' | 'account'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'staff' | 'appearance' | 'khatta' | 'backup' | 'account'>('profile');
 
   // Shop Profile State
   const [name, setName] = useState('');
@@ -182,6 +186,7 @@ export const SettingsPage: React.FC = () => {
       }}>
         {[
           { id: 'profile', label: 'Shop Profile', icon: Store },
+          { id: 'staff', label: '👥 Staff & Access', icon: Users },
           { id: 'appearance', label: 'Theme & Appearance', icon: Palette },
           { id: 'khatta', label: 'Khatta & UPI', icon: CreditCard },
           { id: 'backup', label: 'Data Backup', icon: Database },
@@ -215,6 +220,13 @@ export const SettingsPage: React.FC = () => {
           );
         })}
       </div>
+
+      {/* TAB: STAFF & ACCESS */}
+      {activeTab === 'staff' && (
+        <div style={{ animation: 'modal-slide 0.2s ease' }}>
+          <StaffAccessSection />
+        </div>
+      )}
 
       {/* TAB 1: SHOP PROFILE */}
       {activeTab === 'profile' && (
@@ -584,15 +596,40 @@ export const SettingsPage: React.FC = () => {
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={handleExportDataBackup}
-            className="btn btn-primary"
-            style={{ padding: '0.85rem 1.5rem', fontWeight: '800', borderRadius: '16px', gap: '0.5rem', alignSelf: 'flex-start' }}
-          >
-            <Download size={18} />
-            <span>Download Complete JSON Backup</span>
-          </button>
+          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              onClick={handleExportDataBackup}
+              className="btn btn-primary"
+              style={{ padding: '0.85rem 1.5rem', fontWeight: '800', borderRadius: '16px', gap: '0.5rem' }}
+            >
+              <Download size={18} />
+              <span>Download Complete JSON Backup</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                if (window.confirm('Are you sure you want to clean all prefilled and local storage data? This will reset the app to a completely fresh state.')) {
+                  LocalStorageDB.clearAll();
+                  localStorage.clear();
+                  window.location.href = '/login';
+                }
+              }}
+              className="btn btn-secondary"
+              style={{ 
+                padding: '0.85rem 1.5rem', 
+                fontWeight: '800', 
+                borderRadius: '16px', 
+                gap: '0.5rem',
+                borderColor: '#EF4444',
+                color: '#EF4444'
+              }}
+            >
+              <Trash2 size={18} />
+              <span>Clean All Local / Prefilled Data</span>
+            </button>
+          </div>
         </div>
       )}
 

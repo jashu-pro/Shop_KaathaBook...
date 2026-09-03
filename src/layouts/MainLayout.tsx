@@ -11,376 +11,314 @@ import {
   Sparkles, 
   Settings, 
   Plus, 
-  ChevronLeft,
   Sun, 
   Moon,
-  Wifi,
   X,
   CreditCard,
   UserPlus,
-  PackagePlus
+  PackagePlus,
+  Package,
+  LogOut
 } from 'lucide-react';
 
 import { RecordCreditSaleModal } from '../features/sales/components/RecordCreditSaleModal';
 import { OfflineBanner } from '../components/common/OfflineBanner';
+import { useWorkerPermissions, useInactivityLogout } from '../features/staff';
 
 const MainLayout: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { theme, toggleTheme } = useTheme();
-  const { shop } = useAuthStore();
+  const { shop, signOut } = useAuthStore();
+  const { isWorker, activeWorker, can, exitWorkerSpace } = useWorkerPermissions();
 
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  // Inactivity auto-logout & session revocation heartbeat for worker sessions
+  useInactivityLogout();
+
   const [onlineStatus, setOnlineStatus] = useState(true);
   const [fabMenuOpen, setFabMenuOpen] = useState(false);
   const [isRecordSaleModalOpen, setIsRecordSaleModalOpen] = useState(false);
 
-  const navItems: Array<{ to: string; label: string; icon: any; badge?: string }> = [
-    { to: '/', label: 'Dashboard', icon: LayoutDashboard },
-    { to: '/customers', label: 'Customers', icon: Users },
-    { to: '/ledger', label: 'Ledger', icon: BookOpen },
-    { to: '/reports', label: 'Reports', icon: BarChart3 },
-    { to: '/ai-assistant', label: 'AI Assistant', icon: Sparkles },
-    { to: '/settings', label: 'Settings', icon: Settings },
+
+  // Dynamic Navigation Items based on active permissions
+  const allNavItems: Array<{ to: string; label: string; icon: any; badge?: string; visible: boolean }> = [
+    { to: '/', label: 'Dashboard', icon: LayoutDashboard, visible: can('dashboard') },
+    { to: '/customers', label: 'Customers', icon: Users, visible: can('customers', 'view') },
+    { to: '/inventory', label: 'Inventory', icon: Package, visible: can('inventory', 'view') },
+    { to: '/ledger', label: 'Ledger', icon: BookOpen, visible: can('customers', 'ledger') },
+    { to: '/reports', label: 'Reports', icon: BarChart3, visible: can('reports') },
+    { to: '/ai-assistant', label: 'AI Assistant', icon: Sparkles, visible: true },
+    { to: '/settings', label: 'Settings', icon: Settings, visible: can('settings') },
   ];
 
-  const shopInitials = shop?.name ? shop.name.substring(0, 1).toUpperCase() : 'K';
+  const navItems = allNavItems.filter((i) => i.visible);
+
+  const shopInitials = isWorker && activeWorker
+    ? activeWorker.name.substring(0, 1).toUpperCase()
+    : shop?.name ? shop.name.substring(0, 1).toUpperCase() : 'K';
+
   const shopLocation = [shop?.city, shop?.state].filter(Boolean).join(', ') || '';
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: 'var(--bg-primary)', color: 'var(--text-heading)' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', backgroundColor: 'var(--bg-primary)', color: 'var(--text-heading)' }}>
       
-      {/* ------------------------------------------------------------- */}
-      {/* DESKTOP & TABLET SIDEBAR (Hidden on Mobile < 768px)          */}
-      {/* ------------------------------------------------------------- */}
-      <aside
-        className="desktop-sidebar"
-        style={{
-          width: sidebarCollapsed ? '80px' : '280px',
-          backgroundColor: 'var(--bg-card)',
-          borderRight: '1px solid var(--border-color)',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'space-between',
-          padding: '1.25rem 0.85rem',
-          transition: 'width 300ms cubic-bezier(0.4, 0, 0.2, 1)',
-          position: 'sticky',
-          top: 0,
-          height: '100vh',
-          overflow: 'hidden',
-          zIndex: 40,
-          boxShadow: '4px 0 20px rgba(15, 23, 42, 0.02)'
-        }}
-      >
-        <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflowY: 'auto', paddingRight: '2px' }}>
-          {/* Brand Header */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2rem', padding: '0 0.5rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <div style={{
-                width: '38px', height: '38px', borderRadius: '12px',
-                backgroundColor: 'var(--primary)', color: '#FFFFFF',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontWeight: '800', fontSize: '1.2rem', boxShadow: '0 4px 12px var(--primary-glow)'
-              }}>
-                K
-              </div>
-              {!sidebarCollapsed && (
-                <div>
-                  <h1 style={{ fontSize: '1.1rem', fontWeight: '800', lineHeight: 1.1, color: 'var(--text-heading)' }}>
-                    Shop KhattaBook
-                  </h1>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Credora POS SaaS</span>
-                </div>
-              )}
-            </div>
-
-            <button
-              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-              className="btn btn-secondary btn-icon"
-              style={{ padding: '0.4rem', borderRadius: '10px' }}
-              aria-label="Collapse sidebar"
-            >
-              <ChevronLeft size={18} style={{ transform: sidebarCollapsed ? 'rotate(180deg)' : 'none', transition: 'transform 300ms' }} />
-            </button>
-          </div>
-
-          {/* New Sale Quick Action Button */}
-          <button
-            onClick={() => setIsRecordSaleModalOpen(true)}
-            style={{
-              width: '100%',
-              padding: '0.85rem 1rem',
-              borderRadius: '16px',
-              fontWeight: '800',
-              fontSize: '0.95rem',
-              marginBottom: '1.5rem',
-              backgroundColor: '#059669',
-              color: '#FFFFFF',
-              border: 'none',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: sidebarCollapsed ? 'center' : 'flex-start',
-              gap: '0.4rem',
-              cursor: 'pointer',
-              boxShadow: '0 4px 14px rgba(5, 150, 105, 0.25)'
-            }}
-          >
-            <Plus size={20} />
-            {!sidebarCollapsed && <span>+ New Sale</span>}
-          </button>
-
-          {/* Nav Links */}
-          {!sidebarCollapsed && (
-            <span style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-muted)', letterSpacing: '0.05em', padding: '0 0.5rem', marginBottom: '0.75rem', display: 'block' }}>
-              MAIN MENU
-            </span>
-          )}
-
-          <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = location.pathname === item.to;
-
-              return (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: sidebarCollapsed ? 'center' : 'space-between',
-                    padding: '0.8rem 1rem',
-                    borderRadius: '16px',
-                    color: isActive ? 'var(--primary)' : 'var(--text-body)',
-                    backgroundColor: isActive ? 'var(--primary-light)' : 'transparent',
-                    fontWeight: isActive ? '700' : '500',
-                    transition: 'all 200ms',
-                    textDecoration: 'none'
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-                    <Icon size={20} style={{ color: isActive ? 'var(--primary)' : 'var(--text-muted)' }} />
-                    {!sidebarCollapsed && <span>{item.label}</span>}
-                  </div>
-
-                  {!sidebarCollapsed && item.badge && (
-                    <span style={{
-                      backgroundColor: '#8B5CF6', color: '#FFFFFF',
-                      fontSize: '0.65rem', fontWeight: '800', padding: '0.15rem 0.45rem',
-                      borderRadius: '8px', letterSpacing: '0.05em'
-                    }}>
-                      {item.badge}
-                    </span>
-                  )}
-                </NavLink>
-              );
-            })}
-          </nav>
-        </div>
-
-        {/* Sidebar Footer Shop Profile Card */}
-        <div style={{ marginTop: 'auto', flexShrink: 0, paddingTop: '0.75rem', borderTop: '1px solid var(--border-color)' }}>
-          {!sidebarCollapsed ? (
-            <div style={{
-              padding: '0.85rem',
-              borderRadius: '18px',
-              backgroundColor: 'var(--bg-secondary)',
-              border: '1px solid var(--border-color)',
-              marginBottom: '0.75rem'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <div style={{
-                  width: '36px', height: '36px', borderRadius: '50%',
-                  backgroundColor: '#047857', color: '#FFFFFF',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontWeight: '700', fontSize: '1rem'
-                }}>
-                  {shopInitials}
-                </div>
-                <div style={{ overflow: 'hidden' }}>
-                  <h4 style={{ fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-heading)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {shop?.name || 'Sri Laxmi Traders'}
-                  </h4>
-                  <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {shopLocation}
-                  </p>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div style={{
-              width: '40px', height: '40px', borderRadius: '50%',
-              backgroundColor: '#047857', color: '#FFFFFF',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontWeight: '700', margin: '0 auto 0.75rem auto'
-            }}>
-              {shopInitials}
-            </div>
-          )}
-
-          {/* Online Toggle & Theme Buttons */}
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <button
-              onClick={() => setOnlineStatus(!onlineStatus)}
-              className="btn btn-secondary"
-              style={{
-                flex: 1,
-                padding: '0.5rem',
-                fontSize: '0.75rem',
-                justifyContent: 'center',
-                color: onlineStatus ? '#10B981' : 'var(--text-muted)'
-              }}
-            >
-              <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: onlineStatus ? '#10B981' : '#94A3B8' }} />
-              {!sidebarCollapsed && (onlineStatus ? 'Online' : 'Offline')}
-            </button>
-
-            <button
-              onClick={toggleTheme}
-              className="btn btn-secondary btn-icon"
-              style={{ width: '36px', height: '36px', borderRadius: '12px' }}
-            >
-              {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
-            </button>
-          </div>
-        </div>
-      </aside>
-
-      {/* ------------------------------------------------------------- */}
-      {/* MAIN VIEWPORT CONTAINER (HEADER + MAIN CONTENT)              */}
-      {/* ------------------------------------------------------------- */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, paddingBottom: '70px' }} className="mobile-view-container">
-        
-        {/* TOP APP BAR (Shared Branding for Desktop & Mobile) */}
-        <header
+      {/* Worker Space Notification Banner (Shown when logged in as Worker) */}
+      {isWorker && activeWorker && (
+        <div
           style={{
-            height: '74px',
-            backgroundColor: 'var(--bg-card)',
-            borderBottom: '1px solid var(--border-color)',
+            backgroundColor: '#0284C7',
+            color: '#FFFFFF',
+            padding: '0.45rem 1.5rem',
+            fontSize: '0.8rem',
+            fontWeight: '700',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            padding: '0 1.5rem',
-            position: 'sticky',
-            top: 0,
-            zIndex: 30,
-            boxShadow: '0 2px 10px rgba(15, 23, 42, 0.02)'
+            gap: '1rem',
+            zIndex: 60,
           }}
         >
-          {/* Left Shop Identity */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-            <div style={{
-              width: '42px', height: '42px', borderRadius: '50%',
-              backgroundColor: '#047857', color: '#FFFFFF',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontWeight: '800', fontSize: '1.1rem', boxShadow: '0 4px 12px rgba(4, 120, 87, 0.3)'
-            }}>
-              {shopInitials}
-            </div>
-
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                <h2 style={{ fontSize: '1.05rem', fontWeight: '800', color: 'var(--text-heading)', lineHeight: 1.1 }}>
-                  {shop?.name || 'Sri Laxmi Traders'}
-                </h2>
-              </div>
-              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.25rem', marginTop: '0.15rem' }}>
-                <span>{shopLocation}</span>
-              </p>
-            </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <span style={{ fontSize: '1rem' }}>👷</span>
+            <span>
+              Worker Space: <strong>{activeWorker.name}</strong> ({activeWorker.emailOrPhone})
+            </span>
           </div>
 
-          {/* Right Action Controls */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-            {/* Online Status Badge */}
-            <div style={{
-              backgroundColor: 'rgba(16, 185, 129, 0.1)',
-              color: '#10B981',
-              padding: '0.4rem 0.75rem',
-              borderRadius: '20px',
+          <button
+            onClick={() => {
+              exitWorkerSpace();
+              navigate('/login');
+            }}
+            style={{
+              backgroundColor: 'rgba(255, 255, 255, 0.2)',
+              color: '#FFFFFF',
+              border: 'none',
+              borderRadius: '8px',
+              padding: '0.2rem 0.65rem',
+              fontSize: '0.75rem',
+              fontWeight: '700',
+              cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               gap: '0.35rem',
-              fontSize: '0.8rem',
-              fontWeight: '700'
+            }}
+          >
+            <LogOut size={13} />
+            <span>Exit to Owner Login</span>
+          </button>
+        </div>
+      )}
+
+      {/* ------------------------------------------------------------- */}
+      {/* TOP HORIZONTAL NAVBAR                                         */}
+      {/* ------------------------------------------------------------- */}
+      <header className="top-navbar">
+        {/* Left: Brand Identity */}
+        <div className="top-nav-brand-container">
+          <NavLink to="/" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', textDecoration: 'none', minWidth: 0, overflow: 'hidden' }}>
+            <div style={{
+              width: '38px', height: '38px', borderRadius: '12px', flexShrink: 0,
+              backgroundColor: isWorker ? '#0284C7' : 'var(--primary)', color: '#FFFFFF',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontWeight: '800', fontSize: '1.15rem', boxShadow: '0 4px 12px var(--primary-glow)'
             }}>
-              <Wifi size={14} />
-              <span>Online</span>
+              {isWorker ? '👷' : 'K'}
             </div>
+            <div className="top-nav-brand-text">
+              <h1 className="top-nav-brand-title">
+                Shop KhattaBook
+              </h1>
+              <span 
+                className="top-nav-brand-subtitle"
+                title={isWorker && activeWorker ? `${activeWorker.name} • Worker Space` : shop?.name || 'POS SaaS'}
+              >
+                {isWorker && activeWorker ? `${activeWorker.name} • Worker Space` : shop?.name || 'POS SaaS'}
+              </span>
+            </div>
+          </NavLink>
+        </div>
 
-            {/* AI Assistant Button */}
-            <button
-              onClick={() => navigate('/ai-assistant')}
-              style={{
-                width: '38px', height: '38px', borderRadius: '12px',
-                backgroundColor: '#8B5CF6', color: '#FFFFFF',
-                border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                cursor: 'pointer', boxShadow: '0 4px 12px rgba(139, 92, 246, 0.3)'
-              }}
-              title="AI Business Assistant"
-            >
-              <Sparkles size={18} />
-            </button>
+        {/* Center: Horizontal Navigation Links (Desktop & Tablet) */}
+        <nav className="top-nav-links">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = location.pathname === item.to;
 
-            {/* Theme Toggle Button */}
+            return (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                className={`top-nav-item ${isActive ? 'active' : ''}`}
+              >
+                <Icon size={18} style={{ color: isActive ? 'var(--primary)' : 'var(--text-muted)' }} />
+                <span>{item.label}</span>
+
+                {item.badge && (
+                  <span style={{
+                    backgroundColor: '#8B5CF6', color: '#FFFFFF',
+                    fontSize: '0.65rem', fontWeight: '800', padding: '0.1rem 0.4rem',
+                    borderRadius: '6px', letterSpacing: '0.05em'
+                  }}>
+                    {item.badge}
+                  </span>
+                )}
+              </NavLink>
+            );
+          })}
+        </nav>
+
+        {/* Right: Actions & User Controls */}
+        <div className="top-nav-actions">
+          {/* New Sale Button (Protected by permission; hidden on mobile in favor of bottom FAB) */}
+          {can('sales', 'create') && (
             <button
-              onClick={toggleTheme}
+              onClick={() => setIsRecordSaleModalOpen(true)}
+              className="btn btn-primary top-nav-btn-sale"
               style={{
-                width: '38px', height: '38px', borderRadius: '12px',
-                backgroundColor: 'var(--bg-secondary)', color: 'var(--text-heading)',
-                border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                cursor: 'pointer'
+                padding: '0.55rem 1.15rem',
+                borderRadius: '14px',
+                fontWeight: '700',
+                fontSize: '0.875rem',
+                gap: '0.4rem'
               }}
-              title="Toggle Theme"
             >
-              {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+              <Plus size={18} />
+              <span>New Sale</span>
             </button>
+          )}
+
+          {/* Online/Offline Toggle */}
+          <button
+            onClick={() => setOnlineStatus(!onlineStatus)}
+            className="btn btn-secondary top-nav-status-btn"
+            style={{
+              padding: '0.5rem 0.75rem',
+              fontSize: '0.75rem',
+              borderRadius: '12px',
+              gap: '0.35rem',
+              color: onlineStatus ? '#10B981' : 'var(--text-muted)'
+            }}
+            title="Toggle Online/Offline mode"
+          >
+            <span style={{
+              width: '8px', height: '8px', borderRadius: '50%', flexShrink: 0,
+              backgroundColor: onlineStatus ? '#10B981' : '#94A3B8',
+              boxShadow: onlineStatus ? '0 0 8px #10B981' : 'none'
+            }} />
+            <span className="online-status-text">{onlineStatus ? 'Online' : 'Offline'}</span>
+          </button>
+
+          {/* Theme Toggle Button */}
+          <button
+            onClick={toggleTheme}
+            className="btn btn-secondary btn-icon top-nav-icon-btn"
+            style={{ width: '38px', height: '38px', borderRadius: '12px' }}
+            title="Toggle Theme"
+            aria-label="Toggle theme"
+          >
+            {theme === 'dark' ? <Sun size={17} /> : <Moon size={17} />}
+          </button>
+
+          {/* Sign Out Button */}
+          <button
+            onClick={async () => {
+              if (isWorker) {
+                exitWorkerSpace();
+                navigate('/worker-login');
+              } else {
+                await signOut();
+                navigate('/login');
+              }
+            }}
+            className="btn btn-secondary btn-icon top-nav-icon-btn"
+            style={{ width: '38px', height: '38px', borderRadius: '12px', color: '#EF4444' }}
+            title="Sign Out"
+            aria-label="Sign out"
+          >
+            <LogOut size={17} />
+          </button>
+
+          {/* Shop/Worker Profile Chip */}
+          <div
+            className="top-nav-avatar"
+            style={{
+              width: '38px', height: '38px', borderRadius: '50%', flexShrink: 0,
+              backgroundColor: isWorker ? '#0284C7' : '#047857', color: '#FFFFFF',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontWeight: '800', fontSize: '0.95rem',
+              boxShadow: isWorker ? '0 2px 8px rgba(2, 132, 199, 0.3)' : '0 2px 8px rgba(4, 120, 87, 0.25)',
+              cursor: 'pointer'
+            }}
+            title={isWorker && activeWorker ? `${activeWorker.name} (Worker)` : `${shop?.name || 'Sri Laxmi Traders'}${shopLocation ? ` (${shopLocation})` : ''}`}
+          >
+            {shopInitials}
           </div>
-        </header>
+        </div>
+      </header>
 
-        {/* Offline & Sync Status Banner */}
-        <OfflineBanner />
+      {/* Offline & Sync Status Banner */}
+      <OfflineBanner />
 
-        {/* Main Content Router Outlet */}
-        <main style={{ flex: 1, padding: '1.5rem 1rem', maxWidth: '1600px', margin: '0 auto', width: '100%' }}>
-          <Outlet />
-        </main>
-      </div>
+      {/* Main Content Router Outlet */}
+      <main style={{ flex: 1, padding: '1.5rem 1rem', maxWidth: '1600px', margin: '0 auto', width: '100%' }} className="mobile-view-container">
+        <Outlet />
+      </main>
 
       {/* ------------------------------------------------------------- */}
       {/* MOBILE BOTTOM NAVIGATION BAR (Visible ONLY on Mobile < 768px)  */}
       {/* ------------------------------------------------------------- */}
       <nav className="mobile-bottom-nav">
-        <NavLink to="/" className={({ isActive }) => `mobile-nav-item ${isActive ? 'active' : ''}`}>
-          <LayoutDashboard size={20} />
-          <span>Dashboard</span>
-        </NavLink>
+        {can('dashboard') && (
+          <NavLink to="/" className={({ isActive }) => `mobile-nav-item ${isActive ? 'active' : ''}`}>
+            <LayoutDashboard size={20} />
+            <span>Dashboard</span>
+          </NavLink>
+        )}
 
-        <NavLink to="/customers" className={({ isActive }) => `mobile-nav-item ${isActive ? 'active' : ''}`}>
-          <Users size={20} />
-          <span>Customers</span>
-        </NavLink>
+        {can('customers', 'view') ? (
+          <NavLink to="/customers" className={({ isActive }) => `mobile-nav-item ${isActive ? 'active' : ''}`}>
+            <Users size={20} />
+            <span>Customers</span>
+          </NavLink>
+        ) : can('inventory', 'view') ? (
+          <NavLink to="/inventory" className={({ isActive }) => `mobile-nav-item ${isActive ? 'active' : ''}`}>
+            <Package size={20} />
+            <span>Inventory</span>
+          </NavLink>
+        ) : null}
 
         {/* Center Floating Action Button (FAB) */}
-        <div style={{ position: 'relative', display: 'flex', justifyContent: 'center' }}>
-          <button
-            onClick={() => setFabMenuOpen(!fabMenuOpen)}
-            className="mobile-fab"
-            aria-label="Quick Action Menu"
-          >
-            <Plus size={28} />
-          </button>
-        </div>
+        {can('sales', 'create') && (
+          <div style={{ position: 'relative', display: 'flex', justifyContent: 'center' }}>
+            <button
+              onClick={() => setFabMenuOpen(!fabMenuOpen)}
+              className="mobile-fab"
+              aria-label="Quick Action Menu"
+            >
+              <Plus size={28} />
+            </button>
+          </div>
+        )}
 
-        <NavLink to="/ledger" className={({ isActive }) => `mobile-nav-item ${isActive ? 'active' : ''}`}>
-          <BookOpen size={20} />
-          <span>Ledger</span>
-        </NavLink>
+        {can('customers', 'ledger') && (
+          <NavLink to="/ledger" className={({ isActive }) => `mobile-nav-item ${isActive ? 'active' : ''}`}>
+            <BookOpen size={20} />
+            <span>Ledger</span>
+          </NavLink>
+        )}
 
-        <NavLink to="/settings" className={({ isActive }) => `mobile-nav-item ${isActive ? 'active' : ''}`}>
-          <Settings size={20} />
-          <span>Settings</span>
-        </NavLink>
+        {can('settings') ? (
+          <NavLink to="/settings" className={({ isActive }) => `mobile-nav-item ${isActive ? 'active' : ''}`}>
+            <Settings size={20} />
+            <span>Settings</span>
+          </NavLink>
+        ) : (
+          <NavLink to="/ai-assistant" className={({ isActive }) => `mobile-nav-item ${isActive ? 'active' : ''}`}>
+            <Sparkles size={20} />
+            <span>AI</span>
+          </NavLink>
+        )}
       </nav>
 
       {/* ------------------------------------------------------------- */}
@@ -415,57 +353,65 @@ const MainLayout: React.FC = () => {
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem' }}>
-              <button
-                onClick={() => { setFabMenuOpen(false); setIsRecordSaleModalOpen(true); }}
-                style={{
-                  padding: '1rem', borderRadius: '18px', backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                  border: '1px solid rgba(16, 185, 129, 0.3)', color: '#10B981',
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem',
-                  fontWeight: '700', fontSize: '0.85rem', cursor: 'pointer'
-                }}
-              >
-                <Plus size={24} />
-                <span>+ New Sale</span>
-              </button>
+              {can('sales', 'create') && (
+                <button
+                  onClick={() => { setFabMenuOpen(false); setIsRecordSaleModalOpen(true); }}
+                  style={{
+                    padding: '1rem', borderRadius: '18px', backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    border: '1px solid rgba(16, 185, 129, 0.3)', color: '#10B981',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem',
+                    fontWeight: '700', fontSize: '0.85rem', cursor: 'pointer'
+                  }}
+                >
+                  <Plus size={24} />
+                  <span>New Sale</span>
+                </button>
+              )}
 
-              <button
-                onClick={() => { setFabMenuOpen(false); navigate('/payments/receive'); }}
-                style={{
-                  padding: '1rem', borderRadius: '18px', backgroundColor: 'rgba(245, 158, 11, 0.1)',
-                  border: '1px solid rgba(245, 158, 11, 0.3)', color: '#F59E0B',
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem',
-                  fontWeight: '700', fontSize: '0.85rem', cursor: 'pointer'
-                }}
-              >
-                <CreditCard size={24} />
-                <span>Receive Payment</span>
-              </button>
+              {can('payments', 'receive') && (
+                <button
+                  onClick={() => { setFabMenuOpen(false); navigate('/payments/receive'); }}
+                  style={{
+                    padding: '1rem', borderRadius: '18px', backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                    border: '1px solid rgba(245, 158, 11, 0.3)', color: '#F59E0B',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem',
+                    fontWeight: '700', fontSize: '0.85rem', cursor: 'pointer'
+                  }}
+                >
+                  <CreditCard size={24} />
+                  <span>Receive Payment</span>
+                </button>
+              )}
 
-              <button
-                onClick={() => { setFabMenuOpen(false); navigate('/customers/new'); }}
-                style={{
-                  padding: '1rem', borderRadius: '18px', backgroundColor: 'var(--bg-secondary)',
-                  border: '1px solid var(--border-color)', color: 'var(--text-heading)',
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem',
-                  fontWeight: '700', fontSize: '0.85rem', cursor: 'pointer'
-                }}
-              >
-                <UserPlus size={24} />
-                <span>Add Customer</span>
-              </button>
+              {can('customers', 'add') && (
+                <button
+                  onClick={() => { setFabMenuOpen(false); navigate('/customers'); }}
+                  style={{
+                    padding: '1rem', borderRadius: '18px', backgroundColor: 'var(--bg-secondary)',
+                    border: '1px solid var(--border-color)', color: 'var(--text-heading)',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem',
+                    fontWeight: '700', fontSize: '0.85rem', cursor: 'pointer'
+                  }}
+                >
+                  <UserPlus size={24} />
+                  <span>Add Customer</span>
+                </button>
+              )}
 
-              <button
-                onClick={() => { setFabMenuOpen(false); navigate('/inventory/new'); }}
-                style={{
-                  padding: '1rem', borderRadius: '18px', backgroundColor: 'var(--bg-secondary)',
-                  border: '1px solid var(--border-color)', color: 'var(--text-heading)',
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem',
-                  fontWeight: '700', fontSize: '0.85rem', cursor: 'pointer'
-                }}
-              >
-                <PackagePlus size={24} />
-                <span>Add Product</span>
-              </button>
+              {can('inventory', 'add') && (
+                <button
+                  onClick={() => { setFabMenuOpen(false); navigate('/inventory'); }}
+                  style={{
+                    padding: '1rem', borderRadius: '18px', backgroundColor: 'var(--bg-secondary)',
+                    border: '1px solid var(--border-color)', color: 'var(--text-heading)',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem',
+                    fontWeight: '700', fontSize: '0.85rem', cursor: 'pointer'
+                  }}
+                >
+                  <PackagePlus size={24} />
+                  <span>Add Product</span>
+                </button>
+              )}
             </div>
           </div>
         </div>

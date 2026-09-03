@@ -6,13 +6,14 @@ import {
   Copy, 
   Check, 
   Edit2, 
-  Printer, 
   Download, 
   Save, 
-  ChevronDown 
+  ChevronDown,
+  Sparkles
 } from 'lucide-react';
 import { useAuthStore } from '../../../stores/authStore';
 import { useCustomers } from '../../customers/hooks/useCustomers';
+import { PaymentPosterStudioModal } from './PaymentPosterStudioModal';
 
 interface UpiQrModalProps {
   isOpen: boolean;
@@ -30,6 +31,7 @@ export const UpiQrModal: React.FC<UpiQrModalProps> = ({ isOpen, onClose }) => {
 
   const [selectedCustomerId, setSelectedCustomerId] = useState('');
   const [customAmount, setCustomAmount] = useState('');
+  const [isPosterStudioOpen, setIsPosterStudioOpen] = useState(false);
   const qrCardRef = useRef<HTMLDivElement>(null);
 
   const shopName = shop?.name || 'Shop KhattaBook Store';
@@ -70,10 +72,6 @@ export const UpiQrModal: React.FC<UpiQrModalProps> = ({ isOpen, onClose }) => {
     navigator.clipboard.writeText(upiId);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-  };
-
-  const handlePrintPoster = () => {
-    window.print();
   };
 
   const amountVal = Number(customAmount) || 0;
@@ -433,17 +431,40 @@ export const UpiQrModal: React.FC<UpiQrModalProps> = ({ isOpen, onClose }) => {
             </div>
           </div>
 
-          {/* Bottom Actions: Print Poster | Save QR Image */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+          {/* Bottom Actions: Generate PDF Poster Studio | Save QR Image */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '0.75rem' }}>
             <button
               type="button"
-              onClick={handlePrintPoster}
+              onClick={() => setIsPosterStudioOpen(true)}
+              style={{
+                backgroundColor: '#10B981',
+                color: '#FFFFFF',
+                border: 'none',
+                borderRadius: '14px',
+                padding: '0.8rem',
+                fontSize: '0.85rem',
+                fontWeight: '800',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.45rem',
+                boxShadow: '0 4px 14px rgba(16, 185, 129, 0.35)'
+              }}
+            >
+              <Sparkles size={16} />
+              <span>Generate Poster PDF</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleDownloadQr}
               style={{
                 backgroundColor: '#FFFFFF',
                 color: '#0F172A',
                 border: '1px solid #CBD5E1',
                 borderRadius: '14px',
-                padding: '0.75rem',
+                padding: '0.8rem',
                 fontSize: '0.85rem',
                 fontWeight: '800',
                 cursor: 'pointer',
@@ -454,29 +475,6 @@ export const UpiQrModal: React.FC<UpiQrModalProps> = ({ isOpen, onClose }) => {
                 boxShadow: '0 2px 6px rgba(0,0,0,0.02)'
               }}
             >
-              <Printer size={16} />
-              <span>Print Poster</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={handleDownloadQr}
-              style={{
-                backgroundColor: '#059669',
-                color: '#FFFFFF',
-                border: 'none',
-                borderRadius: '14px',
-                padding: '0.75rem',
-                fontSize: '0.85rem',
-                fontWeight: '800',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.45rem',
-                boxShadow: '0 4px 12px rgba(5, 150, 105, 0.25)'
-              }}
-            >
               <Download size={16} />
               <span>Save QR Image</span>
             </button>
@@ -484,6 +482,16 @@ export const UpiQrModal: React.FC<UpiQrModalProps> = ({ isOpen, onClose }) => {
 
         </div>
       </div>
+
+      {/* Dedicated High-Res PDF Poster Studio Modal */}
+      {isPosterStudioOpen && (
+        <PaymentPosterStudioModal
+          isOpen={isPosterStudioOpen}
+          onClose={() => setIsPosterStudioOpen(false)}
+          initialAmount={amountVal}
+          initialCustomerName={customers.find(c => c && c.id === selectedCustomerId)?.name || ''}
+        />
+      )}
     </div>
   );
 };
