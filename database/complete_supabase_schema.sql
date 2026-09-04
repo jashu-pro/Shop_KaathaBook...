@@ -1,3 +1,7 @@
+-- Enable Essential PostgreSQL Extensions
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
 -- 001_profiles.sql
 -- User Profiles Table (linked to Supabase Auth.users)
 
