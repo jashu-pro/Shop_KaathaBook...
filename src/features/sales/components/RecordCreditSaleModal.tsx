@@ -20,6 +20,7 @@ import { useCustomers } from '../../customers/hooks/useCustomers';
 import { useInventory } from '../../inventory/hooks/useInventory';
 import { useSales } from '../hooks/useSales';
 import { AddCustomerModal } from '../../customers/components/AddCustomerModal';
+import { useTheme } from '../../../providers/ThemeProvider';
 
 
 interface LineItem {
@@ -46,6 +47,40 @@ export const RecordCreditSaleModal: React.FC<RecordCreditSaleModalProps> = ({
   const { customers, refetch: refetchCustomers } = useCustomers();
   const { products } = useInventory();
   const { createSale } = useSales();
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+
+  const themeStyles = {
+    modalBg: isDark ? '#1E293B' : '#FFFFFF',
+    modalBorder: isDark ? '#334155' : '#E2E8F0',
+    headerBg: isDark ? '#1E293B' : '#FFFFFF',
+    headerBorder: isDark ? '#334155' : '#F1F5F9',
+    title: isDark ? '#F8FAFC' : '#0F172A',
+    subtitle: isDark ? '#94A3B8' : '#64748B',
+    sectionTitle: isDark ? '#F8FAFC' : '#0F172A',
+    label: isDark ? '#CBD5E1' : '#475569',
+    cardBg: isDark ? '#0F172A' : '#F8FAFC',
+    cardBorder: isDark ? '#334155' : '#E2E8F0',
+    inputBg: isDark ? '#0F172A' : '#FFFFFF',
+    inputBorder: isDark ? '#334155' : '#CBD5E1',
+    inputText: isDark ? '#F8FAFC' : '#0F172A',
+    placeholder: isDark ? '#64748B' : '#94A3B8',
+    stepperBtnBg: isDark ? '#334155' : '#FFFFFF',
+    stepperBtnBorder: isDark ? '#475569' : '#CBD5E1',
+    stepperBtnText: isDark ? '#F8FAFC' : '#0F172A',
+    summaryBg: isDark ? '#0F172A' : '#F8FAFC',
+    summaryBorder: isDark ? '#334155' : '#F1F5F9',
+    divider: isDark ? '#334155' : '#E2E8F0',
+    chipBg: isDark ? '#1E293B' : '#F8FAFC',
+    chipBorder: isDark ? '#334155' : '#CBD5E1',
+    chipText: isDark ? '#CBD5E1' : '#475569',
+    methodBg: isDark ? '#0F172A' : '#FFFFFF',
+    methodBorder: isDark ? '#334155' : '#CBD5E1',
+    methodText: isDark ? '#CBD5E1' : '#475569',
+    dropdownBg: isDark ? '#1E293B' : '#FFFFFF',
+    dropdownBorder: isDark ? '#334155' : '#E2E8F0',
+    dropdownItemBorder: isDark ? '#334155' : '#F1F5F9',
+  };
 
   // Form States
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>(initialCustomerId);
@@ -257,13 +292,13 @@ export const RecordCreditSaleModal: React.FC<RecordCreditSaleModalProps> = ({
       animation: 'modal-slide 0.25s ease'
     }}>
       <div style={{
-        backgroundColor: '#FFFFFF',
+        backgroundColor: themeStyles.modalBg,
         borderRadius: '24px',
         maxWidth: '550px',
         width: '100%',
         maxHeight: '92vh',
-        boxShadow: '0 20px 40px rgba(0, 0, 0, 0.15)',
-        border: '1.5px solid #E2E8F0',
+        boxShadow: isDark ? '0 25px 50px -12px rgba(0, 0, 0, 0.7)' : '0 20px 40px rgba(0, 0, 0, 0.15)',
+        border: '1.5px solid ' + themeStyles.modalBorder,
         overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column'
@@ -275,24 +310,24 @@ export const RecordCreditSaleModal: React.FC<RecordCreditSaleModalProps> = ({
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          borderBottom: '1px solid #F1F5F9',
-          backgroundColor: '#FFFFFF'
+          borderBottom: '1px solid ' + themeStyles.headerBorder,
+          backgroundColor: themeStyles.headerBg
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-            <div style={{ width: '42px', height: '42px', borderRadius: '14px', backgroundColor: '#ECFDF5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ width: '42px', height: '42px', borderRadius: '14px', backgroundColor: isDark ? 'rgba(16, 185, 129, 0.15)' : '#ECFDF5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <ShoppingBag size={22} style={{ color: '#059669' }} />
             </div>
             <div>
-              <h3 style={{ fontSize: '1.3rem', fontWeight: '800', color: '#0F172A', lineHeight: 1.1 }}>
+              <h3 style={{ fontSize: '1.3rem', fontWeight: '800', color: themeStyles.title, lineHeight: 1.1 }}>
                 Record Credit Sale
               </h3>
-              <p style={{ fontSize: '0.8rem', color: '#64748B', marginTop: '0.15rem' }}>
+              <p style={{ fontSize: '0.8rem', color: themeStyles.subtitle, marginTop: '0.15rem' }}>
                 Fast itemized billing & automatic ledger sync
               </p>
             </div>
           </div>
 
-          <button onClick={onClose} style={{ border: 'none', background: 'none', color: '#64748B', cursor: 'pointer', padding: '0.3rem' }}>
+          <button onClick={onClose} style={{ border: 'none', background: 'none', color: themeStyles.subtitle, cursor: 'pointer', padding: '0.3rem' }}>
             <X size={22} />
           </button>
         </div>
@@ -310,29 +345,29 @@ export const RecordCreditSaleModal: React.FC<RecordCreditSaleModalProps> = ({
               </div>
 
               <div>
-                <h3 style={{ fontSize: '1.35rem', fontWeight: '800', color: '#0F172A' }}>
+                <h3 style={{ fontSize: '1.35rem', fontWeight: '800', color: themeStyles.title }}>
                   ✅ Sale Saved Successfully
                 </h3>
-                <p style={{ fontSize: '0.825rem', color: '#64748B', marginTop: '0.15rem' }}>
+                <p style={{ fontSize: '0.825rem', color: themeStyles.subtitle, marginTop: '0.15rem' }}>
                   Invoice #{savedSuccessRecord.invoiceNo} • Ledger & stock updated
                 </p>
               </div>
 
               {/* Summary Card */}
-              <div style={{ backgroundColor: '#F8FAFC', borderRadius: '18px', padding: '1rem 1.25rem', display: 'flex', flexDirection: 'column', gap: '0.55rem', border: '1px solid #E2E8F0', textAlign: 'left' }}>
+              <div style={{ backgroundColor: themeStyles.cardBg, borderRadius: '18px', padding: '1rem 1.25rem', display: 'flex', flexDirection: 'column', gap: '0.55rem', border: '1px solid ' + themeStyles.cardBorder, textAlign: 'left' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
-                  <span style={{ color: '#64748B' }}>Customer:</span>
-                  <span style={{ fontWeight: '800', color: '#0F172A' }}>{savedSuccessRecord.customerName}</span>
+                  <span style={{ color: themeStyles.subtitle }}>Customer:</span>
+                  <span style={{ fontWeight: '800', color: themeStyles.title }}>{savedSuccessRecord.customerName}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
-                  <span style={{ color: '#64748B' }}>Total Amount:</span>
-                  <span style={{ fontWeight: '800', color: '#0F172A' }}>₹{savedSuccessRecord.totalAmount}</span>
+                  <span style={{ color: themeStyles.subtitle }}>Total Amount:</span>
+                  <span style={{ fontWeight: '800', color: themeStyles.title }}>₹{savedSuccessRecord.totalAmount}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
-                  <span style={{ color: '#64748B' }}>Paid:</span>
+                  <span style={{ color: themeStyles.subtitle }}>Paid:</span>
                   <span style={{ fontWeight: '800', color: '#10B981' }}>₹{savedSuccessRecord.amountPaid}</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #E2E8F0', paddingTop: '0.5rem', fontSize: '1rem', fontWeight: '800' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid ' + themeStyles.divider, paddingTop: '0.5rem', fontSize: '1rem', fontWeight: '800' }}>
                   <span style={{ color: '#EF4444' }}>Outstanding Debt:</span>
                   <span style={{ color: '#EF4444' }}>₹{savedSuccessRecord.balanceOwed}</span>
                 </div>
@@ -340,7 +375,7 @@ export const RecordCreditSaleModal: React.FC<RecordCreditSaleModalProps> = ({
 
               {/* Actions */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
-                <button onClick={() => window.print()} style={{ padding: '0.75rem', borderRadius: '14px', border: '1.5px solid #CBD5E1', backgroundColor: '#FFFFFF', fontWeight: '800', fontSize: '0.825rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem' }}>
+                <button onClick={() => window.print()} style={{ padding: '0.75rem', borderRadius: '14px', border: '1.5px solid ' + themeStyles.inputBorder, backgroundColor: themeStyles.inputBg, color: themeStyles.title, fontWeight: '800', fontSize: '0.825rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem' }}>
                   <Printer size={16} /> Print Invoice
                 </button>
                 {savedSuccessRecord.customerPhone && (
@@ -388,7 +423,7 @@ export const RecordCreditSaleModal: React.FC<RecordCreditSaleModalProps> = ({
               {/* ------------------------------------------------------------- */}
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
-                  <label style={{ fontSize: '0.85rem', fontWeight: '800', color: '#0F172A' }}>
+                  <label style={{ fontSize: '0.85rem', fontWeight: '800', color: themeStyles.sectionTitle }}>
                     Select Customer *
                   </label>
                   <button
@@ -408,7 +443,7 @@ export const RecordCreditSaleModal: React.FC<RecordCreditSaleModalProps> = ({
                       padding: '0.75rem 1rem',
                       borderRadius: '16px',
                       border: '1.5px solid #059669',
-                      backgroundColor: '#ECFDF5',
+                      backgroundColor: isDark ? 'rgba(16, 185, 129, 0.12)' : '#ECFDF5',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
@@ -416,16 +451,16 @@ export const RecordCreditSaleModal: React.FC<RecordCreditSaleModalProps> = ({
                     }}
                   >
                     <div>
-                      <h4 style={{ fontSize: '0.925rem', fontWeight: '800', color: '#0F172A' }}>
+                      <h4 style={{ fontSize: '0.925rem', fontWeight: '800', color: themeStyles.title }}>
                         🔍 {selectedCustomer.name}
                       </h4>
-                      <span style={{ fontSize: '0.75rem', color: '#64748B' }}>
+                      <span style={{ fontSize: '0.75rem', color: themeStyles.subtitle }}>
                         📞 {selectedCustomer.phone || 'No Mobile'} {selectedCustomer.village ? `• ${selectedCustomer.village}` : ''}
                       </span>
                     </div>
 
                     <div style={{ textAlign: 'right' }}>
-                      <span style={{ fontSize: '0.7rem', color: '#64748B' }}>Outstanding</span>
+                      <span style={{ fontSize: '0.7rem', color: themeStyles.subtitle }}>Outstanding</span>
                       <div style={{ fontSize: '0.9rem', fontWeight: '800', color: selectedCustomer.currentBalance > 0 ? '#EF4444' : '#10B981' }}>
                         ₹{selectedCustomer.currentBalance}
                       </div>
@@ -434,7 +469,7 @@ export const RecordCreditSaleModal: React.FC<RecordCreditSaleModalProps> = ({
                 ) : (
                   <div style={{ position: 'relative' }}>
                     <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                      <Search size={16} style={{ position: 'absolute', left: '0.85rem', color: '#94A3B8' }} />
+                      <Search size={16} style={{ position: 'absolute', left: '0.85rem', color: themeStyles.placeholder }} />
                       <input
                         type="text"
                         placeholder="Search Customer by Name, Mobile, Village..."
@@ -445,7 +480,9 @@ export const RecordCreditSaleModal: React.FC<RecordCreditSaleModalProps> = ({
                           width: '100%',
                           padding: '0.65rem 1rem 0.65rem 2.4rem',
                           borderRadius: '14px',
-                          border: '1.5px solid #CBD5E1',
+                          border: '1.5px solid ' + themeStyles.inputBorder,
+                          backgroundColor: themeStyles.inputBg,
+                          color: themeStyles.inputText,
                           fontSize: '0.875rem',
                           fontWeight: '600'
                         }}
@@ -459,10 +496,10 @@ export const RecordCreditSaleModal: React.FC<RecordCreditSaleModalProps> = ({
                         top: '105%',
                         left: 0,
                         right: 0,
-                        backgroundColor: '#FFFFFF',
+                        backgroundColor: themeStyles.dropdownBg,
                         borderRadius: '16px',
-                        border: '1.5px solid #E2E8F0',
-                        boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
+                        border: '1.5px solid ' + themeStyles.dropdownBorder,
+                        boxShadow: isDark ? '0 10px 25px rgba(0,0,0,0.5)' : '0 10px 25px rgba(0,0,0,0.1)',
                         maxHeight: '200px',
                         overflowY: 'auto',
                         zIndex: 100,
@@ -470,7 +507,7 @@ export const RecordCreditSaleModal: React.FC<RecordCreditSaleModalProps> = ({
                       }}>
                         {filteredCustomers.length === 0 ? (
                           <div style={{ padding: '0.85rem', textAlign: 'center' }}>
-                            <span style={{ fontSize: '0.8rem', color: '#64748B', display: 'block' }}>Customer not found</span>
+                            <span style={{ fontSize: '0.8rem', color: themeStyles.subtitle, display: 'block' }}>Customer not found</span>
                             <button
                               type="button"
                               onClick={() => { setShowCustomerDropdown(false); setIsAddCustomerOpen(true); }}
@@ -494,12 +531,13 @@ export const RecordCreditSaleModal: React.FC<RecordCreditSaleModalProps> = ({
                                 justifyContent: 'space-between',
                                 alignItems: 'center',
                                 cursor: 'pointer',
-                                borderBottom: '1px solid #F1F5F9'
+                                borderBottom: '1px solid ' + themeStyles.dropdownItemBorder,
+                                backgroundColor: themeStyles.dropdownBg
                               }}
                             >
                               <div>
-                                <span style={{ fontWeight: '800', fontSize: '0.85rem', color: '#0F172A', display: 'block' }}>{c.name}</span>
-                                <span style={{ fontSize: '0.725rem', color: '#64748B' }}>📞 {c.phone || 'N/A'} {c.village ? `(${c.village})` : ''}</span>
+                                <span style={{ fontWeight: '800', fontSize: '0.85rem', color: themeStyles.title, display: 'block' }}>{c.name}</span>
+                                <span style={{ fontSize: '0.725rem', color: themeStyles.subtitle }}>📞 {c.phone || 'N/A'} {c.village ? `(${c.village})` : ''}</span>
                               </div>
                               <span style={{ fontWeight: '800', fontSize: '0.825rem', color: c.currentBalance > 0 ? '#EF4444' : '#10B981' }}>
                                 ₹{c.currentBalance}
@@ -517,7 +555,7 @@ export const RecordCreditSaleModal: React.FC<RecordCreditSaleModalProps> = ({
               {/* 7. SALE TYPE TOGGLE (CREDIT vs FULL PAYMENT)                  */}
               {/* ------------------------------------------------------------- */}
               <div>
-                <label style={{ fontSize: '0.8rem', fontWeight: '800', color: '#475569', marginBottom: '0.3rem', display: 'block' }}>
+                <label style={{ fontSize: '0.8rem', fontWeight: '800', color: themeStyles.label, marginBottom: '0.3rem', display: 'block' }}>
                   Sale Type
                 </label>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
@@ -527,9 +565,9 @@ export const RecordCreditSaleModal: React.FC<RecordCreditSaleModalProps> = ({
                     style={{
                       padding: '0.65rem',
                       borderRadius: '14px',
-                      border: saleType === 'credit' ? '2px solid #EF4444' : '1.5px solid #CBD5E1',
-                      backgroundColor: saleType === 'credit' ? '#FEF2F2' : '#FFFFFF',
-                      color: saleType === 'credit' ? '#B91C1C' : '#475569',
+                      border: saleType === 'credit' ? '2px solid #EF4444' : '1.5px solid ' + themeStyles.inputBorder,
+                      backgroundColor: saleType === 'credit' ? (isDark ? 'rgba(239, 68, 68, 0.2)' : '#FEF2F2') : themeStyles.inputBg,
+                      color: saleType === 'credit' ? (isDark ? '#FCA5A5' : '#B91C1C') : themeStyles.label,
                       fontWeight: '800',
                       fontSize: '0.85rem',
                       cursor: 'pointer'
@@ -544,9 +582,9 @@ export const RecordCreditSaleModal: React.FC<RecordCreditSaleModalProps> = ({
                     style={{
                       padding: '0.65rem',
                       borderRadius: '14px',
-                      border: saleType === 'full' ? '2px solid #10B981' : '1.5px solid #CBD5E1',
-                      backgroundColor: saleType === 'full' ? '#ECFDF5' : '#FFFFFF',
-                      color: saleType === 'full' ? '#047857' : '#475569',
+                      border: saleType === 'full' ? '2px solid #10B981' : '1.5px solid ' + themeStyles.inputBorder,
+                      backgroundColor: saleType === 'full' ? (isDark ? 'rgba(16, 185, 129, 0.2)' : '#ECFDF5') : themeStyles.inputBg,
+                      color: saleType === 'full' ? (isDark ? '#6EE7B7' : '#047857') : themeStyles.label,
                       fontWeight: '800',
                       fontSize: '0.85rem',
                       cursor: 'pointer'
@@ -562,7 +600,7 @@ export const RecordCreditSaleModal: React.FC<RecordCreditSaleModalProps> = ({
               {/* ------------------------------------------------------------- */}
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
-                  <label style={{ fontSize: '0.85rem', fontWeight: '800', color: '#0F172A' }}>
+                  <label style={{ fontSize: '0.85rem', fontWeight: '800', color: themeStyles.sectionTitle }}>
                     Itemized Items List *
                   </label>
                   <div style={{ display: 'flex', gap: '0.4rem' }}>
@@ -576,7 +614,7 @@ export const RecordCreditSaleModal: React.FC<RecordCreditSaleModalProps> = ({
                     <button
                       type="button"
                       onClick={() => handleAddLineItem(products[0])}
-                      style={{ backgroundColor: '#ECFDF5', color: '#047857', border: '1px solid #A7F3D0', padding: '0.2rem 0.55rem', borderRadius: '8px', fontWeight: '800', fontSize: '0.725rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.2rem' }}
+                      style={{ backgroundColor: isDark ? 'rgba(16, 185, 129, 0.15)' : '#ECFDF5', color: isDark ? '#34D399' : '#047857', border: '1px solid ' + (isDark ? '#059669' : '#A7F3D0'), padding: '0.2rem 0.55rem', borderRadius: '8px', fontWeight: '800', fontSize: '0.725rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.2rem' }}
                     >
                       <Barcode size={13} /> Scan Barcode
                     </button>
@@ -586,21 +624,63 @@ export const RecordCreditSaleModal: React.FC<RecordCreditSaleModalProps> = ({
                 {/* Line Items Table */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
                   {lineItems.map((item) => (
-                    <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', backgroundColor: '#F8FAFC', padding: '0.55rem 0.75rem', borderRadius: '14px', border: '1px solid #E2E8F0' }}>
+                    <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', backgroundColor: themeStyles.cardBg, padding: '0.55rem 0.75rem', borderRadius: '14px', border: '1px solid ' + themeStyles.cardBorder }}>
                       {/* Product Name Input */}
                       <input
                         type="text"
                         placeholder="Rice, Sugar, Oil..."
                         value={item.name}
                         onChange={(e) => handleUpdateLineItem(item.id, 'name', e.target.value)}
-                        style={{ flex: 1, minWidth: 0, padding: '0.45rem 0.65rem', borderRadius: '10px', border: '1.5px solid #CBD5E1', fontSize: '0.85rem', fontWeight: '700' }}
+                        style={{
+                          flex: 1,
+                          minWidth: 0,
+                          padding: '0.45rem 0.65rem',
+                          borderRadius: '10px',
+                          border: '1.5px solid ' + themeStyles.inputBorder,
+                          backgroundColor: themeStyles.inputBg,
+                          color: themeStyles.inputText,
+                          fontSize: '0.85rem',
+                          fontWeight: '700'
+                        }}
                       />
 
                       {/* Quantity Stepper (- / +) */}
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                        <button type="button" onClick={() => handleUpdateQty(item.id, -1)} style={{ width: '26px', height: '26px', borderRadius: '8px', border: '1px solid #CBD5E1', backgroundColor: '#FFFFFF', fontWeight: '800', cursor: 'pointer' }}>-</button>
-                        <span style={{ fontWeight: '800', fontSize: '0.85rem', minWidth: '20px', textAlign: 'center' }}>{item.quantity}</span>
-                        <button type="button" onClick={() => handleUpdateQty(item.id, 1)} style={{ width: '26px', height: '26px', borderRadius: '8px', border: '1px solid #CBD5E1', backgroundColor: '#FFFFFF', fontWeight: '800', cursor: 'pointer' }}>+</button>
+                        <button
+                          type="button"
+                          onClick={() => handleUpdateQty(item.id, -1)}
+                          style={{
+                            width: '26px',
+                            height: '26px',
+                            borderRadius: '8px',
+                            border: '1px solid ' + themeStyles.stepperBtnBorder,
+                            backgroundColor: themeStyles.stepperBtnBg,
+                            color: themeStyles.stepperBtnText,
+                            fontWeight: '800',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          -
+                        </button>
+                        <span style={{ fontWeight: '800', fontSize: '0.85rem', minWidth: '20px', textAlign: 'center', color: themeStyles.stepperBtnText }}>
+                          {item.quantity}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleUpdateQty(item.id, 1)}
+                          style={{
+                            width: '26px',
+                            height: '26px',
+                            borderRadius: '8px',
+                            border: '1px solid ' + themeStyles.stepperBtnBorder,
+                            backgroundColor: themeStyles.stepperBtnBg,
+                            color: themeStyles.stepperBtnText,
+                            fontWeight: '800',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          +
+                        </button>
                       </div>
 
                       {/* Price Input */}
@@ -609,11 +689,21 @@ export const RecordCreditSaleModal: React.FC<RecordCreditSaleModalProps> = ({
                         placeholder="Price"
                         value={item.price || ''}
                         onChange={(e) => handleUpdateLineItem(item.id, 'price', Number(e.target.value))}
-                        style={{ width: '75px', padding: '0.45rem 0.5rem', borderRadius: '10px', border: '1.5px solid #CBD5E1', fontSize: '0.85rem', fontWeight: '700', textAlign: 'right' }}
+                        style={{
+                          width: '75px',
+                          padding: '0.45rem 0.5rem',
+                          borderRadius: '10px',
+                          border: '1.5px solid ' + themeStyles.inputBorder,
+                          backgroundColor: themeStyles.inputBg,
+                          color: themeStyles.inputText,
+                          fontSize: '0.85rem',
+                          fontWeight: '700',
+                          textAlign: 'right'
+                        }}
                       />
 
                       {/* Line Total */}
-                      <span style={{ fontWeight: '800', fontSize: '0.85rem', color: '#059669', minWidth: '55px', textAlign: 'right' }}>
+                      <span style={{ fontWeight: '800', fontSize: '0.85rem', color: isDark ? '#34D399' : '#059669', minWidth: '55px', textAlign: 'right' }}>
                         ₹{(item.quantity * item.price).toLocaleString('en-IN')}
                       </span>
 
@@ -631,24 +721,52 @@ export const RecordCreditSaleModal: React.FC<RecordCreditSaleModalProps> = ({
               {/* ------------------------------------------------------------- */}
               {/* 5. BEAUTIFUL RUNNING TOTAL SUMMARY CARD                       */}
               {/* ------------------------------------------------------------- */}
-              <div style={{ backgroundColor: '#F8FAFC', borderRadius: '18px', padding: '0.85rem 1.15rem', display: 'flex', flexDirection: 'column', gap: '0.65rem', border: '1px solid #F1F5F9' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', color: '#475569' }}>
+              <div style={{ backgroundColor: themeStyles.summaryBg, borderRadius: '18px', padding: '0.85rem 1.15rem', display: 'flex', flexDirection: 'column', gap: '0.65rem', border: '1px solid ' + themeStyles.summaryBorder }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', color: themeStyles.label }}>
                   <span>Subtotal:</span>
-                  <span style={{ fontWeight: '800', color: '#0F172A' }}>₹{subtotal}</span>
+                  <span style={{ fontWeight: '800', color: themeStyles.title }}>₹{subtotal}</span>
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
                   <div>
-                    <label style={{ fontSize: '0.725rem', fontWeight: '700', color: '#64748B' }}>Discount (₹)</label>
-                    <input type="number" value={discountAmount} onChange={(e) => setDiscountAmount(e.target.value)} style={{ width: '100%', padding: '0.45rem 0.65rem', borderRadius: '10px', border: '1.5px solid #CBD5E1', fontSize: '0.85rem', fontWeight: '700', backgroundColor: '#FFFFFF' }} />
+                    <label style={{ fontSize: '0.725rem', fontWeight: '700', color: themeStyles.label }}>Discount (₹)</label>
+                    <input
+                      type="number"
+                      value={discountAmount}
+                      onChange={(e) => setDiscountAmount(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '0.45rem 0.65rem',
+                        borderRadius: '10px',
+                        border: '1.5px solid ' + themeStyles.inputBorder,
+                        fontSize: '0.85rem',
+                        fontWeight: '700',
+                        backgroundColor: themeStyles.inputBg,
+                        color: themeStyles.inputText
+                      }}
+                    />
                   </div>
                   <div>
-                    <label style={{ fontSize: '0.725rem', fontWeight: '700', color: '#64748B' }}>Tax (₹)</label>
-                    <input type="number" value={taxAmount} onChange={(e) => setTaxAmount(e.target.value)} style={{ width: '100%', padding: '0.45rem 0.65rem', borderRadius: '10px', border: '1.5px solid #CBD5E1', fontSize: '0.85rem', fontWeight: '700', backgroundColor: '#FFFFFF' }} />
+                    <label style={{ fontSize: '0.725rem', fontWeight: '700', color: themeStyles.label }}>Tax (₹)</label>
+                    <input
+                      type="number"
+                      value={taxAmount}
+                      onChange={(e) => setTaxAmount(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '0.45rem 0.65rem',
+                        borderRadius: '10px',
+                        border: '1.5px solid ' + themeStyles.inputBorder,
+                        fontSize: '0.85rem',
+                        fontWeight: '700',
+                        backgroundColor: themeStyles.inputBg,
+                        color: themeStyles.inputText
+                      }}
+                    />
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1rem', fontWeight: '800', color: '#0F172A', borderTop: '1px solid #E2E8F0', paddingTop: '0.5rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1rem', fontWeight: '800', color: themeStyles.title, borderTop: '1px solid ' + themeStyles.divider, paddingTop: '0.5rem' }}>
                   <span>Grand Total:</span>
                   <span>₹{grandTotal}</span>
                 </div>
@@ -656,17 +774,32 @@ export const RecordCreditSaleModal: React.FC<RecordCreditSaleModalProps> = ({
                 {saleType === 'credit' ? (
                   <>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <label style={{ fontSize: '0.8rem', fontWeight: '700', color: '#475569' }}>Paid Cash Now (₹):</label>
-                      <input type="number" value={paidCashNow} onChange={(e) => setPaidCashNow(e.target.value)} style={{ width: '110px', padding: '0.45rem 0.65rem', borderRadius: '10px', border: '1.5px solid #CBD5E1', fontSize: '0.875rem', fontWeight: '800', textAlign: 'right', backgroundColor: '#FFFFFF' }} />
+                      <label style={{ fontSize: '0.8rem', fontWeight: '700', color: themeStyles.label }}>Paid Cash Now (₹):</label>
+                      <input
+                        type="number"
+                        value={paidCashNow}
+                        onChange={(e) => setPaidCashNow(e.target.value)}
+                        style={{
+                          width: '110px',
+                          padding: '0.45rem 0.65rem',
+                          borderRadius: '10px',
+                          border: '1.5px solid ' + themeStyles.inputBorder,
+                          fontSize: '0.875rem',
+                          fontWeight: '800',
+                          textAlign: 'right',
+                          backgroundColor: themeStyles.inputBg,
+                          color: themeStyles.inputText
+                        }}
+                      />
                     </div>
 
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #E2E8F0', paddingTop: '0.5rem' }}>
-                      <span style={{ fontSize: '0.95rem', fontWeight: '800', color: '#0F172A' }}>Remaining Udhaar Balance:</span>
-                      <span style={{ fontSize: '1.2rem', fontWeight: '800', color: '#EF4444' }}>₹{balanceOwed}</span>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid ' + themeStyles.divider, paddingTop: '0.5rem' }}>
+                      <span style={{ fontSize: '0.95rem', fontWeight: '800', color: themeStyles.title }}>Remaining Udhaar Balance:</span>
+                      <span style={{ fontSize: '1.2rem', fontWeight: '800', color: isDark ? '#F87171' : '#EF4444' }}>₹{balanceOwed}</span>
                     </div>
                   </>
                 ) : (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#047857', fontWeight: '800', fontSize: '0.85rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: isDark ? '#34D399' : '#047857', fontWeight: '800', fontSize: '0.85rem' }}>
                     <span>Paid in Full (Clear):</span>
                     <span>₹{grandTotal}</span>
                   </div>
@@ -677,7 +810,7 @@ export const RecordCreditSaleModal: React.FC<RecordCreditSaleModalProps> = ({
               {/* 6. PAYMENT METHOD SELECTORS                                    */}
               {/* ------------------------------------------------------------- */}
               <div>
-                <label style={{ fontSize: '0.8rem', fontWeight: '800', color: '#475569', marginBottom: '0.3rem', display: 'block' }}>
+                <label style={{ fontSize: '0.8rem', fontWeight: '800', color: themeStyles.label, marginBottom: '0.3rem', display: 'block' }}>
                   Payment Method
                 </label>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.4rem' }}>
@@ -695,9 +828,9 @@ export const RecordCreditSaleModal: React.FC<RecordCreditSaleModalProps> = ({
                       style={{
                         padding: '0.5rem 0.2rem',
                         borderRadius: '12px',
-                        border: paymentMethod === m.id ? '2px solid #059669' : '1.5px solid #CBD5E1',
-                        backgroundColor: paymentMethod === m.id ? '#ECFDF5' : '#FFFFFF',
-                        color: paymentMethod === m.id ? '#047857' : '#475569',
+                        border: paymentMethod === m.id ? '2px solid #059669' : '1.5px solid ' + themeStyles.methodBorder,
+                        backgroundColor: paymentMethod === m.id ? (isDark ? 'rgba(16, 185, 129, 0.2)' : '#ECFDF5') : themeStyles.methodBg,
+                        color: paymentMethod === m.id ? (isDark ? '#6EE7B7' : '#047857') : themeStyles.methodText,
                         fontWeight: '800',
                         fontSize: '0.725rem',
                         cursor: 'pointer'
@@ -714,7 +847,7 @@ export const RecordCreditSaleModal: React.FC<RecordCreditSaleModalProps> = ({
               {/* ------------------------------------------------------------- */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
                 <div>
-                  <label style={{ fontSize: '0.8rem', fontWeight: '800', color: '#475569', marginBottom: '0.25rem', display: 'block' }}>
+                  <label style={{ fontSize: '0.8rem', fontWeight: '800', color: themeStyles.label, marginBottom: '0.25rem', display: 'block' }}>
                     Notes (Optional)
                   </label>
                   <div style={{ display: 'flex', gap: '0.35rem', marginBottom: '0.35rem', flexWrap: 'wrap' }}>
@@ -723,7 +856,16 @@ export const RecordCreditSaleModal: React.FC<RecordCreditSaleModalProps> = ({
                         key={chip}
                         type="button"
                         onClick={() => setNotes((prev) => (prev ? `${prev}, ${chip}` : chip))}
-                        style={{ padding: '0.25rem 0.6rem', borderRadius: '8px', border: '1px solid #CBD5E1', backgroundColor: '#F8FAFC', fontSize: '0.725rem', fontWeight: '700', cursor: 'pointer' }}
+                        style={{
+                          padding: '0.25rem 0.6rem',
+                          borderRadius: '8px',
+                          border: '1px solid ' + themeStyles.chipBorder,
+                          backgroundColor: themeStyles.chipBg,
+                          color: themeStyles.chipText,
+                          fontSize: '0.725rem',
+                          fontWeight: '700',
+                          cursor: 'pointer'
+                        }}
                       >
                         + {chip}
                       </button>
@@ -734,19 +876,28 @@ export const RecordCreditSaleModal: React.FC<RecordCreditSaleModalProps> = ({
                     placeholder="Write custom notes..."
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
-                    style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: '12px', border: '1.5px solid #CBD5E1', fontSize: '0.825rem' }}
+                    style={{
+                      width: '100%',
+                      padding: '0.55rem 0.75rem',
+                      borderRadius: '12px',
+                      border: '1.5px solid ' + themeStyles.inputBorder,
+                      backgroundColor: themeStyles.inputBg,
+                      color: themeStyles.inputText,
+                      fontSize: '0.825rem'
+                    }}
                   />
                 </div>
 
                 {/* Multi-Image Attachments Studio (Step 47-49) */}
-                <div style={{ backgroundColor: '#F8FAFC', borderRadius: '16px', padding: '0.85rem', border: '1px solid #E2E8F0' }}>
+                <div style={{ backgroundColor: themeStyles.cardBg, borderRadius: '16px', padding: '0.85rem', border: '1px solid ' + themeStyles.cardBorder }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                    <label style={{ fontSize: '0.8rem', fontWeight: '800', color: '#334155', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                    <label style={{ fontSize: '0.8rem', fontWeight: '800', color: themeStyles.sectionTitle, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                       <Camera size={14} style={{ color: '#059669' }} />
                       Bill & Receipt Attachments ({billPhotos.length})
                     </label>
-                    <span style={{ fontSize: '0.7rem', color: '#64748B' }}>Multiple images supported</span>
+                    <span style={{ fontSize: '0.7rem', color: themeStyles.subtitle }}>Multiple images supported</span>
                   </div>
+
 
                   {/* Hidden inputs for Camera and Gallery */}
                   <input
@@ -794,9 +945,9 @@ export const RecordCreditSaleModal: React.FC<RecordCreditSaleModalProps> = ({
                       style={{
                         padding: '0.55rem',
                         borderRadius: '12px',
-                        border: '1.5px solid #CBD5E1',
-                        backgroundColor: '#FFFFFF',
-                        color: '#475569',
+                        border: '1.5px solid ' + themeStyles.inputBorder,
+                        backgroundColor: themeStyles.inputBg,
+                        color: themeStyles.label,
                         fontWeight: '700',
                         fontSize: '0.775rem',
                         display: 'flex',
@@ -937,10 +1088,10 @@ export const RecordCreditSaleModal: React.FC<RecordCreditSaleModalProps> = ({
                 <div
                   onClick={() => setSendWhatsApp(!sendWhatsApp)}
                   style={{
-                    backgroundColor: sendWhatsApp ? '#ECFDF5' : '#F8FAFC',
+                    backgroundColor: sendWhatsApp ? (isDark ? 'rgba(16, 185, 129, 0.15)' : '#ECFDF5') : themeStyles.cardBg,
                     padding: '0.65rem 0.85rem',
                     borderRadius: '14px',
-                    border: `1.5px solid ${sendWhatsApp ? '#A7F3D0' : '#CBD5E1'}`,
+                    border: `1.5px solid ${sendWhatsApp ? '#059669' : themeStyles.cardBorder}`,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
@@ -948,12 +1099,12 @@ export const RecordCreditSaleModal: React.FC<RecordCreditSaleModalProps> = ({
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <Send size={15} style={{ color: sendWhatsApp ? '#059669' : '#64748B' }} />
-                    <span style={{ fontSize: '0.775rem', fontWeight: '800', color: sendWhatsApp ? '#047857' : '#475569' }}>
+                    <Send size={15} style={{ color: sendWhatsApp ? '#059669' : themeStyles.subtitle }} />
+                    <span style={{ fontSize: '0.775rem', fontWeight: '800', color: sendWhatsApp ? (isDark ? '#34D399' : '#047857') : themeStyles.label }}>
                       Send Receipt to WhatsApp
                     </span>
                   </div>
-                  <span style={{ fontSize: '0.75rem', fontWeight: '800', color: sendWhatsApp ? '#059669' : '#94A3B8' }}>
+                  <span style={{ fontSize: '0.75rem', fontWeight: '800', color: sendWhatsApp ? '#059669' : themeStyles.subtitle }}>
                     {sendWhatsApp ? 'ON' : 'OFF'}
                   </span>
                 </div>

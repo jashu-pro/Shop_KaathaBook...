@@ -54,6 +54,11 @@ button, input, select, textarea {
   outline: none;
 }
 
+input::placeholder, textarea::placeholder {
+  color: var(--text-muted);
+  opacity: 0.8;
+}
+
 /* Custom Scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
