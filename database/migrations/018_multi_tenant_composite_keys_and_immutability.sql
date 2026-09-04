@@ -241,9 +241,9 @@ CREATE TRIGGER trg_immutable_ledger_entries
     FOR EACH ROW
     EXECUTE FUNCTION enforce_strict_immutability();
 
-DROP TRIGGER IF EXISTS trg_immutable_inventory_movements ON inventory_movements;
-CREATE TRIGGER trg_immutable_inventory_movements
-    BEFORE UPDATE OR DELETE ON inventory_movements
+DROP TRIGGER IF EXISTS trg_immutable_stock_movements ON stock_movements;
+CREATE TRIGGER trg_immutable_stock_movements
+    BEFORE UPDATE OR DELETE ON stock_movements
     FOR EACH ROW
     EXECUTE FUNCTION enforce_strict_immutability();
 

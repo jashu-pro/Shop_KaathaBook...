@@ -1446,9 +1446,9 @@ CREATE TRIGGER trg_immutable_ledger_entries
     FOR EACH ROW
     EXECUTE FUNCTION enforce_strict_immutability();
 
-DROP TRIGGER IF EXISTS trg_immutable_inventory_movements ON inventory_movements;
-CREATE TRIGGER trg_immutable_inventory_movements
-    BEFORE UPDATE OR DELETE ON inventory_movements
+DROP TRIGGER IF EXISTS trg_immutable_stock_movements ON stock_movements;
+CREATE TRIGGER trg_immutable_stock_movements
+    BEFORE UPDATE OR DELETE ON stock_movements
     FOR EACH ROW
     EXECUTE FUNCTION enforce_strict_immutability();
 
@@ -1458,152 +1458,18 @@ CREATE TRIGGER trg_immutable_worker_activity_logs
     FOR EACH ROW
     EXECUTE FUNCTION enforce_strict_immutability();
 
--- ATOMIC STORED PROCEDURE: EXECUTE CREDIT SALE
-CREATE OR REPLACE FUNCTION execute_credit_sale(
-    p_shop_id UUID,
-    p_customer_id UUID,
-    p_member_id UUID,
-    p_invoice_number VARCHAR,
-    p_subtotal NUMERIC,
-    p_discount NUMERIC,
-    p_total NUMERIC,
-    p_paid_amount NUMERIC,
-    p_payment_method payment_method,
-    p_items JSONB,
-    p_notes TEXT
-) RETURNS UUID AS $$
-DECLARE
-    v_sale_id UUID;
-    v_balance NUMERIC;
-    v_cust_balance NUMERIC;
-    v_cust_limit NUMERIC;
-    v_item RECORD;
-    v_current_stock NUMERIC;
-    v_resulting_stock NUMERIC;
-BEGIN
-    v_balance := p_total - p_paid_amount;
+-- Backward compatibility view for inventory_movements
+CREATE OR REPLACE VIEW inventory_movements AS 
+  SELECT 
+    id,
+    shop_id,
+    product_id,
+    sale_id,
+    type,
+    quantity,
+    reason,
+    created_at
+  FROM stock_movements;
 
-    IF NOT has_shop_permission(p_shop_id, 'sales:create') THEN
-        RAISE EXCEPTION 'Authorization Error: Missing sales:create permission';
-    END IF;
-
-    SELECT current_balance, credit_limit 
-    INTO v_cust_balance, v_cust_limit
-    FROM customers 
-    WHERE id = p_customer_id AND shop_id = p_shop_id 
-    FOR UPDATE;
-
-    IF NOT FOUND THEN
-        RAISE EXCEPTION 'Invalid customer identifier for this shop';
-    END IF;
-
-    IF v_cust_limit > 0 AND (v_cust_balance + v_balance) > v_cust_limit THEN
-        RAISE EXCEPTION 'Transaction Rejected: Credit limit of % exceeded. Projected: %', 
-            v_cust_limit, (v_cust_balance + v_balance);
-    END IF;
-
-    INSERT INTO sales (
-        shop_id, customer_id, created_by_member_id, invoice_number,
-        subtotal, discount_amount, total_amount, paid_amount, balance_amount,
-        payment_method, notes
-    ) VALUES (
-        p_shop_id, p_customer_id, p_member_id, p_invoice_number,
-        p_subtotal, p_discount, p_total, p_paid_amount, v_balance,
-        p_payment_method, p_notes
-    ) RETURNING id INTO v_sale_id;
-
-    FOR v_item IN SELECT * FROM jsonb_to_recordset(p_items) AS x(
-        product_id UUID, quantity NUMERIC, unit_price NUMERIC, cost_price NUMERIC, total_price NUMERIC
-    )
-    LOOP
-        SELECT current_stock INTO v_current_stock 
-        FROM products 
-        WHERE id = v_item.product_id AND shop_id = p_shop_id 
-        FOR UPDATE;
-
-        IF NOT FOUND THEN
-            RAISE EXCEPTION 'Product % not found in this shop', v_item.product_id;
-        END IF;
-
-        v_resulting_stock := v_current_stock - v_item.quantity;
-
-        INSERT INTO sale_items (sale_id, shop_id, product_id, quantity, unit_price, cost_price, total_price)
-        VALUES (v_sale_id, p_shop_id, v_item.product_id, v_item.quantity, v_item.unit_price, v_item.cost_price, v_item.total_price);
-
-        UPDATE products 
-        SET current_stock = v_resulting_stock, updated_at = NOW() 
-        WHERE id = v_item.product_id AND shop_id = p_shop_id;
-
-        INSERT INTO inventory_movements (
-            shop_id, product_id, movement_type, quantity_delta, resulting_stock,
-            reference_sale_id, created_by_member_id
-        ) VALUES (
-            p_shop_id, v_item.product_id, 'sale', -v_item.quantity, v_resulting_stock,
-            v_sale_id, p_member_id
-        );
-    END LOOP;
-
-    IF v_balance > 0 THEN
-        INSERT INTO ledger_entries (
-            shop_id, customer_id, entry_type, debit, credit,
-            running_balance, reference_sale_id, notes, created_by_member_id
-        ) VALUES (
-            p_shop_id, p_customer_id, 'credit_sale', v_balance, 0.00,
-            v_cust_balance + v_balance, v_sale_id, 'Credit Sale: ' || p_invoice_number, p_member_id
-        );
-
-        UPDATE customers 
-        SET current_balance = current_balance + v_balance, updated_at = NOW() 
-        WHERE id = p_customer_id AND shop_id = p_shop_id;
-    END IF;
-
-    INSERT INTO worker_activity_logs (shop_id, member_id, action_type, metadata)
-    VALUES (
-        p_shop_id, p_member_id, 'SALE_CREATED',
-        jsonb_build_object('sale_id', v_sale_id, 'total', p_total, 'credit', v_balance)
-    );
-
-    RETURN v_sale_id;
-END;
-$$ LANGUAGE plpgsql;
-
--- SECURE WORKER AUTHENTICATION RPC
-CREATE OR REPLACE FUNCTION verify_worker_login(
-    p_shop_id UUID,
-    p_phone VARCHAR,
-    p_pin VARCHAR
-) RETURNS TABLE (
-    token_member_id UUID,
-    worker_name VARCHAR,
-    permissions JSONB
-) SECURITY DEFINER AS $$
-DECLARE
-    v_member RECORD;
-BEGIN
-    SELECT id, worker_name, pin_hash, permissions, is_active
-    INTO v_member
-    FROM shop_memberships
-    WHERE shop_id = p_shop_id 
-      AND worker_phone = p_phone 
-      AND member_type = 'worker';
-
-    IF NOT FOUND THEN
-        RAISE EXCEPTION 'Authentication Failed: Invalid shop or phone number';
-    END IF;
-
-    IF NOT v_member.is_active THEN
-        RAISE EXCEPTION 'Account Inactive: Activation required by shop owner';
-    END IF;
-
-    IF v_member.pin_hash != crypt(p_pin, v_member.pin_hash) THEN
-        RAISE EXCEPTION 'Authentication Failed: Incorrect security PIN';
-    END IF;
-
-    INSERT INTO worker_activity_logs (shop_id, member_id, action_type, metadata)
-    VALUES (p_shop_id, v_member.id, 'WORKER_LOGIN', jsonb_build_object('timestamp', NOW()));
-
-    RETURN QUERY SELECT v_member.id, v_member.worker_name, v_member.permissions;
-END;
-$$ LANGUAGE plpgsql;
 
 
