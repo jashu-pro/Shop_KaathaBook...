@@ -21,6 +21,7 @@ import { useInventory } from '../../inventory/hooks/useInventory';
 import { useSales } from '../hooks/useSales';
 import { AddCustomerModal } from '../../customers/components/AddCustomerModal';
 import { useTheme } from '../../../providers/ThemeProvider';
+import { LiveCameraStudio } from '../../../components/common/LiveCameraStudio';
 
 
 interface LineItem {
@@ -106,8 +107,8 @@ export const RecordCreditSaleModal: React.FC<RecordCreditSaleModalProps> = ({
   const [billPhotos, setBillPhotos] = useState<string[]>([]);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   const galleryInputRef = useRef<HTMLInputElement | null>(null);
-  const cameraInputRef = useRef<HTMLInputElement | null>(null);
   const [sendWhatsApp, setSendWhatsApp] = useState<boolean>(true);
+  const [isLiveCameraOpen, setIsLiveCameraOpen] = useState<boolean>(false);
 
   const handleAddPhotos = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -949,11 +950,11 @@ export const RecordCreditSaleModal: React.FC<RecordCreditSaleModalProps> = ({
                       <Camera size={14} style={{ color: '#059669' }} />
                       Bill & Receipt Attachments ({billPhotos.length})
                     </label>
-                    <span style={{ fontSize: '0.7rem', color: themeStyles.subtitle }}>Multiple images supported</span>
+                    <span style={{ fontSize: '0.7rem', color: themeStyles.subtitle }}>Unlimited photos supported</span>
                   </div>
 
 
-                  {/* Hidden inputs for Camera and Gallery */}
+                  {/* Hidden inputs for Camera and Gallery fallback */}
                   <input
                     ref={galleryInputRef}
                     type="file"
@@ -962,27 +963,19 @@ export const RecordCreditSaleModal: React.FC<RecordCreditSaleModalProps> = ({
                     style={{ display: 'none' }}
                     onChange={handleAddPhotos}
                   />
-                  <input
-                    ref={cameraInputRef}
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    style={{ display: 'none' }}
-                    onChange={handleAddPhotos}
-                  />
 
                   {/* Action buttons: Camera vs Gallery */}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: billPhotos.length > 0 ? '0.75rem' : 0 }}>
                     <button
                       type="button"
-                      onClick={() => cameraInputRef.current?.click()}
+                      onClick={() => setIsLiveCameraOpen(true)}
                       style={{
                         padding: '0.55rem',
                         borderRadius: '12px',
                         border: '1.5px solid #10B981',
-                        backgroundColor: '#ECFDF5',
-                        color: '#047857',
-                        fontWeight: '700',
+                        backgroundColor: isDark ? 'rgba(16, 185, 129, 0.2)' : '#ECFDF5',
+                        color: isDark ? '#34D399' : '#047857',
+                        fontWeight: '800',
                         fontSize: '0.775rem',
                         display: 'flex',
                         alignItems: 'center',
@@ -991,7 +984,7 @@ export const RecordCreditSaleModal: React.FC<RecordCreditSaleModalProps> = ({
                         cursor: 'pointer'
                       }}
                     >
-                      <Camera size={15} /> 📸 Camera
+                      <Camera size={15} /> 📸 Camera (Unlimited)
                     </button>
                     <button
                       type="button"
@@ -1219,6 +1212,16 @@ export const RecordCreditSaleModal: React.FC<RecordCreditSaleModalProps> = ({
         isOpen={isAddCustomerOpen}
         onClose={() => setIsAddCustomerOpen(false)}
         onSuccess={() => refetchCustomers()}
+      />
+
+      {/* Live Camera Viewfinder Studio for Unlimited Photo Snapping */}
+      <LiveCameraStudio
+        isOpen={isLiveCameraOpen}
+        onClose={() => setIsLiveCameraOpen(false)}
+        existingCount={billPhotos.length}
+        onPhotosCaptured={(newSnaps) => {
+          setBillPhotos((prev) => [...prev, ...newSnaps]);
+        }}
       />
     </div>
   );
