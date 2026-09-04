@@ -315,7 +315,8 @@ export class LocalSaleRepository implements ISaleRepository {
       }
     }
 
-    return this.mapSale(saleRecord);
+    const finalSale = await this.getSaleById(saleRecord.id);
+    return finalSale || this.mapSale(saleRecord);
   }
 
   async deleteSale(id: string): Promise<void> {
