@@ -209,3 +209,34 @@ export const FULL_OWNER_PERMISSIONS: WorkerPermissions = {
   staffManagement: true,
 };
 
+export type LeaderboardTimeframe = 'today' | 'week' | 'month' | 'all_time';
+
+export interface WorkerSalesPerformance {
+  workerId: string;
+  workerName: string;
+  role: string;
+  totalRevenue: number;
+  billsCount: number;
+  cashCollected: number;
+  upiCollected: number;
+  averageBillValue: number;
+  dailyTarget: number;
+  targetProgress: number; // 0 to 100+
+  commissionEarned: number;
+  rank: number;
+  badge?: 'top_performer' | 'speed_master' | 'customer_champ';
+}
+
+export interface ShopPerformanceSettings {
+  dailySalesTargetPerWorker: number; // e.g. 20000
+  commissionPercentage: number;      // e.g. 1.0 (1%)
+  rewardThresholdMultiplier: number; // e.g. 1.25 for bonus badge
+}
+
+export const DEFAULT_PERFORMANCE_SETTINGS: ShopPerformanceSettings = {
+  dailySalesTargetPerWorker: 25000,
+  commissionPercentage: 1.0,
+  rewardThresholdMultiplier: 1.2,
+};
+
+

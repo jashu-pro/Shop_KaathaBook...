@@ -1,5 +1,5 @@
 /* features/staff/pages/WorkerDashboardPage.tsx */
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   CreditCard, 
@@ -11,12 +11,19 @@ import {
   LogOut, 
   Clock,
   ShieldCheck,
-  ArrowRight
+  ArrowRight,
+  Trophy,
+  Flame,
+  X
 } from 'lucide-react';
 import { useWorkerPermissions } from '../hooks/useWorkerPermissions';
 import { useAuthStore } from '../../../stores/authStore';
 import { useStaff } from '../hooks/useStaff';
 import { RecordCreditSaleModal } from '../../sales/components/RecordCreditSaleModal';
+import { WorkerPerformanceService } from '../services/WorkerPerformanceService';
+import { WorkerLeaderboardStudio } from '../components/WorkerLeaderboardStudio';
+import type { WorkerSalesPerformance } from '../types';
+import { EventBus } from '../../../services/EventBus';
 
 export const WorkerDashboardPage: React.FC = () => {
   const navigate = useNavigate();
@@ -25,6 +32,29 @@ export const WorkerDashboardPage: React.FC = () => {
   const { activityLogs } = useStaff();
 
   const [isRecordSaleModalOpen, setIsRecordSaleModalOpen] = useState(false);
+  const [myPerf, setMyPerf] = useState<WorkerSalesPerformance | null>(null);
+  const [showLeaderboardModal, setShowLeaderboardModal] = useState(false);
+
+  const loadMyPerformance = useCallback(async () => {
+    if (!shop?.id) return;
+    try {
+      const list = await WorkerPerformanceService.computeLeaderboard(shop.id, 'today');
+      const mine = list.find((w) => w.workerId === activeWorker?.id) || list[0] || null;
+      setMyPerf(mine);
+    } catch (e) {
+      console.error('Failed to load performance', e);
+    }
+  }, [shop?.id, activeWorker?.id]);
+
+  useEffect(() => {
+    loadMyPerformance();
+    const unsubSales = EventBus.subscribe('sales:changed', () => loadMyPerformance());
+    const unsubSync = EventBus.subscribe('data:sync', () => loadMyPerformance());
+    return () => {
+      unsubSales();
+      unsubSync();
+    };
+  }, [loadMyPerformance]);
 
   const workerName = activeWorker?.name || 'Worker';
   const shopName = shop?.name || 'Shop KhattaBook';
@@ -102,6 +132,99 @@ export const WorkerDashboardPage: React.FC = () => {
           <LogOut size={16} />
           <span>Exit Worker Space</span>
         </button>
+      </div>
+
+      {/* Worker Live Target & Performance Bar */}
+      <div
+        className="glass-panel"
+        style={{
+          padding: '1.25rem 1.5rem',
+          borderRadius: '24px',
+          backgroundColor: 'var(--bg-card)',
+          border: '1.5px solid var(--border-color)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '0.85rem',
+          boxShadow: '0 4px 16px rgba(15, 23, 42, 0.04)',
+        }}
+      >
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+            <div style={{ width: '36px', height: '36px', borderRadius: '12px', backgroundColor: '#F59E0B', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Trophy size={18} />
+            </div>
+            <div>
+              <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: '800', color: 'var(--text-heading)' }}>
+                Today's Sales Performance & Daily Target
+              </h4>
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                Rank #{myPerf?.rank || 1} in team today • Earn +{myPerf?.commissionEarned ? `₹${myPerf.commissionEarned}` : '₹0'} incentive
+              </span>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setShowLeaderboardModal(true)}
+            style={{
+              padding: '0.45rem 0.85rem',
+              borderRadius: '12px',
+              border: '1.5px solid rgba(245, 158, 11, 0.4)',
+              backgroundColor: 'rgba(245, 158, 11, 0.1)',
+              color: '#D97706',
+              fontWeight: '800',
+              fontSize: '0.75rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+              cursor: 'pointer',
+            }}
+          >
+            <Flame size={14} />
+            <span>View Team Leaderboard</span>
+          </button>
+        </div>
+
+        {/* 3 Metrics: Revenue, Bills, Target */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.75rem' }}>
+          <div style={{ padding: '0.75rem', borderRadius: '14px', backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}>
+            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'block' }}>Billed Today</span>
+            <span style={{ fontSize: '1.15rem', fontWeight: '800', color: '#059669' }}>
+              ₹{(myPerf?.totalRevenue || 0).toLocaleString('en-IN')}
+            </span>
+          </div>
+          <div style={{ padding: '0.75rem', borderRadius: '14px', backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}>
+            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'block' }}>Bills Issued</span>
+            <span style={{ fontSize: '1.15rem', fontWeight: '800', color: 'var(--text-heading)' }}>
+              {myPerf?.billsCount || 0} bills
+            </span>
+          </div>
+          <div style={{ padding: '0.75rem', borderRadius: '14px', backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}>
+            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'block' }}>Estimated Incentive</span>
+            <span style={{ fontSize: '1.15rem', fontWeight: '800', color: '#F59E0B' }}>
+              +₹{myPerf?.commissionEarned || 0}
+            </span>
+          </div>
+        </div>
+
+        {/* Target Progress Bar */}
+        <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', fontWeight: '700', marginBottom: '0.3rem' }}>
+            <span style={{ color: 'var(--text-heading)' }}>Daily Target Progress: {myPerf?.targetProgress || 0}%</span>
+            <span style={{ color: 'var(--text-muted)' }}>Target: ₹{(myPerf?.dailyTarget || 25000).toLocaleString('en-IN')}</span>
+          </div>
+          <div style={{ width: '100%', height: '8px', borderRadius: '10px', backgroundColor: 'rgba(0,0,0,0.1)', overflow: 'hidden' }}>
+            <div
+              style={{
+                width: `${Math.min(myPerf?.targetProgress || 0, 100)}%`,
+                height: '100%',
+                borderRadius: '10px',
+                backgroundColor: (myPerf?.targetProgress || 0) >= 100 ? '#10B981' : '#F59E0B',
+                transition: 'width 0.5s ease',
+              }}
+            />
+          </div>
+        </div>
       </div>
 
       {/* Allowed Workspace Modules (Dynamically Generated based on Permissions) */}
@@ -457,6 +580,62 @@ export const WorkerDashboardPage: React.FC = () => {
         isOpen={isRecordSaleModalOpen}
         onClose={() => setIsRecordSaleModalOpen(false)}
       />
+
+      {/* Team Leaderboard Modal View */}
+      {showLeaderboardModal && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 9999,
+            backgroundColor: 'rgba(15, 23, 42, 0.75)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1.5rem',
+          }}
+        >
+          <div
+            style={{
+              width: '100%',
+              maxWidth: '900px',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              borderRadius: '28px',
+              backgroundColor: 'var(--bg-card)',
+              border: '1.5px solid var(--border-color)',
+              padding: '1.5rem',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.35)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '1rem',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                onClick={() => setShowLeaderboardModal(false)}
+                style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '50%',
+                  border: 'none',
+                  backgroundColor: 'rgba(0,0,0,0.08)',
+                  color: 'var(--text-heading)',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <WorkerLeaderboardStudio />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -5,7 +5,8 @@ import {
   UserPlus, 
   History, 
   Search, 
-  ExternalLink
+  ExternalLink,
+  Trophy
 } from 'lucide-react';
 import { useStaff } from '../hooks/useStaff';
 import type { WorkerMember } from '../types';
@@ -13,13 +14,14 @@ import { WorkerCard } from './WorkerCard';
 import { AddWorkerModal } from './AddWorkerModal';
 import { ManageWorkerAccessModal } from './ManageWorkerAccessModal';
 import { WorkerActivityLogView } from './WorkerActivityLogView';
+import { WorkerLeaderboardStudio } from './WorkerLeaderboardStudio';
 import { useNavigate } from 'react-router-dom';
 
 export const StaffAccessSection: React.FC = () => {
   const navigate = useNavigate();
   const { workers, activityLogs, isLoading } = useStaff();
 
-  const [activeSubTab, setActiveSubTab] = useState<'workers' | 'logs'>('workers');
+  const [activeSubTab, setActiveSubTab] = useState<'workers' | 'leaderboard' | 'logs'>('workers');
   const [searchQuery, setSearchQuery] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingWorker, setEditingWorker] = useState<WorkerMember | null>(null);
@@ -162,6 +164,15 @@ export const StaffAccessSection: React.FC = () => {
           </button>
 
           <button
+            onClick={() => setActiveSubTab('leaderboard')}
+            className={`btn ${activeSubTab === 'leaderboard' ? 'btn-primary' : 'btn-secondary'}`}
+            style={{ padding: '0.45rem 1rem', fontSize: '0.85rem', borderRadius: '12px', gap: '0.4rem' }}
+          >
+            <Trophy size={16} />
+            <span>Sales Leaderboard 🏆</span>
+          </button>
+
+          <button
             onClick={() => setActiveSubTab('logs')}
             className={`btn ${activeSubTab === 'logs' ? 'btn-primary' : 'btn-secondary'}`}
             style={{ padding: '0.45rem 1rem', fontSize: '0.85rem', borderRadius: '12px', gap: '0.4rem' }}
@@ -246,7 +257,12 @@ export const StaffAccessSection: React.FC = () => {
         </div>
       )}
 
-      {/* Sub-Tab 2: Activity Logs */}
+      {/* Sub-Tab 2: Sales Leaderboard Studio */}
+      {activeSubTab === 'leaderboard' && (
+        <WorkerLeaderboardStudio />
+      )}
+
+      {/* Sub-Tab 3: Activity Logs */}
       {activeSubTab === 'logs' && (
         <WorkerActivityLogView logs={activityLogs} isLoading={isLoading} />
       )}

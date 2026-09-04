@@ -11,7 +11,10 @@ export * from './components/WorkerCard';
 export * from './components/AddWorkerModal';
 export * from './components/ManageWorkerAccessModal';
 export * from './components/WorkerActivityLogView';
+export * from './components/WorkerLeaderboardStudio';
+export * from './services/WorkerPerformanceService';
 export * from './pages/WorkerLoginPage';
 export * from './pages/WorkerPinSetupPage';
 export * from './pages/WorkerDashboardPage';
+
 
