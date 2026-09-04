@@ -5,7 +5,7 @@ export interface WorkerRepository {
   getWorkers(shopId: string): Promise<WorkerMember[]>;
   getWorkerById(workerId: string): Promise<WorkerMember | null>;
   findWorkerByEmailOrPhone(shopId: string, emailOrPhone: string): Promise<WorkerMember | null>;
-  addWorker(shopId: string, data: AddWorkerDTO, tempCode: string): Promise<{ worker: WorkerMember; tempCode: string }>;
+  addWorker(shopId: string, data: AddWorkerDTO, tempCode?: string): Promise<{ worker: WorkerMember; tempCode: string }>;
   updateWorker(workerId: string, updates: UpdateWorkerDTO): Promise<WorkerMember>;
   generateNewApprovalCode(workerId: string): Promise<{ worker: WorkerMember; tempCode: string }>;
   verifyAndActivateWorker(workerId: string, tempCode: string, newPin: string): Promise<WorkerMember>;

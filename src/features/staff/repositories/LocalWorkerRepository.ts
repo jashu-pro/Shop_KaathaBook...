@@ -98,7 +98,7 @@ export class LocalWorkerRepository implements WorkerRepository {
     return null;
   }
 
-  async addWorker(shopId: string, data: AddWorkerDTO, tempCode: string): Promise<{ worker: WorkerMember; tempCode: string }> {
+  async addWorker(shopId: string, data: AddWorkerDTO, customTempCode?: string): Promise<{ worker: WorkerMember; tempCode: string }> {
     const workers = this.readWorkers(shopId);
     const existing = workers.find(
       (w) => w.emailOrPhone.trim().toLowerCase() === data.emailOrPhone.trim().toLowerCase()
@@ -108,6 +108,7 @@ export class LocalWorkerRepository implements WorkerRepository {
       throw new Error(`A worker with email or phone "${data.emailOrPhone}" is already registered in this shop.`);
     }
 
+    const tempCode = customTempCode || generate4DigitCode();
     const tempCodeHash = await hashSecret(tempCode);
     const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
 
