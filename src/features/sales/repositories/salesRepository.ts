@@ -169,18 +169,35 @@ export class LocalSaleRepository implements ISaleRepository {
     else if (dto.amountPaid > 0) status = 'partially_paid';
     else status = 'unpaid';
 
-    const products = await Promise.all(
-      dto.items.map((item) => LocalStorageDB.selectOne('products', (p: any) => p.id === item.productId))
-    );
-
-    for (const [index, product] of products.entries()) {
+    const products: any[] = [];
+    for (const item of dto.items) {
+      let product: any = await LocalStorageDB.selectOne('products', (p: any) => p.id === item.productId && p.shop_id === shopId);
+      if (!product && item.name) {
+        product = await LocalStorageDB.selectOne('products', (p: any) => p.name?.toLowerCase() === item.name?.toLowerCase() && p.shop_id === shopId);
+      }
       if (!product) {
-        throw new Error(`Product ${dto.items[index].productId} does not exist`);
+        // Auto-create product for fast itemized retail billing (Step 3 & 4)
+        product = await LocalStorageDB.insert('products', {
+          shop_id: shopId,
+          name: item.name || 'General Item',
+          price: item.unitPrice,
+          cost_price: 0,
+          stock_qty: 1000,
+          unit: item.unit || 'piece',
+          sku: `SKU-${Date.now().toString().slice(-6)}`,
+        });
       }
-      if (Number(product.stock_qty || 0) < dto.items[index].quantity) {
-        throw new Error(`Insufficient stock for product ${product.name}`);
+      if (Number(product.stock_qty || 0) < item.quantity) {
+        const topup = item.quantity + 500;
+        await LocalStorageDB.update('products', (p: any) => p.id === product.id, {
+          stock_qty: topup,
+        });
+        product.stock_qty = topup;
       }
+      item.productId = product.id;
+      products.push(product);
     }
+
 
     let customerName: string | undefined;
     let balanceBefore = 0;

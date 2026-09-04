@@ -46,6 +46,7 @@ export interface Sale {
 
 export interface CreateSaleItemDTO {
   productId: string;
+  name?: string;
   quantity: number;
   unitPrice: number;
   totalPrice: number;

@@ -45,7 +45,7 @@ export const RecordCreditSaleModal: React.FC<RecordCreditSaleModalProps> = ({
   onSuccess
 }) => {
   const { customers, refetch: refetchCustomers } = useCustomers();
-  const { products } = useInventory();
+  const { products, addProduct } = useInventory();
   const { createSale } = useSales();
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -237,6 +237,39 @@ export const RecordCreditSaleModal: React.FC<RecordCreditSaleModalProps> = ({
 
     setSubmitting(true);
     try {
+      const saleItemsPayload = [];
+      for (const item of validItems) {
+        let prodId = item.productId;
+        const matched = products.find(
+          (p) => (prodId && p.id === prodId) || p.name.trim().toLowerCase() === item.name.trim().toLowerCase()
+        );
+
+        if (matched) {
+          prodId = matched.id;
+        } else {
+          try {
+            const newProd = await addProduct({
+              name: item.name.trim(),
+              price: Number(item.price) || 0,
+              costPrice: 0,
+              stockQty: 1000,
+              unit: 'piece',
+            });
+            prodId = newProd.id;
+          } catch {
+            prodId = item.productId || item.id;
+          }
+        }
+
+        saleItemsPayload.push({
+          productId: prodId,
+          name: item.name.trim(),
+          quantity: Number(item.quantity) || 1,
+          unitPrice: Number(item.price) || 0,
+          totalPrice: (Number(item.quantity) || 1) * (Number(item.price) || 0),
+        });
+      }
+
       const created = await createSale({
         customerId: selectedCustomerId,
         subtotal,
@@ -249,12 +282,7 @@ export const RecordCreditSaleModal: React.FC<RecordCreditSaleModalProps> = ({
         billImageUrl: billPhotos[0] || undefined,
         billImageUrls: billPhotos,
         notes: notes || undefined,
-        items: validItems.map((item) => ({
-          productId: item.productId || item.id,
-          quantity: Number(item.quantity) || 1,
-          unitPrice: Number(item.price) || 0,
-          totalPrice: (Number(item.quantity) || 1) * (Number(item.price) || 0),
-        })),
+        items: saleItemsPayload,
       });
 
       if (sendWhatsApp && selectedCustomer?.phone) {
@@ -628,9 +656,26 @@ export const RecordCreditSaleModal: React.FC<RecordCreditSaleModalProps> = ({
                       {/* Product Name Input */}
                       <input
                         type="text"
+                        list="inventory-products-list"
                         placeholder="Rice, Sugar, Oil..."
                         value={item.name}
-                        onChange={(e) => handleUpdateLineItem(item.id, 'name', e.target.value)}
+                        onChange={(e) => {
+                          const newName = e.target.value;
+                          const matchedProd = products.find((p) => p.name.toLowerCase() === newName.toLowerCase());
+                          setLineItems((prev) =>
+                            prev.map((it) => {
+                              if (it.id === item.id) {
+                                return {
+                                  ...it,
+                                  name: newName,
+                                  productId: matchedProd ? matchedProd.id : it.productId,
+                                  price: matchedProd ? matchedProd.price : it.price,
+                                };
+                              }
+                              return it;
+                            })
+                          );
+                        }}
                         style={{
                           flex: 1,
                           minWidth: 0,
@@ -716,6 +761,15 @@ export const RecordCreditSaleModal: React.FC<RecordCreditSaleModalProps> = ({
                     </div>
                   ))}
                 </div>
+
+                {/* Datalist for fast inventory auto-complete */}
+                <datalist id="inventory-products-list">
+                  {products.map((p) => (
+                    <option key={p.id} value={p.name}>
+                      ₹{p.price} (Stock: {p.stockQty})
+                    </option>
+                  ))}
+                </datalist>
               </div>
 
               {/* ------------------------------------------------------------- */}
