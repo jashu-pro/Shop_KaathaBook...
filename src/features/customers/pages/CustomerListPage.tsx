@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { 
   Search, 
   UserPlus, 
@@ -19,15 +19,22 @@ import type { Customer } from '../types';
 
 export const CustomerListPage: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const initialTab = searchParams.get('tab');
+  const validTab = initialTab && ['all', 'udhaar', 'settled', 'advance', 'vip', 'risk'].includes(initialTab)
+    ? (initialTab as 'all' | 'udhaar' | 'settled' | 'advance' | 'vip' | 'risk')
+    : 'all';
+  const shouldOpenAdd = searchParams.get('add') === 'true';
+
   const { customers, isLoading, error, refetch } = useCustomers();
 
   // Search, Filter & Sort State
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterTab, setFilterTab] = useState<'all' | 'udhaar' | 'settled' | 'advance' | 'vip' | 'risk'>('all');
+  const [filterTab, setFilterTab] = useState<'all' | 'udhaar' | 'settled' | 'advance' | 'vip' | 'risk'>(validTab);
   const [sortOption, setSortOption] = useState<'highest_udhaar' | 'name_asc' | 'recent'>('highest_udhaar');
 
   // Modal Control States
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(shouldOpenAdd);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [detailsCustomer, setDetailsCustomer] = useState<Customer | null>(null);
   const [recordSaleCustomerId, setRecordSaleCustomerId] = useState<string | null>(null);

@@ -414,6 +414,11 @@ export const Dashboard: React.FC = () => {
         {/* TOTAL CUSTOMER DEBT (UDHAAR) CARD */}
         <div 
           className="udhaar-card-span dashboard-udhaar-card"
+          onClick={() => navigate('/customers?tab=udhaar')}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') navigate('/customers?tab=udhaar'); }}
+          role="button"
+          tabIndex={0}
+          title="Click to view all customers with Udhaar"
           style={{
             backgroundColor: '#047857',
             color: '#FFFFFF',
@@ -442,15 +447,25 @@ export const Dashboard: React.FC = () => {
             <div className="dashboard-udhaar-value" style={{ fontWeight: '800', letterSpacing: '-0.5px', lineHeight: 1.1 }}>
               ₹{totalUdhaar.toLocaleString('en-IN')}
             </div>
-            <p style={{ fontSize: '0.775rem', opacity: '0.85', marginTop: '0.25rem' }}>
-              Total pending collections across all villages
-            </p>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.25rem' }}>
+              <p style={{ fontSize: '0.775rem', opacity: '0.85', margin: 0 }}>
+                Total pending collections across all villages
+              </p>
+              <span style={{ fontSize: '0.75rem', fontWeight: '700', opacity: 0.9 }}>
+                View →
+              </span>
+            </div>
           </div>
         </div>
 
         {/* TODAY'S CREDIT SALES */}
         <div 
           className="dashboard-stat-card"
+          onClick={() => navigate('/sales?date=today')}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') navigate('/sales?date=today'); }}
+          role="button"
+          tabIndex={0}
+          title="Click to view Today's Credit Sales"
           style={{
             backgroundColor: 'var(--bg-card)',
             border: '1px solid var(--border-color)',
@@ -477,15 +492,25 @@ export const Dashboard: React.FC = () => {
             <div className="dashboard-stat-value" style={{ fontWeight: '800', color: 'var(--text-heading)', lineHeight: 1.1 }}>
               ₹{todaysSales.toLocaleString('en-IN')}
             </div>
-            <span style={{ fontSize: '0.775rem', fontWeight: '600', color: 'var(--text-body)', marginTop: '0.2rem', display: 'block' }}>
-              Today's Credit Sales
-            </span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.2rem' }}>
+              <span style={{ fontSize: '0.775rem', fontWeight: '600', color: 'var(--text-body)' }}>
+                Today's Credit Sales
+              </span>
+              <span style={{ fontSize: '0.7rem', fontWeight: '700', color: '#10B981' }}>
+                View →
+              </span>
+            </div>
           </div>
         </div>
 
         {/* TODAY'S COLLECTIONS */}
         <div 
           className="dashboard-stat-card"
+          onClick={() => navigate('/payments?date=today')}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') navigate('/payments?date=today'); }}
+          role="button"
+          tabIndex={0}
+          title="Click to view Today's Collections"
           style={{
             backgroundColor: 'var(--bg-card)',
             border: '1px solid var(--border-color)',
@@ -512,15 +537,25 @@ export const Dashboard: React.FC = () => {
             <div className="dashboard-stat-value" style={{ fontWeight: '800', color: 'var(--text-heading)', lineHeight: 1.1 }}>
               ₹{todaysCollections.toLocaleString('en-IN')}
             </div>
-            <span style={{ fontSize: '0.775rem', fontWeight: '600', color: 'var(--text-body)', marginTop: '0.2rem', display: 'block' }}>
-              Today's Collections
-            </span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.2rem' }}>
+              <span style={{ fontSize: '0.775rem', fontWeight: '600', color: 'var(--text-body)' }}>
+                Today's Collections
+              </span>
+              <span style={{ fontSize: '0.7rem', fontWeight: '700', color: '#F59E0B' }}>
+                View →
+              </span>
+            </div>
           </div>
         </div>
 
         {/* ACTIVE CUSTOMERS */}
         <div 
           className="dashboard-stat-card"
+          onClick={() => navigate('/customers')}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') navigate('/customers'); }}
+          role="button"
+          tabIndex={0}
+          title="Click to view Customer List"
           style={{
             backgroundColor: 'var(--bg-card)',
             border: '1px solid var(--border-color)',
@@ -544,15 +579,25 @@ export const Dashboard: React.FC = () => {
             <div className="dashboard-stat-value" style={{ fontWeight: '800', color: 'var(--text-heading)', lineHeight: 1.1 }}>
               {activeCustomersCount}
             </div>
-            <span style={{ fontSize: '0.775rem', fontWeight: '600', color: 'var(--text-body)', marginTop: '0.2rem', display: 'block' }}>
-              Active Customers
-            </span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.2rem' }}>
+              <span style={{ fontSize: '0.775rem', fontWeight: '600', color: 'var(--text-body)' }}>
+                Active Customers
+              </span>
+              <span style={{ fontSize: '0.7rem', fontWeight: '700', color: '#10B981' }}>
+                View →
+              </span>
+            </div>
           </div>
         </div>
 
         {/* TOTAL TRANSACTIONS */}
         <div 
           className="dashboard-stat-card"
+          onClick={() => navigate('/ledger')}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') navigate('/ledger'); }}
+          role="button"
+          tabIndex={0}
+          title="Click to view Cashbook & Ledger"
           style={{
             backgroundColor: 'var(--bg-card)',
             border: '1px solid var(--border-color)',
@@ -576,9 +621,14 @@ export const Dashboard: React.FC = () => {
             <div className="dashboard-stat-value" style={{ fontWeight: '800', color: 'var(--text-heading)', lineHeight: 1.1 }}>
               {totalTransactionsCount}
             </div>
-            <span style={{ fontSize: '0.775rem', fontWeight: '600', color: 'var(--text-body)', marginTop: '0.2rem', display: 'block' }}>
-              Total Transactions
-            </span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.2rem' }}>
+              <span style={{ fontSize: '0.775rem', fontWeight: '600', color: 'var(--text-body)' }}>
+                Total Transactions
+              </span>
+              <span style={{ fontSize: '0.7rem', fontWeight: '700', color: '#F59E0B' }}>
+                View →
+              </span>
+            </div>
           </div>
         </div>
 
@@ -623,7 +673,7 @@ export const Dashboard: React.FC = () => {
 
           {/* Action 3: Add Customer */}
           <button
-            onClick={() => navigate('/customers/new')}
+            onClick={() => navigate('/customers?add=true')}
             className="quick-action-pill"
             style={{
               backgroundColor: 'var(--bg-card)',

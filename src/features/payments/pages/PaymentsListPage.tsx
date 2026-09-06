@@ -1,6 +1,6 @@
 /* features/payments/pages/PaymentsListPage.tsx */
 import React, { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { 
   CreditCard, 
   Plus, 
@@ -19,11 +19,17 @@ import type { Payment, PaymentMode } from '../types';
 
 export const PaymentsListPage: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const initialDate = searchParams.get('date');
+  const validDate = initialDate && ['all', 'today', 'week', 'month'].includes(initialDate) 
+    ? (initialDate as 'all' | 'today' | 'week' | 'month') 
+    : 'all';
+
   const { payments, isLoading, removePayment, refetch } = usePayments();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMethod, setSelectedMethod] = useState<string>('all');
-  const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'week' | 'month'>('all');
+  const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'week' | 'month'>(validDate);
   const [selectedPaymentForDetails, setSelectedPaymentForDetails] = useState<Payment | null>(null);
 
   const totalPaymentsCount = payments.length;

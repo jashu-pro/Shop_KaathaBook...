@@ -1,6 +1,6 @@
 /* features/sales/pages/SalesListPage.tsx */
 import React, { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { 
   Receipt, 
   Plus, 
@@ -16,11 +16,17 @@ import type { Sale, SalesFilterTab } from '../types';
 
 export const SalesListPage: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const initialDate = searchParams.get('date');
+  const validDate = initialDate && ['all', 'today', 'week', 'month'].includes(initialDate) 
+    ? (initialDate as 'all' | 'today' | 'week' | 'month') 
+    : 'all';
+
   const { sales, isLoading, removeSale, refetch } = useSales();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<SalesFilterTab>('all');
-  const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'week' | 'month'>('all');
+  const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'week' | 'month'>(validDate);
   const [selectedSaleForDetails, setSelectedSaleForDetails] = useState<Sale | null>(null);
 
   const totalSalesCount = sales.length;

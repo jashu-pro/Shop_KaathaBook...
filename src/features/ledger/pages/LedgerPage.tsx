@@ -1,6 +1,5 @@
-/* features/ledger/pages/LedgerPage.tsx */
 import React, { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { 
   BookOpen, 
   Search, 
@@ -18,10 +17,16 @@ import type { LedgerDateFilter } from '../types';
 
 const LedgerPage: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const initialDate = searchParams.get('date');
+  const validDate = initialDate && ['all', 'today', 'week', 'month'].includes(initialDate)
+    ? (initialDate as LedgerDateFilter)
+    : 'all';
+
   const { customers } = useCustomers();
 
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>('all');
-  const [dateFilter, setDateFilter] = useState<LedgerDateFilter>('all');
+  const [dateFilter, setDateFilter] = useState<LedgerDateFilter>(validDate);
   const [searchQuery, setSearchQuery] = useState('');
 
   const [isRecordSaleModalOpen, setIsRecordSaleModalOpen] = useState(false);
