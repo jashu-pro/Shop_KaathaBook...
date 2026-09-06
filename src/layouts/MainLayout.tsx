@@ -6,7 +6,6 @@ import { useTheme } from '../providers/ThemeProvider';
 import {
   LayoutDashboard,
   Users,
-  BookOpen,
   BarChart3,
   Sparkles,
   Settings,
@@ -66,13 +65,6 @@ const MainLayout: React.FC = () => {
     ? activeWorker.name.substring(0, 1).toUpperCase()
     : shop?.name ? shop.name.substring(0, 1).toUpperCase() : 'K';
 
-  const shopLocation = [shop?.city, shop?.state].filter(Boolean).join(', ') || '';
-
-  /* ── Active route detection for bottom nav ── */
-  const isAtCustomers  = location.pathname.startsWith('/customers');
-  const isAtCashbook   = location.pathname.startsWith('/cashbook') || location.pathname.startsWith('/ledger');
-  const isAtReports    = location.pathname.startsWith('/reports');
-  const isAtProfile    = profileSheetOpen;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', backgroundColor: 'var(--bg-primary)', color: 'var(--text-heading)' }}>
