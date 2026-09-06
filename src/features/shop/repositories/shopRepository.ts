@@ -5,6 +5,7 @@ import { LocalStorageDB } from '../../../services/localStorageDB';
 
 export interface IShopRepository {
   getShopByOwner(ownerId: string): Promise<Shop | null>;
+  getShopsByOwner(ownerId: string): Promise<Shop[]>;
   getShopById(shopId: string): Promise<Shop | null>;
   createShop(ownerId: string, shopData: CreateShopDTO): Promise<Shop>;
   updateShop(shopId: string, updates: Partial<Shop>): Promise<Shop>;
@@ -43,9 +44,12 @@ export class SupabaseShopRepository implements IShopRepository {
       businessType: data.business_type,
       phone: data.phone || undefined,
       address: data.address || undefined,
+      landmark: data.landmark || undefined,
       city: data.city || undefined,
       state: data.state || undefined,
       pincode: data.pincode || undefined,
+      latitude: data.latitude ?? undefined,
+      longitude: data.longitude ?? undefined,
       gstin: data.gstin || undefined,
       pan: data.pan || undefined,
       upiId: data.upi_id || undefined,
@@ -68,6 +72,18 @@ export class SupabaseShopRepository implements IShopRepository {
 
     if (error || !data) return null;
     return this.mapEntityToDomain(data);
+  }
+
+  async getShopsByOwner(ownerId: string): Promise<Shop[]> {
+    if (!supabase) return [];
+    const { data, error } = await supabase
+      .from('shops')
+      .select('*')
+      .eq('owner_id', ownerId)
+      .order('created_at', { ascending: true });
+
+    if (error || !data) return [];
+    return data.map((d) => this.mapEntityToDomain(d));
   }
 
   async getShopById(shopId: string): Promise<Shop | null> {
@@ -97,9 +113,12 @@ export class SupabaseShopRepository implements IShopRepository {
         business_type: shopData.businessType,
         phone: shopData.phone || null,
         address: shopData.address || null,
+        landmark: shopData.landmark || null,
         city: shopData.city || null,
         state: shopData.state || null,
         pincode: shopData.pincode || null,
+        latitude: shopData.latitude ?? null,
+        longitude: shopData.longitude ?? null,
         gstin: shopData.gstin || null,
         pan: shopData.pan || null,
         upi_id: shopData.upiId || null,
@@ -133,9 +152,12 @@ export class SupabaseShopRepository implements IShopRepository {
         business_type: updates.businessType,
         phone: updates.phone || null,
         address: updates.address || null,
+        landmark: updates.landmark || null,
         city: updates.city || null,
         state: updates.state || null,
         pincode: updates.pincode || null,
+        latitude: updates.latitude ?? null,
+        longitude: updates.longitude ?? null,
         gstin: updates.gstin || null,
         pan: updates.pan || null,
         upi_id: updates.upiId || null,
@@ -166,9 +188,12 @@ export class LocalShopRepository implements IShopRepository {
       businessType: data.business_type,
       phone: data.phone || undefined,
       address: data.address || undefined,
+      landmark: data.landmark || undefined,
       city: data.city || undefined,
       state: data.state || undefined,
       pincode: data.pincode || undefined,
+      latitude: data.latitude ?? undefined,
+      longitude: data.longitude ?? undefined,
       gstin: data.gstin || undefined,
       pan: data.pan || undefined,
       upiId: data.upi_id || undefined,
@@ -187,6 +212,11 @@ export class LocalShopRepository implements IShopRepository {
     return this.mapEntityToDomain(data);
   }
 
+  async getShopsByOwner(ownerId: string): Promise<Shop[]> {
+    const data = await LocalStorageDB.select('shops', (s: any) => s.owner_id === ownerId);
+    return data.map((d: any) => this.mapEntityToDomain(d));
+  }
+
   async getShopById(shopId: string): Promise<Shop | null> {
     const data = await LocalStorageDB.selectOne('shops', (s: any) => s.id === shopId);
     if (!data) return null;
@@ -201,9 +231,12 @@ export class LocalShopRepository implements IShopRepository {
       business_type: shopData.businessType,
       phone: shopData.phone || null,
       address: shopData.address || null,
+      landmark: shopData.landmark || null,
       city: shopData.city || null,
       state: shopData.state || null,
       pincode: shopData.pincode || null,
+      latitude: shopData.latitude ?? null,
+      longitude: shopData.longitude ?? null,
       gstin: shopData.gstin || null,
       pan: shopData.pan || null,
       upi_id: shopData.upiId || null,
@@ -223,9 +256,12 @@ export class LocalShopRepository implements IShopRepository {
       business_type: updates.businessType,
       phone: updates.phone || null,
       address: updates.address || null,
+      landmark: updates.landmark || null,
       city: updates.city || null,
       state: updates.state || null,
       pincode: updates.pincode || null,
+      latitude: updates.latitude ?? null,
+      longitude: updates.longitude ?? null,
       gstin: updates.gstin || null,
       pan: updates.pan || null,
       upi_id: updates.upiId || null,

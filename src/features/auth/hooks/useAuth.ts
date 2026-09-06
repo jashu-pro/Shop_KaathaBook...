@@ -13,6 +13,8 @@ export const useAuth = () => {
     signUp,
     signInWithGoogle,
     signOut,
+    sendOtp,
+    loginWithOtp,
   } = useAuthStore();
 
   return {
@@ -26,5 +28,7 @@ export const useAuth = () => {
     signup: signUp,
     loginWithGoogle: signInWithGoogle,
     logout: signOut,
+    sendOtp,
+    loginWithOtp,
   };
 };

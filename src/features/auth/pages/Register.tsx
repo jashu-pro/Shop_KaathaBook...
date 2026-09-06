@@ -76,6 +76,17 @@ const Register: React.FC = () => {
           </p>
         </div>
 
+        {/* Fast Mobile OTP Login Banner */}
+        <div style={{ marginBottom: '1.25rem', padding: '0.65rem 0.85rem', backgroundColor: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.25)', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', color: '#10B981', fontSize: '0.8rem', fontWeight: '700' }}>
+            <span>⚡</span>
+            <span>Fast Mobile OTP Login</span>
+          </div>
+          <Link to="/login" style={{ color: '#10B981', fontSize: '0.775rem', fontWeight: '800', textDecoration: 'underline' }}>
+            Use Phone OTP →
+          </Link>
+        </div>
+
         <form onSubmit={handleSubmit}>
           {/* Full Name */}
           <div className="form-group" style={{ marginBottom: '0.85rem' }}>

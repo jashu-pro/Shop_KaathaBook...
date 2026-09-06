@@ -160,6 +160,11 @@ export const AppRouter: React.FC = () => {
                 <LedgerPage />
               </PermissionGuard>
             } />
+            <Route path="/cashbook" element={
+              <PermissionGuard module="customers" action="ledger">
+                <LedgerPage />
+              </PermissionGuard>
+            } />
 
             <Route path="/reports" element={
               <PermissionGuard module="reports">

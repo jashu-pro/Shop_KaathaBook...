@@ -8,9 +8,12 @@ export interface Shop {
   businessType: string;
   phone?: string;
   address?: string;
+  landmark?: string;
   city?: string;
   state?: string;
   pincode?: string;
+  latitude?: number;
+  longitude?: number;
   gstin?: string;
   pan?: string;
   upiId?: string;
@@ -29,9 +32,12 @@ export interface CreateShopDTO {
   businessType: string;
   phone?: string;
   address?: string;
+  landmark?: string;
   city?: string;
   state?: string;
   pincode?: string;
+  latitude?: number;
+  longitude?: number;
   gstin?: string;
   pan?: string;
   upiId?: string;

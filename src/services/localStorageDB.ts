@@ -81,6 +81,57 @@ class LocalStorageDBService {
     });
   }
 
+  /**
+   * Strictly tenant-isolated query: returns items matching both the shopId and optional filter
+   */
+  selectByShop<T = any>(table: string, shopId: string, additionalFilter?: (item: T) => boolean): Promise<T[]> {
+    return this.select<T>(table, (item: any) => {
+      if (item.shop_id !== shopId) return false;
+      return additionalFilter ? additionalFilter(item) : true;
+    });
+  }
+
+  /**
+   * Strictly tenant-isolated single record lookup
+   */
+  selectOneByShop<T = any>(table: string, shopId: string, filterFn: (item: T) => boolean): Promise<T | null> {
+    return this.selectOne<T>(table, (item: any) => {
+      if (item.shop_id !== shopId) return false;
+      return filterFn(item);
+    });
+  }
+
+  /**
+   * Strictly tenant-isolated delete
+   */
+  deleteByShop<T = any>(table: string, shopId: string, filterFn: (item: T) => boolean): Promise<void> {
+    return this.delete<T>(table, (item: any) => item.shop_id === shopId && filterFn(item));
+  }
+
+  /**
+   * Purge all data belonging to a specific shop without affecting other tenants
+   */
+  async clearShopData(shopId: string): Promise<void> {
+    const tenantTables = [
+      'customers',
+      'categories',
+      'products',
+      'sales',
+      'sale_items',
+      'sale_attachments',
+      'payments',
+      'ledger_entries',
+      'stock_movements',
+      'workers',
+      'worker_activity_logs'
+    ];
+
+    for (const table of tenantTables) {
+      await this.delete(table, (item: any) => item.shop_id === shopId);
+    }
+    Logger.info(`LocalStorageDB: Purged all isolated data for shop ${shopId}`);
+  }
+
   clearAll(): void {
     const keys = Object.keys(localStorage);
     keys.forEach((key) => {

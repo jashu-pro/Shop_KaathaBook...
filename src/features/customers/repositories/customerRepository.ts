@@ -5,10 +5,10 @@ import { LocalStorageDB } from '../../../services/localStorageDB';
 
 export interface ICustomerRepository {
   getCustomersByShop(shopId: string): Promise<Customer[]>;
-  getCustomerById(id: string): Promise<Customer | null>;
+  getCustomerById(id: string, shopId?: string): Promise<Customer | null>;
   createCustomer(shopId: string, data: CreateCustomerDTO): Promise<Customer>;
   updateCustomer(id: string, updates: UpdateCustomerDTO): Promise<Customer>;
-  deleteCustomer(id: string): Promise<boolean>;
+  deleteCustomer(id: string, shopId?: string): Promise<boolean>;
   findDuplicateByPhone(shopId: string, phone: string): Promise<Customer | null>;
 }
 
@@ -44,13 +44,13 @@ export class SupabaseCustomerRepository implements ICustomerRepository {
     return data.map((d) => this.mapEntityToDomain(d));
   }
 
-  async getCustomerById(id: string): Promise<Customer | null> {
+  async getCustomerById(id: string, shopId?: string): Promise<Customer | null> {
     if (!supabase) return null;
-    const { data, error } = await supabase
-      .from('customers')
-      .select('*')
-      .eq('id', id)
-      .maybeSingle();
+    let query = supabase.from('customers').select('*').eq('id', id);
+    if (shopId) {
+      query = query.eq('shop_id', shopId);
+    }
+    const { data, error } = await query.maybeSingle();
 
     if (error || !data) return null;
     return this.mapEntityToDomain(data);
@@ -109,9 +109,13 @@ export class SupabaseCustomerRepository implements ICustomerRepository {
     return this.mapEntityToDomain(data);
   }
 
-  async deleteCustomer(id: string): Promise<boolean> {
+  async deleteCustomer(id: string, shopId?: string): Promise<boolean> {
     if (!supabase) return false;
-    const { error } = await supabase.from('customers').delete().eq('id', id);
+    let query = supabase.from('customers').delete().eq('id', id);
+    if (shopId) {
+      query = query.eq('shop_id', shopId);
+    }
+    const { error } = await query;
     return !error;
   }
 
@@ -153,8 +157,8 @@ export class LocalCustomerRepository implements ICustomerRepository {
     return data.map((d: any) => this.mapEntityToDomain(d));
   }
 
-  async getCustomerById(id: string): Promise<Customer | null> {
-    const data = await LocalStorageDB.selectOne('customers', (c: any) => c.id === id);
+  async getCustomerById(id: string, shopId?: string): Promise<Customer | null> {
+    const data = await LocalStorageDB.selectOne('customers', (c: any) => c.id === id && (!shopId || c.shop_id === shopId));
     if (!data) return null;
     return this.mapEntityToDomain(data);
   }
@@ -195,8 +199,8 @@ export class LocalCustomerRepository implements ICustomerRepository {
     return this.mapEntityToDomain(data);
   }
 
-  async deleteCustomer(id: string): Promise<boolean> {
-    await LocalStorageDB.delete('customers', (c: any) => c.id === id);
+  async deleteCustomer(id: string, shopId?: string): Promise<boolean> {
+    await LocalStorageDB.delete('customers', (c: any) => c.id === id && (!shopId || c.shop_id === shopId));
     return true;
   }
 

@@ -77,15 +77,15 @@ async function checkWorkerDB() {
   const addRes = await localRepo.addWorker(testShopId, {
     name: 'Jaswanth Worker Test',
     emailOrPhone: '08121157489',
-    role: 'billing_staff',
     permissions: {
+      dashboard: true,
       sales: { view: true, create: true, edit: false, delete: false },
-      payments: { view: true, receive: true, edit: false, delete: false },
-      customers: { view: true, add: true, edit: false, delete: false },
-      inventory: { view: true, add: false, edit: false, delete: false },
-      reports: { view: false },
-      staff: { view: false, manage: false },
-      settings: { view: false, edit: false }
+      payments: { view: true, receive: true },
+      customers: { view: true, add: true, edit: false, ledger: false },
+      inventory: { view: true, add: false, edit: false, adjustStock: false },
+      reports: false,
+      staffManagement: false,
+      settings: false
     }
   });
   const addedWorker = addRes.worker;

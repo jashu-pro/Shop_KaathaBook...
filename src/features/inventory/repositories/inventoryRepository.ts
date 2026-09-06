@@ -13,15 +13,15 @@ import { LocalStorageDB } from '../../../services/localStorageDB';
 export interface ICategoryRepository {
   list(shopId: string): Promise<Category[]>;
   create(shopId: string, dto: CreateCategoryDTO): Promise<Category>;
-  delete(id: string): Promise<void>;
+  delete(id: string, shopId?: string): Promise<void>;
 }
 
 export interface IProductRepository {
   list(shopId: string): Promise<Product[]>;
-  getById(id: string): Promise<Product | null>;
+  getById(id: string, shopId?: string): Promise<Product | null>;
   create(shopId: string, dto: CreateProductDTO): Promise<Product>;
-  update(id: string, updates: UpdateProductDTO): Promise<Product>;
-  delete(id: string): Promise<void>;
+  update(id: string, updates: UpdateProductDTO, shopId?: string): Promise<Product>;
+  delete(id: string, shopId?: string): Promise<void>;
   adjustStock(shopId: string, productId: string, deltaQty: number, reason?: string): Promise<Product>;
   listStockMovements(shopId: string): Promise<StockMovement[]>;
 }
@@ -53,9 +53,11 @@ export class SupabaseCategoryRepository implements ICategoryRepository {
     return { id: data.id, shopId: data.shop_id, name: data.name, color: data.color, icon: data.icon, createdAt: data.created_at };
   }
 
-  async delete(id: string): Promise<void> {
+  async delete(id: string, shopId?: string): Promise<void> {
     if (!supabase) throw new Error('Supabase client not initialized');
-    await supabase.from('categories').delete().eq('id', id);
+    let query = supabase.from('categories').delete().eq('id', id);
+    if (shopId) query = query.eq('shop_id', shopId);
+    await query;
   }
 }
 
@@ -82,8 +84,8 @@ export class LocalCategoryRepository implements ICategoryRepository {
     return { id: data.id, shopId: data.shop_id, name: data.name, color: data.color, icon: data.icon, createdAt: data.created_at };
   }
 
-  async delete(id: string): Promise<void> {
-    await LocalStorageDB.delete('categories', (c: any) => c.id === id);
+  async delete(id: string, shopId?: string): Promise<void> {
+    await LocalStorageDB.delete('categories', (c: any) => c.id === id && (!shopId || c.shop_id === shopId));
   }
 }
 
@@ -119,9 +121,11 @@ export class SupabaseProductRepository implements IProductRepository {
     return data.map((d: any) => this.map(d));
   }
 
-  async getById(id: string): Promise<Product | null> {
+  async getById(id: string, shopId?: string): Promise<Product | null> {
     if (!supabase) return null;
-    const { data, error } = await supabase.from('products').select('*, categories(name)').eq('id', id).maybeSingle();
+    let query = supabase.from('products').select('*, categories(name)').eq('id', id);
+    if (shopId) query = query.eq('shop_id', shopId);
+    const { data, error } = await query.maybeSingle();
     if (error || !data) return null;
     return this.map(data);
   }
@@ -152,9 +156,9 @@ export class SupabaseProductRepository implements IProductRepository {
     return this.map(data);
   }
 
-  async update(id: string, updates: UpdateProductDTO): Promise<Product> {
+  async update(id: string, updates: UpdateProductDTO, shopId?: string): Promise<Product> {
     if (!supabase) throw new Error('Supabase client not initialized');
-    const { data, error } = await supabase
+    let query = supabase
       .from('products')
       .update({
         category_id: updates.categoryId || null,
@@ -172,16 +176,18 @@ export class SupabaseProductRepository implements IProductRepository {
         notes: updates.notes || null,
         updated_at: new Date().toISOString(),
       })
-      .eq('id', id)
-      .select('*, categories(name)')
-      .single();
+      .eq('id', id);
+    if (shopId) query = query.eq('shop_id', shopId);
+    const { data, error } = await query.select('*, categories(name)').single();
     if (error || !data) throw error || new Error('Failed to update product');
     return this.map(data);
   }
 
-  async delete(id: string): Promise<void> {
+  async delete(id: string, shopId?: string): Promise<void> {
     if (!supabase) throw new Error('Supabase client not initialized');
-    await supabase.from('products').delete().eq('id', id);
+    let query = supabase.from('products').delete().eq('id', id);
+    if (shopId) query = query.eq('shop_id', shopId);
+    await query;
   }
 
   async adjustStock(shopId: string, productId: string, deltaQty: number, reason?: string): Promise<Product> {
@@ -249,8 +255,8 @@ export class LocalProductRepository implements IProductRepository {
     return list.map((item: any) => this.map(item));
   }
 
-  async getById(id: string): Promise<Product | null> {
-    const data = await LocalStorageDB.selectOne('products', (p: any) => p.id === id);
+  async getById(id: string, shopId?: string): Promise<Product | null> {
+    const data = await LocalStorageDB.selectOne('products', (p: any) => p.id === id && (!shopId || p.shop_id === shopId));
     if (!data) return null;
     return this.map(data);
   }
@@ -275,8 +281,8 @@ export class LocalProductRepository implements IProductRepository {
     return this.map(data);
   }
 
-  async update(id: string, updates: UpdateProductDTO): Promise<Product> {
-    const data = await LocalStorageDB.update('products', (p: any) => p.id === id, {
+  async update(id: string, updates: UpdateProductDTO, shopId?: string): Promise<Product> {
+    const data = await LocalStorageDB.update('products', (p: any) => p.id === id && (!shopId || p.shop_id === shopId), {
       category_id: updates.categoryId || null,
       name: updates.name,
       description: updates.description || null,
@@ -294,8 +300,8 @@ export class LocalProductRepository implements IProductRepository {
     return this.map(data);
   }
 
-  async delete(id: string): Promise<void> {
-    await LocalStorageDB.delete('products', (p: any) => p.id === id);
+  async delete(id: string, shopId?: string): Promise<void> {
+    await LocalStorageDB.delete('products', (p: any) => p.id === id && (!shopId || p.shop_id === shopId));
   }
 
   async adjustStock(shopId: string, productId: string, deltaQty: number, reason?: string): Promise<Product> {

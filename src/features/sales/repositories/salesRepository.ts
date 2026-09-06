@@ -202,7 +202,7 @@ export class LocalSaleRepository implements ISaleRepository {
     let customerName: string | undefined;
     let balanceBefore = 0;
     if (dto.customerId) {
-      const customer: any = await LocalStorageDB.selectOne('customers', (c: any) => c.id === dto.customerId);
+      const customer: any = await LocalStorageDB.selectOne('customers', (c: any) => c.id === dto.customerId && c.shop_id === shopId);
       if (!customer) throw new Error('Customer does not belong to this shop');
       customerName = customer.name;
       balanceBefore = Number(customer.current_balance || 0);
