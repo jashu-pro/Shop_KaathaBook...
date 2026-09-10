@@ -104,6 +104,23 @@ export class SupabaseShopRepository implements IShopRepository {
     // Upload image to Supabase Storage if configured
     const uploadedLogoUrl = await uploadBase64ToStorage(shopData.logoUrl, 'logos');
 
+    // Ensure profile row exists in public.profiles to satisfy foreign key constraint
+    const { data: existingProfile } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('id', ownerId)
+      .maybeSingle();
+
+    if (!existingProfile) {
+      const { data: { user } } = await supabase.auth.getUser();
+      await supabase.from('profiles').upsert({
+        id: ownerId,
+        email: user?.email || (user?.phone ? `${user.phone}@phone.local` : `${ownerId}@user.local`),
+        full_name: user?.user_metadata?.full_name || user?.user_metadata?.name || shopData.name,
+        avatar_url: user?.user_metadata?.avatar_url || user?.user_metadata?.picture || null,
+      });
+    }
+
     const { data, error } = await supabase
       .from('shops')
       .insert({
