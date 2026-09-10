@@ -35,9 +35,12 @@ create table if not exists public.shops (
   business_type text not null,
   phone text,
   address text,
+  landmark text,
   city text,
   state text,
   pincode text,
+  latitude double precision,
+  longitude double precision,
   gstin text,
   pan text,
   upi_id text,
@@ -672,7 +675,11 @@ create trigger on_sale_item_modified
 -- 016_production_finance_and_inventory.sql
 -- Align the database with the application model and make financial writes atomic.
 
--- Columns used by the current domain model but absent from the original schema.
+alter table public.shops
+  add column if not exists landmark text,
+  add column if not exists latitude double precision,
+  add column if not exists longitude double precision;
+
 alter table public.customers
   add column if not exists current_balance numeric(12,2) not null default 0,
   add column if not exists tag text;
