@@ -13,6 +13,8 @@ import {
 import { useLedger } from '../hooks/useLedger';
 import { useCustomers } from '../../customers/hooks/useCustomers';
 import { RecordCreditSaleModal } from '../../sales/components/RecordCreditSaleModal';
+import { AiPassbookModal } from '../components/AiPassbookModal';
+import { useAuthStore } from '../../../stores/authStore';
 import type { LedgerDateFilter } from '../types';
 
 const LedgerPage: React.FC = () => {
@@ -24,12 +26,18 @@ const LedgerPage: React.FC = () => {
     : 'all';
 
   const { customers } = useCustomers();
+  const { shop } = useAuthStore();
 
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>('all');
   const [dateFilter, setDateFilter] = useState<LedgerDateFilter>(validDate);
   const [searchQuery, setSearchQuery] = useState('');
 
   const [isRecordSaleModalOpen, setIsRecordSaleModalOpen] = useState(false);
+  const [isPassbookModalOpen, setIsPassbookModalOpen] = useState(false);
+
+  const selectedCustomer = useMemo(() => {
+    return selectedCustomerId !== 'all' ? customers.find((c) => c.id === selectedCustomerId) : null;
+  }, [customers, selectedCustomerId]);
 
   const { entries, isLoading, refetch } = useLedger(
     selectedCustomerId === 'all' ? undefined : selectedCustomerId
@@ -76,7 +84,7 @@ const LedgerPage: React.FC = () => {
   }, [entries, searchQuery, dateFilter]);
 
   const handleExportPassbook = () => {
-    window.print();
+    setIsPassbookModalOpen(true);
   };
 
   return (
@@ -416,6 +424,42 @@ const LedgerPage: React.FC = () => {
         onClose={() => setIsRecordSaleModalOpen(false)}
         onSuccess={() => refetch()}
       />
+
+      {/* AI Passbook & Statement Modal */}
+      {isPassbookModalOpen && (
+        <AiPassbookModal
+          isOpen={isPassbookModalOpen}
+          onClose={() => setIsPassbookModalOpen(false)}
+          params={{
+            shop: {
+              name: shop?.name || 'Shop KhattaBook',
+              tagline: shop?.tagline,
+              businessType: shop?.businessType,
+              address: shop?.address,
+              landmark: shop?.landmark,
+              city: shop?.city,
+              state: shop?.state,
+              pincode: shop?.pincode,
+              phone: shop?.phone,
+              gstin: shop?.gstin,
+              upiId: shop?.upiId,
+            },
+            customer: selectedCustomer ? {
+              name: selectedCustomer.name,
+              phone: selectedCustomer.phone,
+              village: selectedCustomer.village,
+              address: selectedCustomer.address,
+              creditLimit: selectedCustomer.creditLimit,
+              currentBalance: selectedCustomer.currentBalance,
+            } : null,
+            entries: filteredEntries,
+            dateRangeLabel: dateFilter === 'today' ? 'Today' : dateFilter === 'week' ? 'This Week' : dateFilter === 'month' ? 'This Month' : 'All Time',
+            totalGaveUdhaar,
+            totalGotJama,
+            netBalance,
+          }}
+        />
+      )}
 
     </div>
   );

@@ -14,9 +14,12 @@ import { useSales } from '../../sales/hooks/useSales';
 import { usePayments } from '../../payments/hooks/usePayments';
 import { useCustomers } from '../../customers/hooks/useCustomers';
 import { exportToCSV } from '../utils/csvExporter';
+import { useAuthStore } from '../../../stores/authStore';
+import { generateAiReportPdf } from '../../../modules/documents/AiReportPdfGenerator';
 import type { ReportPeriod, ReportTab } from '../types';
 
 const Reports: React.FC = () => {
+  const { shop } = useAuthStore();
   const { sales } = useSales();
   const { payments } = usePayments();
   const { customers } = useCustomers();
@@ -126,7 +129,31 @@ const Reports: React.FC = () => {
   };
 
   const handleExportPDF = () => {
-    window.print();
+    const doc = generateAiReportPdf({
+      shop: {
+        name: shop?.name || 'Shop KhattaBook',
+        tagline: shop?.tagline,
+        businessType: shop?.businessType,
+        address: shop?.address,
+        landmark: shop?.landmark,
+        city: shop?.city,
+        state: shop?.state,
+        pincode: shop?.pincode,
+        phone: shop?.phone,
+        gstin: shop?.gstin,
+        upiId: shop?.upiId,
+      },
+      periodLabel: period === 'daily' ? 'Today' : period === 'weekly' ? 'This Week' : 'This Month',
+      totalRevenue,
+      totalCollections: totalCollected,
+      totalUdhaarOutstanding,
+      grossProfit,
+      profitMarginPercent,
+      sales: periodSales,
+      debtors: debtorsList,
+    });
+    const safeShopName = (shop?.name || 'Shop').replace(/[^a-zA-Z0-9]/g, '_');
+    doc.save(`${safeShopName}_Business_Report_${period}_${new Date().toISOString().slice(0, 10)}.pdf`);
   };
 
   return (
