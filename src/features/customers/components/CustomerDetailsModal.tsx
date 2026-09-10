@@ -6,15 +6,16 @@ import {
   Send, 
   Receipt, 
   CreditCard, 
-  FileText, 
   Edit3,
-  ChevronDown
+  ChevronDown,
+  Sparkles
 } from 'lucide-react';
 import type { Customer } from '../types';
 import { useSales } from '../../sales/hooks/useSales';
 import { usePayments } from '../../payments/hooks/usePayments';
 import { useCustomers } from '../hooks/useCustomers';
 import { useAuthStore } from '../../../stores/authStore';
+import { AiPassbookModal } from '../../ledger/components/AiPassbookModal';
 
 interface CustomerDetailsModalProps {
   customer: Customer | null;
@@ -42,6 +43,7 @@ export const CustomerDetailsModal: React.FC<CustomerDetailsModalProps> = ({
 
   const [currentTag, setCurrentTag] = useState('Regular');
   const [dateFilter, setDateFilter] = useState<'all' | 'this_month' | 'last_30'>('all');
+  const [isAiPassbookOpen, setIsAiPassbookOpen] = useState(false);
 
   useEffect(() => {
     if (customer?.tag) {
@@ -127,7 +129,7 @@ export const CustomerDetailsModal: React.FC<CustomerDetailsModalProps> = ({
     { bg: '#F8FAFC', text: '#475569', dot: '#64748B', border: '#E2E8F0' };
 
   const handleDownloadPassbook = () => {
-    window.print();
+    setIsAiPassbookOpen(true);
   };
 
   return (
@@ -553,28 +555,74 @@ export const CustomerDetailsModal: React.FC<CustomerDetailsModalProps> = ({
           <button
             type="button"
             onClick={handleDownloadPassbook}
+            className="btn btn-primary"
             style={{
               width: '100%',
-              padding: '0.7rem',
+              padding: '0.8rem',
               borderRadius: '14px',
-              fontWeight: '700',
-              fontSize: '0.825rem',
+              fontWeight: '800',
+              fontSize: '0.85rem',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: '0.4rem',
-              backgroundColor: '#F8FAFC',
-              border: '1px solid #E2E8F0',
-              color: '#475569',
-              cursor: 'pointer'
+              gap: '0.5rem',
+              backgroundColor: '#047857',
+              color: '#FFFFFF',
+              cursor: 'pointer',
+              boxShadow: '0 4px 12px rgba(4, 120, 87, 0.2)'
             }}
           >
-            <FileText size={15} />
-            <span>Print / Export PDF Khatta Passbook</span>
+            <Sparkles size={16} />
+            <span>Generate Official AI PDF Passbook</span>
           </button>
 
         </div>
       </div>
+
+      {/* AI Passbook Modal */}
+      {isAiPassbookOpen && (
+        <AiPassbookModal
+          isOpen={isAiPassbookOpen}
+          onClose={() => setIsAiPassbookOpen(false)}
+          params={{
+            shop: {
+              name: shop?.name || 'Shop KhattaBook',
+              tagline: shop?.tagline,
+              businessType: shop?.businessType,
+              address: shop?.address,
+              landmark: shop?.landmark,
+              city: shop?.city,
+              state: shop?.state,
+              pincode: shop?.pincode,
+              phone: shop?.phone,
+              gstin: shop?.gstin,
+              upiId: shop?.upiId,
+            },
+            customer: {
+              name: customer.name,
+              phone: customer.phone,
+              village: customer.village,
+              address: customer.address,
+              creditLimit: Number(customer.creditLimit) || 0,
+              currentBalance: Number(customer.currentBalance) || 0,
+            },
+            entries: filteredLedgerEntries.map((e) => ({
+              id: e.id,
+              entryDate: e.date,
+              entryType: (e.type === 'sale' ? 'debit' : 'credit') as 'debit' | 'credit',
+              amount: e.type === 'sale' ? e.udhaar : e.jama,
+              balanceAfter: 0,
+              description: e.details,
+              customerName: customer.name,
+              customerPhone: customer.phone,
+            })),
+            dateRangeLabel: dateFilter === 'this_month' ? 'This Month' : dateFilter === 'last_30' ? 'Last 30 Days' : 'All Time',
+            totalGaveUdhaar: filteredLedgerEntries.reduce((sum, e) => sum + e.udhaar, 0),
+            totalGotJama: filteredLedgerEntries.reduce((sum, e) => sum + e.jama, 0),
+            netBalance: currentBalance,
+          }}
+        />
+      )}
     </div>
   );
 };

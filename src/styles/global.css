@@ -584,3 +584,37 @@ input::placeholder, textarea::placeholder {
   color: var(--error);
   border: 1px solid rgba(239, 68, 68, 0.2);
 }
+
+/* ------------------------------------------------------------- */
+/* PRINT OPTIMIZATION (Clean Paper Statement & Invoice Output)   */
+/* ------------------------------------------------------------- */
+@media print {
+  body {
+    background: #FFFFFF !important;
+    color: #0F172A !important;
+    font-size: 10pt !important;
+  }
+
+  /* Hide app navigation chrome & controls during print */
+  nav,
+  header,
+  .bottom-nav,
+  .btn,
+  button,
+  .no-print,
+  input,
+  select,
+  .search-box,
+  .quick-actions-scroll {
+    display: none !important;
+  }
+
+  /* Make containers fit A4 */
+  .card,
+  .glass-panel {
+    box-shadow: none !important;
+    border: 1px solid #E2E8F0 !important;
+    page-break-inside: avoid;
+  }
+}
+
