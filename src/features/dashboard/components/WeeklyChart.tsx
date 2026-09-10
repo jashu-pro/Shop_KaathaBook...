@@ -5,7 +5,6 @@ import {
   ArrowUpRight, 
   Calendar, 
   RefreshCw, 
-  Zap, 
   Plus, 
   TrendingUp, 
   TrendingDown, 
@@ -31,7 +30,6 @@ interface WeeklyChartProps {
   onRefresh?: () => void;
   isRefreshing?: boolean;
   onQuickAddSale?: () => void;
-  onSeedSampleData?: () => void;
 }
 
 export const WeeklyChart: React.FC<WeeklyChartProps> = ({ 
@@ -40,8 +38,7 @@ export const WeeklyChart: React.FC<WeeklyChartProps> = ({
   onTimeRangeChange,
   onRefresh,
   isRefreshing = false,
-  onQuickAddSale,
-  onSeedSampleData
+  onQuickAddSale
 }) => {
   const [hoveredDay, setHoveredDay] = useState<DayData | null>(null);
 
@@ -278,27 +275,6 @@ export const WeeklyChart: React.FC<WeeklyChartProps> = ({
             <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: '600' }}>
               No transactions recorded in this period
             </span>
-            {onSeedSampleData && (
-              <button
-                type="button"
-                onClick={onSeedSampleData}
-                style={{
-                  backgroundColor: 'rgba(139, 92, 246, 0.12)',
-                  color: '#8B5CF6',
-                  border: '1px solid rgba(139, 92, 246, 0.3)',
-                  padding: '0.25rem 0.6rem',
-                  borderRadius: '10px',
-                  fontSize: '0.725rem',
-                  fontWeight: '800',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.25rem'
-                }}
-              >
-                <Zap size={12} /> ⚡ Demo Week
-              </button>
-            )}
           </div>
         )}
       </div>

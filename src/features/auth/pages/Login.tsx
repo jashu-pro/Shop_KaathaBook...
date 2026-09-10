@@ -245,9 +245,7 @@ const Login: React.FC = () => {
             </>
           )}
         </button>
-        <p style={{ textAlign: 'center', fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>
-          🧪 Demo mode: signs in as <strong>demo.merchant@gmail.com</strong>
-        </p>
+
 
         {/* Worker Space PIN Login */}
         <button

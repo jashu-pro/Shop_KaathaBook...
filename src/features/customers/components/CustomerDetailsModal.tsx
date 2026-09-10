@@ -290,7 +290,7 @@ export const CustomerDetailsModal: React.FC<CustomerDetailsModalProps> = ({
                 <option value="Wholesale">WHOLESALE</option>
                 <option value="Contacted">CONTACTED</option>
                 <option value="Onboarding">ONBOARDING</option>
-                <option value="Demo Scheduled">DEMO SCHEDULED</option>
+                <option value="Meeting Scheduled">MEETING SCHEDULED</option>
                 <option value="Risk">RISK</option>
               </select>
               <ChevronDown size={18} style={{ position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#64748B' }} />

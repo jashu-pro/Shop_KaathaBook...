@@ -29,9 +29,9 @@ import {
 export const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const { shop } = useAuthStore();
-  const { customers, refetch: refetchCustomers, addCustomer } = useCustomers();
-  const { sales, refetch: refetchSales, createSale } = useSales();
-  const { payments, refetch: refetchPayments, createPayment } = usePayments();
+  const { customers, refetch: refetchCustomers } = useCustomers();
+  const { sales, refetch: refetchSales } = useSales();
+  const { payments, refetch: refetchPayments } = usePayments();
   const { entries: ledgerEntries, refetch: refetchLedger } = useLedger();
 
   const [showQrModal, setShowQrModal] = useState(false);
@@ -269,46 +269,6 @@ export const Dashboard: React.FC = () => {
       };
     });
   }, [timeRange, ledgerEntries, sales, payments]);
-
-  // Demo Sample Data Generator for testing live chart
-  const handleSeedSampleWeekData = async () => {
-    setIsRefreshing(true);
-    try {
-      let activeCustomer = customers[0];
-      if (!activeCustomer) {
-        activeCustomer = await addCustomer({
-          name: 'Ramesh Patel',
-          phone: '9876543210',
-          village: 'Main Market',
-          creditLimit: 50000,
-        });
-      }
-
-      // Record a live sale
-      await createSale({
-        customerId: activeCustomer.id,
-        subtotal: 3500,
-        totalAmount: 3500,
-        amountPaid: 1500,
-        paymentStatus: 'partially_paid',
-        paymentMethod: 'cash',
-        items: [{ productId: 'item-1', quantity: 2, unitPrice: 1750, totalPrice: 3500 }],
-        notes: 'Live demo transaction entry',
-      });
-
-      // Record a live payment
-      await createPayment({
-        customerId: activeCustomer.id,
-        amount: 2000,
-        paymentMethod: 'phonepe',
-        notes: 'Live demo UPI collection',
-      });
-
-      EventBus.triggerFullSync();
-    } finally {
-      setIsRefreshing(false);
-    }
-  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', animation: 'modal-slide 0.3s ease' }}>
@@ -726,7 +686,6 @@ export const Dashboard: React.FC = () => {
         onRefresh={handleFullRefresh}
         isRefreshing={isRefreshing}
         onQuickAddSale={() => setIsRecordSaleOpen(true)}
-        onSeedSampleData={handleSeedSampleWeekData}
       />
 
       {/* ------------------------------------------------------------- */}
