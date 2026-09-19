@@ -68,7 +68,7 @@ const extractPhoneDigits = (user: any): string => {
 
 export const ShopRegistration: React.FC = () => {
   const navigate = useNavigate();
-  const { user, isOnboarded, registerShop, isLoading, error } = useAuthStore();
+  const { user, isOnboarded, registerShop, isLoading, error, signOut } = useAuthStore();
 
   // Redirect if already onboarded
   useEffect(() => {
@@ -79,6 +79,7 @@ export const ShopRegistration: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
   const [successState, setSuccessState] = useState(false);
+  const [avatarImgError, setAvatarImgError] = useState(false);
 
   /* ── STEP 1: Business Identity ── */
   const [shopName, setShopName] = useState('');
@@ -219,6 +220,10 @@ export const ShopRegistration: React.FC = () => {
 
   const handleBack = () => {
     setLocalError(null);
+    if (step === 1) {
+      navigate('/login');
+      return;
+    }
     setStep((prev) => Math.max(prev - 1, 1) as any);
   };
 
@@ -407,12 +412,96 @@ export const ShopRegistration: React.FC = () => {
               {/* ================================================== */}
               {step === 1 && (
                 <div>
-                  <h3 style={{ fontSize: '1.2rem', fontWeight: '800', color: 'var(--text-heading)', marginBottom: '0.25rem' }}>
-                    Step 1: Business Identity
-                  </h3>
-                  <p style={{ color: 'var(--text-body)', fontSize: '0.875rem', marginBottom: '1.75rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.35rem' }}>
+                    <button
+                      type="button"
+                      onClick={handleBack}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: '36px',
+                        height: '36px',
+                        borderRadius: '50%',
+                        backgroundColor: 'var(--bg-secondary, rgba(255, 255, 255, 0.05))',
+                        border: '1px solid var(--border-color)',
+                        color: 'var(--text-heading)',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        flexShrink: 0,
+                      }}
+                      title="Back to Login"
+                      aria-label="Back to Login"
+                    >
+                      <ArrowLeft size={18} />
+                    </button>
+                    <h3 style={{ fontSize: '1.25rem', fontWeight: '800', color: 'var(--text-heading)', margin: 0 }}>
+                      Step 1: Business Identity
+                    </h3>
+                  </div>
+                  <p style={{ color: 'var(--text-body)', fontSize: '0.875rem', marginBottom: '1.25rem' }}>
                     Tell us your shop name, category, and optionally upload a logo for bills & receipts.
                   </p>
+
+                  {/* Connected Google / Merchant Account Banner */}
+                  {user?.email && (
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '0.75rem 1.15rem',
+                      backgroundColor: 'rgba(59, 130, 246, 0.08)',
+                      borderRadius: '14px',
+                      border: '1px solid rgba(59, 130, 246, 0.25)',
+                      marginBottom: '1.75rem',
+                      flexWrap: 'wrap',
+                      gap: '0.75rem',
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        {user.avatarUrl && !avatarImgError ? (
+                          <img
+                            src={user.avatarUrl}
+                            alt=""
+                            onError={() => setAvatarImgError(true)}
+                            referrerPolicy="no-referrer"
+                            style={{ width: '34px', height: '34px', borderRadius: '50%', objectFit: 'cover' }}
+                          />
+                        ) : (
+                          <div style={{
+                            width: '34px', height: '34px', borderRadius: '50%',
+                            backgroundColor: '#4285F4', color: '#FFFFFF',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontWeight: '700', fontSize: '0.9rem',
+                          }}>
+                            {user.email.charAt(0).toUpperCase()}
+                          </div>
+                        )}
+                        <div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Connected Account</div>
+                          <div style={{ fontSize: '0.875rem', fontWeight: '700', color: 'var(--text-heading)' }}>{user.email}</div>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          await signOut();
+                          navigate('/login');
+                        }}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: 'var(--primary)',
+                          fontSize: '0.825rem',
+                          fontWeight: '700',
+                          cursor: 'pointer',
+                          textDecoration: 'underline',
+                          padding: '0.2rem 0.4rem',
+                        }}
+                      >
+                        Switch Account / Login
+                      </button>
+                    </div>
+                  )}
 
                   {/* Logo Upload */}
                   <div style={{ marginBottom: '2rem', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
@@ -504,9 +593,33 @@ export const ShopRegistration: React.FC = () => {
               {/* ================================================== */}
               {step === 2 && (
                 <div>
-                  <h3 style={{ fontSize: '1.2rem', fontWeight: '800', color: 'var(--text-heading)', marginBottom: '0.25rem' }}>
-                    Step 2: Location & Address
-                  </h3>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.35rem' }}>
+                    <button
+                      type="button"
+                      onClick={handleBack}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: '36px',
+                        height: '36px',
+                        borderRadius: '50%',
+                        backgroundColor: 'var(--bg-secondary, rgba(255, 255, 255, 0.05))',
+                        border: '1px solid var(--border-color)',
+                        color: 'var(--text-heading)',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        flexShrink: 0,
+                      }}
+                      title="Back to Step 1"
+                      aria-label="Back"
+                    >
+                      <ArrowLeft size={18} />
+                    </button>
+                    <h3 style={{ fontSize: '1.25rem', fontWeight: '800', color: 'var(--text-heading)', margin: 0 }}>
+                      Step 2: Location & Address
+                    </h3>
+                  </div>
                   <p style={{ color: 'var(--text-body)', fontSize: '0.875rem', marginBottom: '1.5rem' }}>
                     Use GPS to auto-fill your address or enter details manually. Your location helps customers find your shop.
                   </p>
@@ -679,9 +792,33 @@ export const ShopRegistration: React.FC = () => {
               {/* ================================================== */}
               {step === 3 && (
                 <div>
-                  <h3 style={{ fontSize: '1.2rem', fontWeight: '800', color: 'var(--text-heading)', marginBottom: '0.25rem' }}>
-                    Step 3: Financial & Tax Details
-                  </h3>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.35rem' }}>
+                    <button
+                      type="button"
+                      onClick={handleBack}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: '36px',
+                        height: '36px',
+                        borderRadius: '50%',
+                        backgroundColor: 'var(--bg-secondary, rgba(255, 255, 255, 0.05))',
+                        border: '1px solid var(--border-color)',
+                        color: 'var(--text-heading)',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        flexShrink: 0,
+                      }}
+                      title="Back to Step 2"
+                      aria-label="Back"
+                    >
+                      <ArrowLeft size={18} />
+                    </button>
+                    <h3 style={{ fontSize: '1.25rem', fontWeight: '800', color: 'var(--text-heading)', margin: 0 }}>
+                      Step 3: Financial & Tax Details
+                    </h3>
+                  </div>
                   <p style={{ color: 'var(--text-body)', fontSize: '0.875rem', marginBottom: '1.5rem' }}>
                     Configure currency and optional tax registration details for your shop.
                   </p>
@@ -732,9 +869,33 @@ export const ShopRegistration: React.FC = () => {
               {/* ================================================== */}
               {step === 4 && (
                 <div>
-                  <h3 style={{ fontSize: '1.2rem', fontWeight: '800', color: 'var(--text-heading)', marginBottom: '0.25rem' }}>
-                    Step 4: Payment & Digital UPI Setup
-                  </h3>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.35rem' }}>
+                    <button
+                      type="button"
+                      onClick={handleBack}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: '36px',
+                        height: '36px',
+                        borderRadius: '50%',
+                        backgroundColor: 'var(--bg-secondary, rgba(255, 255, 255, 0.05))',
+                        border: '1px solid var(--border-color)',
+                        color: 'var(--text-heading)',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        flexShrink: 0,
+                      }}
+                      title="Back to Step 3"
+                      aria-label="Back"
+                    >
+                      <ArrowLeft size={18} />
+                    </button>
+                    <h3 style={{ fontSize: '1.25rem', fontWeight: '800', color: 'var(--text-heading)', margin: 0 }}>
+                      Step 4: Payment & Digital UPI Setup
+                    </h3>
+                  </div>
                   <p style={{ color: 'var(--text-body)', fontSize: '0.875rem', marginBottom: '1.5rem' }}>
                     Setup UPI ID &amp; QR Code for seamless customer digital repayments.
                   </p>
@@ -773,9 +934,33 @@ export const ShopRegistration: React.FC = () => {
               {/* ================================================== */}
               {step === 5 && (
                 <div>
-                  <h3 style={{ fontSize: '1.2rem', fontWeight: '800', color: 'var(--text-heading)', marginBottom: '0.25rem' }}>
-                    Step 5: Review &amp; Activate Shop Account
-                  </h3>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.35rem' }}>
+                    <button
+                      type="button"
+                      onClick={handleBack}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: '36px',
+                        height: '36px',
+                        borderRadius: '50%',
+                        backgroundColor: 'var(--bg-secondary, rgba(255, 255, 255, 0.05))',
+                        border: '1px solid var(--border-color)',
+                        color: 'var(--text-heading)',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        flexShrink: 0,
+                      }}
+                      title="Back to Step 4"
+                      aria-label="Back"
+                    >
+                      <ArrowLeft size={18} />
+                    </button>
+                    <h3 style={{ fontSize: '1.25rem', fontWeight: '800', color: 'var(--text-heading)', margin: 0 }}>
+                      Step 5: Review &amp; Activate Shop Account
+                    </h3>
+                  </div>
                   <p style={{ color: 'var(--text-body)', fontSize: '0.875rem', marginBottom: '1.5rem' }}>
                     Review your business setup details before completing registration.
                   </p>
@@ -930,32 +1115,62 @@ export const ShopRegistration: React.FC = () => {
                 marginTop: '1.5rem',
                 paddingTop: '1.25rem',
                 borderTop: '1px solid var(--border-color)',
+                gap: '1rem',
               }}>
-                {step > 1 ? (
-                  <button
-                    type="button"
-                    onClick={handleBack}
-                    className="btn btn-secondary"
-                    disabled={submitting}
-                  >
-                    <ArrowLeft size={16} /> Back
-                  </button>
-                ) : <div />}
+                <button
+                  type="button"
+                  onClick={handleBack}
+                  className="btn btn-secondary"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    padding: '0.75rem 1.6rem',
+                    borderRadius: '9999px',
+                    fontWeight: '700',
+                    fontSize: '0.95rem',
+                    border: '1px solid var(--border-color)',
+                    backgroundColor: 'var(--bg-secondary, rgba(255, 255, 255, 0.06))',
+                    color: 'var(--text-heading)',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                  }}
+                  disabled={submitting}
+                >
+                  <ArrowLeft size={18} /> Back
+                </button>
 
                 {step < 5 ? (
                   <button
                     type="button"
                     onClick={handleNext}
                     className="btn btn-primary"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                      padding: '0.75rem 1.6rem',
+                      borderRadius: '9999px',
+                      fontWeight: '700',
+                      fontSize: '0.95rem',
+                    }}
                   >
-                    Continue <ArrowRight size={16} />
+                    Continue <ArrowRight size={18} />
                   </button>
                 ) : (
                   <button
                     type="button"
                     onClick={handleFinalSubmit}
                     className="btn btn-primary"
-                    style={{ padding: '0.85rem 2rem', fontSize: '1rem' }}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                      padding: '0.85rem 2rem',
+                      borderRadius: '9999px',
+                      fontSize: '1rem',
+                      fontWeight: '700',
+                    }}
                     disabled={submitting || isLoading}
                   >
                     {submitting

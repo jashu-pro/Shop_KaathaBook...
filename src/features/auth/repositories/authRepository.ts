@@ -7,7 +7,7 @@ export interface IAuthRepository {
   getCurrentUser(): Promise<User | null>;
   signUp(email: string, password: string, fullName: string): Promise<User>;
   signIn(email: string, password: string): Promise<User>;
-  signInWithGoogle(): Promise<User | void>;
+  signInWithGoogle(selectedEmail?: string, selectedName?: string): Promise<User | void>;
   sendOtp(phone: string): Promise<{ success: boolean; message: string; mockOtp?: string }>;
   verifyOtp(phone: string, otp: string): Promise<User>;
   signOut(): Promise<void>;
@@ -86,13 +86,20 @@ export class SupabaseAuthRepository implements IAuthRepository {
 
   async signInWithGoogle(): Promise<void> {
     if (!supabase) throw new Error('Supabase client not initialized');
-    const { error } = await supabase.auth.signInWithOAuth({
+    const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/`,
+        redirectTo: `${window.location.origin}/auth/callback`,
+        queryParams: {
+          prompt: 'select_account',
+          access_type: 'offline',
+        },
       },
     });
     if (error) throw error;
+    if (data?.url) {
+      window.location.href = data.url;
+    }
   }
 
   async signOut(): Promise<void> {
@@ -187,26 +194,25 @@ export class LocalAuthRepository implements IAuthRepository {
     return user;
   }
 
-  async signInWithGoogle(): Promise<User> {
+  async signInWithGoogle(selectedEmail?: string, selectedName?: string): Promise<User> {
     // Mock Google OAuth for local/demo mode.
-    // Simulates the 1-second redirect delay of a real OAuth flow.
-    await new Promise((r) => setTimeout(r, 900));
+    await new Promise((r) => setTimeout(r, 600));
 
-    const MOCK_GOOGLE_EMAIL = 'demo.merchant@gmail.com';
-    const MOCK_GOOGLE_NAME  = 'Demo Merchant';
-    const MOCK_AVATAR       = `https://ui-avatars.com/api/?name=Demo+Merchant&background=4285F4&color=fff&size=128&bold=true&rounded=true`;
+    const emailToUse = selectedEmail || 'merchant.kirana@gmail.com';
+    const nameToUse  = selectedName || (emailToUse.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase()));
+    const avatarUrl  = `https://ui-avatars.com/api/?name=${encodeURIComponent(nameToUse)}&background=4285F4&color=fff&size=128&bold=true&rounded=true`;
 
     // Find or create the mock Google profile
     let profile: any = await LocalStorageDB.selectOne(
       'profiles',
-      (p: any) => p.email === MOCK_GOOGLE_EMAIL
+      (p: any) => p.email === emailToUse
     );
 
     if (!profile) {
       profile = await LocalStorageDB.insert('profiles', {
-        email:     MOCK_GOOGLE_EMAIL,
-        full_name: MOCK_GOOGLE_NAME,
-        avatar_url: MOCK_AVATAR,
+        email:     emailToUse,
+        full_name: nameToUse,
+        avatar_url: avatarUrl,
         provider:  'google',
         password:  '__google_oauth__',
       });

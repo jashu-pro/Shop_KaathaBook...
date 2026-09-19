@@ -16,7 +16,7 @@ interface AuthState {
   loadSession: () => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, fullName: string) => Promise<void>;
-  signInWithGoogle: () => Promise<void>;
+  signInWithGoogle: (selectedEmail?: string, selectedName?: string) => Promise<void>;
   signOut: () => Promise<void>;
   registerShop: (shopData: CreateShopDTO) => Promise<void>;
   updateShop: (updates: Partial<Shop>) => Promise<Shop>;
@@ -118,10 +118,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
-  signInWithGoogle: async () => {
+  signInWithGoogle: async (selectedEmail?: string, selectedName?: string) => {
     set({ isLoading: true, error: null });
     try {
-      const user = await authRepo.signInWithGoogle();
+      const user = await authRepo.signInWithGoogle(selectedEmail, selectedName);
       if (user) {
         Logger.info(`AuthStore: Google login successful for user ${user.email}`);
         const shops = await shopRepo.getShopsByOwner(user.id);

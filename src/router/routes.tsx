@@ -98,8 +98,10 @@ export const AppRouter: React.FC = () => {
           <Route path="/worker-activate" element={<WorkerPinSetupPage />} />
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/auth/callback" element={<AuthCallback />} />
         </Route>
+
+        {/* Dedicated OAuth Callback */}
+        <Route path="/auth/callback" element={<AuthCallback />} />
 
         {/* Onboarding Routes - Requires login, but no shop registration check */}
         <Route element={<ProtectedRoute requireShop={false} />}>
