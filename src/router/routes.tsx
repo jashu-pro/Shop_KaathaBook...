@@ -3,18 +3,33 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 
-// Layout
+// Layouts
 import MainLayout from '../layouts/MainLayout';
+import AdminLayout from '../layouts/AdminLayout';
 
 // Auth Pages
 import Login from '../features/auth/pages/Login';
 import Register from '../features/auth/pages/Register';
 import ForgotPassword from '../features/auth/pages/ForgotPassword';
-
 import AuthCallback from '../features/auth/pages/AuthCallback';
 
-// Shop Onboarding Page
+// Shop Onboarding & Approval Gatekeeper
 import ShopRegistration from '../features/shop/pages/ShopRegistration';
+import RegistrationApprovalStatusPage from '../features/shop/pages/RegistrationApprovalStatusPage';
+
+// Admin Portal Pages & Hook
+import { 
+  useAdminAuth,
+  AdminLoginPage,
+  AdminDashboardPage,
+  AdminPendingRequestsPage,
+  AdminShopsPage,
+  AdminWorkersPage,
+  AdminPermissionsPage,
+  AdminAuditLogsPage,
+  AdminReportsPage,
+  AdminSettingsPage
+} from '../features/admin';
 
 // Core Application Pages
 import Dashboard from '../features/dashboard/pages/Dashboard';
@@ -39,9 +54,9 @@ const DashboardRouter: React.FC = () => {
   return isWorker ? <WorkerDashboardPage /> : <Dashboard />;
 };
 
-// Guard for routes that require authentication
+// Guard for routes that require merchant authentication and active shop status
 export const ProtectedRoute: React.FC<{ requireShop?: boolean }> = ({ requireShop = true }) => {
-  const { isAuthenticated, isOnboarded, isLoading } = useAuthStore();
+  const { isAuthenticated, shop, isLoading } = useAuthStore();
   const { isWorker } = useWorkerPermissions();
 
   if (isLoading) {
@@ -57,8 +72,13 @@ export const ProtectedRoute: React.FC<{ requireShop?: boolean }> = ({ requireSho
     return <Navigate to="/login" replace />;
   }
 
-  if (requireShop && !isOnboarded && !isWorker) {
-    return <Navigate to="/shop-setup" replace />;
+  if (requireShop && !isWorker) {
+    if (!shop) {
+      return <Navigate to="/shop-setup" replace />;
+    }
+    if (shop.status !== 'active') {
+      return <Navigate to="/approval-status" replace />;
+    }
   }
 
   return <Outlet />;
@@ -66,7 +86,8 @@ export const ProtectedRoute: React.FC<{ requireShop?: boolean }> = ({ requireSho
 
 // Guard for routes that are public (login/register) and should redirect if already authenticated
 export const PublicRoute: React.FC = () => {
-  const { isAuthenticated, isOnboarded, isLoading } = useAuthStore();
+  const { isAuthenticated, shop, isLoading } = useAuthStore();
+
   const { isWorker } = useWorkerPermissions();
 
   if (isLoading) {
@@ -78,10 +99,34 @@ export const PublicRoute: React.FC = () => {
   }
 
   if (isAuthenticated || isWorker) {
-    if (!isOnboarded && !isWorker) {
-      return <Navigate to="/shop-setup" replace />;
+    if (!isWorker) {
+      if (!shop) {
+        return <Navigate to="/shop-setup" replace />;
+      }
+      if (shop.status !== 'active') {
+        return <Navigate to="/approval-status" replace />;
+      }
     }
     return <Navigate to="/" replace />;
+  }
+
+  return <Outlet />;
+};
+
+// Guard for Admin Portal routes (/admin/*)
+export const AdminProtectedRoute: React.FC = () => {
+  const { isAdmin, loading } = useAdminAuth();
+
+  if (loading) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#090d16' }}>
+        <div className="spinner"></div>
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return <Navigate to="/admin/login" replace />;
   }
 
   return <Outlet />;
@@ -103,12 +148,30 @@ export const AppRouter: React.FC = () => {
         {/* Dedicated OAuth Callback */}
         <Route path="/auth/callback" element={<AuthCallback />} />
 
-        {/* Onboarding Routes - Requires login, but no shop registration check */}
-        <Route element={<ProtectedRoute requireShop={false} />}>
-          <Route path="/shop-setup" element={<ShopRegistration />} />
+        {/* Admin Portal Authentication */}
+        <Route path="/admin/login" element={<AdminLoginPage />} />
+
+        {/* Admin Protected Control Center */}
+        <Route element={<AdminProtectedRoute />}>
+          <Route element={<AdminLayout />}>
+            <Route path="/admin" element={<AdminDashboardPage />} />
+            <Route path="/admin/pending" element={<AdminPendingRequestsPage />} />
+            <Route path="/admin/shops" element={<AdminShopsPage />} />
+            <Route path="/admin/workers" element={<AdminWorkersPage />} />
+            <Route path="/admin/permissions" element={<AdminPermissionsPage />} />
+            <Route path="/admin/audit" element={<AdminAuditLogsPage />} />
+            <Route path="/admin/reports" element={<AdminReportsPage />} />
+            <Route path="/admin/settings" element={<AdminSettingsPage />} />
+          </Route>
         </Route>
 
-        {/* Protected Application Routes - Requires login and active shop (or worker session) */}
+        {/* Onboarding & Approval Gatekeeper - Requires login, but no active shop check */}
+        <Route element={<ProtectedRoute requireShop={false} />}>
+          <Route path="/shop-setup" element={<ShopRegistration />} />
+          <Route path="/approval-status" element={<RegistrationApprovalStatusPage />} />
+        </Route>
+
+        {/* Protected Merchant Application Routes - Strictly requires active approved shop (or worker) */}
         <Route element={<ProtectedRoute requireShop={true} />}>
           <Route element={<MainLayout />}>
             <Route path="/" element={<DashboardRouter />} />

@@ -91,7 +91,7 @@ export const AddCustomerModal: React.FC<AddCustomerModalProps> = ({ isOpen, onCl
             videoRef.current.play().catch(() => {});
           }
         }, 120);
-      } catch (err: any) {
+      } catch {
         cameraInputRef.current?.click();
       }
     } else {

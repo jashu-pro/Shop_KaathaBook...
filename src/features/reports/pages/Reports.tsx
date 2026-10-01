@@ -15,7 +15,7 @@ import { usePayments } from '../../payments/hooks/usePayments';
 import { useCustomers } from '../../customers/hooks/useCustomers';
 import { exportToCSV } from '../utils/csvExporter';
 import { useAuthStore } from '../../../stores/authStore';
-import { generateAiReportPdf } from '../../../modules/documents/AiReportPdfGenerator';
+import { CalendarPdfExportModal } from '../components/CalendarPdfExportModal';
 import type { ReportPeriod, ReportTab } from '../types';
 
 const Reports: React.FC = () => {
@@ -26,6 +26,7 @@ const Reports: React.FC = () => {
 
   const [period, setPeriod] = useState<ReportPeriod>('monthly');
   const [activeTab, setActiveTab] = useState<ReportTab>('overview');
+  const [isCalendarPdfModalOpen, setIsCalendarPdfModalOpen] = useState(false);
 
   // Time Window Filter Helper
   const periodWindowTime = useMemo(() => {
@@ -128,33 +129,7 @@ const Reports: React.FC = () => {
     }
   };
 
-  const handleExportPDF = () => {
-    const doc = generateAiReportPdf({
-      shop: {
-        name: shop?.name || 'Shop KhattaBook',
-        tagline: shop?.tagline,
-        businessType: shop?.businessType,
-        address: shop?.address,
-        landmark: shop?.landmark,
-        city: shop?.city,
-        state: shop?.state,
-        pincode: shop?.pincode,
-        phone: shop?.phone,
-        gstin: shop?.gstin,
-        upiId: shop?.upiId,
-      },
-      periodLabel: period === 'daily' ? 'Today' : period === 'weekly' ? 'This Week' : 'This Month',
-      totalRevenue,
-      totalCollections: totalCollected,
-      totalUdhaarOutstanding,
-      grossProfit,
-      profitMarginPercent,
-      sales: periodSales,
-      debtors: debtorsList,
-    });
-    const safeShopName = (shop?.name || 'Shop').replace(/[^a-zA-Z0-9]/g, '_');
-    doc.save(`${safeShopName}_Business_Report_${period}_${new Date().toISOString().slice(0, 10)}.pdf`);
-  };
+
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', animation: 'modal-slide 0.3s ease' }}>
@@ -227,7 +202,7 @@ const Reports: React.FC = () => {
           </button>
 
           <button
-            onClick={handleExportPDF}
+            onClick={() => setIsCalendarPdfModalOpen(true)}
             className="btn btn-primary"
             style={{ borderRadius: '14px', padding: '0.6rem 1.15rem', fontWeight: '700', fontSize: '0.85rem', backgroundColor: '#059669' }}
           >
@@ -240,7 +215,7 @@ const Reports: React.FC = () => {
       {/* ------------------------------------------------------------- */}
       {/* FINANCIAL METRICS SUMMARY CARDS                               */}
       {/* ------------------------------------------------------------- */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.85rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 150px), 1fr))', gap: '0.85rem' }}>
         {/* Total Sales Revenue */}
         <div style={{
           backgroundColor: 'var(--bg-card)',
@@ -517,6 +492,7 @@ const Reports: React.FC = () => {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
+                  flexWrap: 'wrap',
                   gap: '0.85rem'
                 }}
               >
@@ -529,7 +505,7 @@ const Reports: React.FC = () => {
                   </span>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', flexWrap: 'wrap' }}>
                   <div style={{ textAlign: 'right' }}>
                     <span style={{ fontSize: '0.7rem', color: '#EF4444', fontWeight: '700' }}>Pending Debt</span>
                     <div style={{ fontSize: '1.1rem', fontWeight: '800', color: '#EF4444' }}>
@@ -597,6 +573,16 @@ const Reports: React.FC = () => {
           })}
         </div>
       )}
+
+      {/* Calendar PDF Export Modal */}
+      <CalendarPdfExportModal
+        isOpen={isCalendarPdfModalOpen}
+        onClose={() => setIsCalendarPdfModalOpen(false)}
+        shop={shop}
+        sales={sales}
+        payments={payments}
+        customers={customers}
+      />
 
     </div>
   );

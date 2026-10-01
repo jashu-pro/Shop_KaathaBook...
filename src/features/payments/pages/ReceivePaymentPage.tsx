@@ -12,7 +12,8 @@ import {
   Printer,
   Share2,
   Plus,
-  AlertCircle
+  AlertCircle,
+  UserCheck
 } from 'lucide-react';
 import { useAuthStore } from '../../../stores/authStore';
 import { useCustomers } from '../../customers/hooks/useCustomers';
@@ -28,10 +29,25 @@ export const ReceivePaymentPage: React.FC = () => {
   const initialCustomerId = searchParams.get('customerId') || '';
 
   const { shop } = useAuthStore();
-  const { customers, refetch: refetchCustomers } = useCustomers();
+  const { customers, addCustomer, refetch: refetchCustomers } = useCustomers();
   const { createPayment, refetch: refetchPayments } = usePayments();
 
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>(initialCustomerId);
+
+  const handleQuickAddCustomer = async (name: string): Promise<string | void> => {
+    try {
+      const created = await addCustomer({
+        name: name.trim(),
+        phone: '',
+        openingBalance: 0,
+      });
+      setSelectedCustomerId(created.id);
+      return created.id;
+    } catch (err: any) {
+      setError(err.message || 'Failed to create customer');
+    }
+  };
+  const [paymentType, setPaymentType] = useState<'customer' | 'shop_deposit'>('customer');
   const [amount, setAmount] = useState<string>('');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMode>('phonepe');
   const [referenceNo, setReferenceNo] = useState('');
@@ -59,18 +75,18 @@ export const ReceivePaymentPage: React.FC = () => {
 
   // Auto-populate default amount to current debt when customer selected if empty
   useEffect(() => {
-    if (selectedCustomer && isDebt && !amount) {
+    if (paymentType === 'customer' && selectedCustomer && isDebt && !amount) {
       setAmount(currentBalance.toString());
     }
-  }, [selectedCustomer, isDebt, currentBalance]);
+  }, [selectedCustomer, isDebt, currentBalance, paymentType]);
 
   const payAmountVal = Math.max(0, Number(amount) || 0);
   
   // Calculate remaining balance preview safely
   const remainingUdhaar = useMemo(() => {
-    if (!selectedCustomer) return 0;
+    if (!selectedCustomer || paymentType !== 'customer') return 0;
     return currentBalance - payAmountVal;
-  }, [selectedCustomer, currentBalance, payAmountVal]);
+  }, [selectedCustomer, currentBalance, payAmountVal, paymentType]);
 
   const handlePayFullShortcut = () => {
     if (selectedCustomer && isDebt) {
@@ -86,12 +102,28 @@ export const ReceivePaymentPage: React.FC = () => {
     e.preventDefault();
     setError(null);
 
-    if (!selectedCustomerId) {
+    let targetCustomerId = selectedCustomerId;
+    if (paymentType === 'shop_deposit') {
+      let depositCust = customers.find((c) => 
+        c.name.toLowerCase().includes('shop cash counter') || 
+        c.name.toLowerCase().includes('cash deposit')
+      );
+      if (!depositCust) {
+        depositCust = await addCustomer({
+          name: 'Shop Cash Counter',
+          phone: '0000000000',
+          openingBalance: 0,
+          village: 'Cashbook Account'
+        });
+      }
+      targetCustomerId = depositCust.id;
+    } else if (!selectedCustomerId) {
       setError('Please select a customer to record payment.');
       return;
     }
+
     if (!amount || payAmountVal <= 0) {
-      setError('Please enter a valid payment amount greater than ₹0.');
+      setError('Please enter a valid amount greater than ₹0.');
       return;
     }
 
@@ -100,12 +132,12 @@ export const ReceivePaymentPage: React.FC = () => {
 
     try {
       const record = await createPayment({
-        customerId: selectedCustomerId,
+        customerId: targetCustomerId,
         amount: payAmountVal,
         paymentMethod,
         referenceNo: referenceNo.trim() || undefined,
         proofImageUrl: proofImageUrl || undefined,
-        notes: notes.trim() || undefined,
+        notes: notes.trim() || (paymentType === 'shop_deposit' ? 'Direct Shop Cash Deposit' : undefined),
       });
 
       await Promise.all([
@@ -246,59 +278,155 @@ Thank you for your payment! 🙏`;
 
       <form onSubmit={handleSubmitPayment} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
         
-        {/* 1. Customer Selection Card */}
+        {/* Payment / Deposit Mode Segmented Toggle */}
         <div style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          gap: '0.45rem',
           backgroundColor: 'var(--bg-card)',
-          borderRadius: '20px',
-          padding: '1.25rem',
+          padding: '0.35rem',
+          borderRadius: '16px',
           border: '1px solid var(--border-color)',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '0.85rem'
         }}>
-          <CustomerSearchSelect
-            label="Select Customer"
-            required
-            value={selectedCustomerId}
-            onChange={(id) => setSelectedCustomerId(id)}
-            customers={customers}
-            placeholder="Type to search by customer name, phone, or village..."
-          />
-
-          {/* Customer Balance Banner */}
-          {selectedCustomer && (
-            <div style={{
-              backgroundColor: 'var(--bg-secondary)',
-              borderRadius: '16px',
-              padding: '0.85rem 1rem',
+          <button
+            type="button"
+            onClick={() => setPaymentType('customer')}
+            style={{
+              padding: '0.65rem 0.5rem',
+              borderRadius: '12px',
+              border: 'none',
+              backgroundColor: paymentType === 'customer' ? 'var(--primary)' : 'transparent',
+              color: paymentType === 'customer' ? '#FFFFFF' : 'var(--text-muted)',
+              fontWeight: '800',
+              fontSize: '0.825rem',
+              cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'space-between',
-              flexWrap: 'wrap',
-              gap: '0.5rem'
-            }}>
-              <div>
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                  {isDebt ? 'Outstanding Udhaar Debt:' : isAdvance ? 'Customer Advance Credit:' : 'Current Khatta Balance:'}
-                </span>
-                <div style={{ fontSize: '1.35rem', fontWeight: '900', color: isDebt ? '#DC2626' : isAdvance ? '#16A34A' : '#64748B' }}>
-                  ₹{Math.abs(currentBalance)} {isAdvance ? '(Advance)' : isDebt ? '' : '(Settled)'}
-                </div>
-              </div>
+              justifyContent: 'center',
+              gap: '0.4rem',
+              transition: 'all 0.15s ease'
+            }}
+          >
+            <UserCheck size={16} />
+            <span>Customer Payment</span>
+          </button>
 
-              {isDebt && (
-                <button
-                  type="button"
-                  onClick={handlePayFullShortcut}
-                  className="btn btn-secondary"
-                  style={{ borderRadius: '12px', fontSize: '0.8rem', fontWeight: '800', padding: '0.45rem 0.85rem', color: '#059669', borderColor: 'rgba(5, 150, 105, 0.3)' }}
-                >
-                  <Zap size={14} /> Pay Full ₹{currentBalance}
-                </button>
-              )}
-            </div>
-          )}
+          <button
+            type="button"
+            onClick={() => setPaymentType('shop_deposit')}
+            style={{
+              padding: '0.65rem 0.5rem',
+              borderRadius: '12px',
+              border: 'none',
+              backgroundColor: paymentType === 'shop_deposit' ? '#10B981' : 'transparent',
+              color: paymentType === 'shop_deposit' ? '#FFFFFF' : 'var(--text-muted)',
+              fontWeight: '800',
+              fontSize: '0.825rem',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.4rem',
+              transition: 'all 0.15s ease'
+            }}
+          >
+            <DollarSign size={16} />
+            <span>Shop Deposit (Cash In)</span>
+          </button>
         </div>
+
+        {paymentType === 'customer' ? (
+          /* 1. Customer Selection Card */
+          <div style={{
+            backgroundColor: 'var(--bg-card)',
+            borderRadius: '20px',
+            padding: '1.25rem',
+            border: '1px solid var(--border-color)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0.85rem'
+          }}>
+            <CustomerSearchSelect
+              label="Select Customer"
+              required
+              value={selectedCustomerId}
+              onChange={(id) => setSelectedCustomerId(id)}
+              customers={customers}
+              placeholder="Type to search by customer name, phone, or village..."
+              onQuickAddCustomer={handleQuickAddCustomer}
+            />
+
+            {/* Customer Balance Banner */}
+            {selectedCustomer && (
+              <div style={{
+                backgroundColor: 'var(--bg-secondary)',
+                borderRadius: '16px',
+                padding: '0.85rem 1rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '0.5rem'
+              }}>
+                <div>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                    {isDebt ? 'Outstanding Udhaar Debt:' : isAdvance ? 'Customer Advance Credit:' : 'Current Khatta Balance:'}
+                  </span>
+                  <div style={{ fontSize: '1.35rem', fontWeight: '900', color: isDebt ? '#DC2626' : isAdvance ? '#16A34A' : '#64748B' }}>
+                    ₹{Math.abs(currentBalance)} {isAdvance ? '(Advance)' : isDebt ? '' : '(Settled)'}
+                  </div>
+                </div>
+
+                {isDebt && (
+                  <button
+                    type="button"
+                    onClick={handlePayFullShortcut}
+                    className="btn btn-secondary"
+                    style={{ borderRadius: '12px', fontSize: '0.8rem', fontWeight: '800', padding: '0.45rem 0.85rem', color: '#059669', borderColor: 'rgba(5, 150, 105, 0.3)' }}
+                  >
+                    <Zap size={14} /> Pay Full ₹{currentBalance}
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        ) : (
+          /* Direct Shop Deposit Card */
+          <div style={{
+            backgroundColor: 'rgba(16, 185, 129, 0.08)',
+            borderRadius: '20px',
+            padding: '1.15rem 1.25rem',
+            border: '1px solid rgba(16, 185, 129, 0.25)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.85rem'
+          }}>
+            <div style={{
+              width: '44px',
+              height: '44px',
+              borderRadius: '14px',
+              backgroundColor: '#10B981',
+              color: '#FFFFFF',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontWeight: '800',
+              fontSize: '1.25rem',
+              flexShrink: 0,
+              boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)'
+            }}>
+              💰
+            </div>
+            <div>
+              <div style={{ fontWeight: '800', fontSize: '0.95rem', color: 'var(--text-heading)' }}>
+                Direct Cashbook Deposit (Cash In)
+              </div>
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.15rem', margin: 0 }}>
+                Direct cash/bank collection into your shop register. Recorded atomically in your daily Cashbook.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* 2. Payment Amount & Quick Shortcuts Card */}
         <div style={{

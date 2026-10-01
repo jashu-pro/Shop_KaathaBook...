@@ -15,6 +15,9 @@ export const useAuth = () => {
     signOut,
     sendOtp,
     loginWithOtp,
+    sendEmailOtp,
+    loginWithEmailOtp,
+    clearError,
   } = useAuthStore();
 
   return {
@@ -30,5 +33,8 @@ export const useAuth = () => {
     logout: signOut,
     sendOtp,
     loginWithOtp,
+    sendEmailOtp,
+    loginWithEmailOtp,
+    clearError,
   };
 };

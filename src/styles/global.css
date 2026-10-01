@@ -267,7 +267,8 @@ input::placeholder, textarea::placeholder {
     width: 100%;
     max-width: 100vw;
     overflow-x: hidden !important;
-    padding-bottom: 80px !important;
+    padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)) !important;
+    -webkit-overflow-scrolling: touch;
   }
   .dashboard-main-grid {
     display: grid;

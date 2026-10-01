@@ -105,7 +105,7 @@ export const UpiQrModal: React.FC<UpiQrModalProps> = ({ isOpen, onClose }) => {
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-    } catch (e) {
+    } catch {
       window.open(qrImageUrl, '_blank');
     }
   };

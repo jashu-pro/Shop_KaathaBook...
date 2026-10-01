@@ -1,7 +1,7 @@
 /* stores/authStore.ts */
 import { create } from 'zustand';
 import type { User } from '../features/auth/types';
-import type { Shop, CreateShopDTO } from '../features/shop/types';
+import type { Shop, CreateShopDTO, ShopRegistrationRequest } from '../features/shop/types';
 import { RepositoryFactory } from '../repositories/RepositoryFactory';
 import { Logger } from '../services/Logger';
 
@@ -9,11 +9,13 @@ interface AuthState {
   user: User | null;
   shop: Shop | null;
   shops: Shop[];
+  registrationRequest: ShopRegistrationRequest | null;
   isAuthenticated: boolean;
   isOnboarded: boolean;
   isLoading: boolean;
   error: string | null;
   loadSession: () => Promise<void>;
+  refreshShopStatus: () => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, fullName: string) => Promise<void>;
   signInWithGoogle: (selectedEmail?: string, selectedName?: string) => Promise<void>;
@@ -23,10 +25,17 @@ interface AuthState {
   switchShop: (shopId: string) => Promise<void>;
   sendOtp: (phone: string) => Promise<{ success: boolean; message: string; mockOtp?: string }>;
   loginWithOtp: (phone: string, otp: string) => Promise<void>;
+  sendEmailOtp: (email: string) => Promise<{ success: boolean; message: string; mockOtp?: string }>;
+  loginWithEmailOtp: (email: string, otp: string) => Promise<void>;
+  clearError: () => void;
 }
 
 const authRepo = RepositoryFactory.getAuthRepository();
 const shopRepo = RepositoryFactory.getShopRepository();
+
+const isShopActive = (s: Shop | null): boolean => {
+  return !!s && s.status === 'active';
+};
 
 const resolveActiveShop = (userId: string, shops: Shop[]): Shop | null => {
   if (shops.length === 0) return null;
@@ -39,10 +48,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   shop: null,
   shops: [],
+  registrationRequest: null,
   isAuthenticated: false,
   isOnboarded: false,
   isLoading: true,
   error: null,
+  clearError: () => set({ error: null }),
 
   loadSession: async () => {
     set({ isLoading: true, error: null });
@@ -52,12 +63,20 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         Logger.info(`AuthStore: Restored session for user ${user.email}`);
         const shops = await shopRepo.getShopsByOwner(user.id);
         const shop = resolveActiveShop(user.id, shops);
+        let registrationRequest: ShopRegistrationRequest | null = null;
+        if (shop) {
+          registrationRequest = await shopRepo.getRegistrationRequestByShopId(shop.id);
+        } else {
+          registrationRequest = await shopRepo.getRegistrationRequestByOwner(user.id);
+        }
+
         set({
           user,
           shops,
           shop,
+          registrationRequest,
           isAuthenticated: true,
-          isOnboarded: !!shop,
+          isOnboarded: isShopActive(shop),
           isLoading: false,
         });
       } else {
@@ -65,6 +84,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           user: null,
           shops: [],
           shop: null,
+          registrationRequest: null,
           isAuthenticated: false,
           isOnboarded: false,
           isLoading: false,
@@ -76,6 +96,30 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
+  refreshShopStatus: async () => {
+    const { user } = get();
+    if (!user) return;
+    try {
+      const shops = await shopRepo.getShopsByOwner(user.id);
+      const activeShop = resolveActiveShop(user.id, shops);
+      let registrationRequest: ShopRegistrationRequest | null = null;
+      if (activeShop) {
+        registrationRequest = await shopRepo.getRegistrationRequestByShopId(activeShop.id);
+      } else {
+        registrationRequest = await shopRepo.getRegistrationRequestByOwner(user.id);
+      }
+
+      set({
+        shops,
+        shop: activeShop,
+        registrationRequest,
+        isOnboarded: isShopActive(activeShop),
+      });
+    } catch (err: any) {
+      Logger.error('AuthStore: refreshShopStatus failed', err);
+    }
+  },
+
   signIn: async (email, password) => {
     set({ isLoading: true, error: null });
     try {
@@ -83,12 +127,18 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       Logger.info(`AuthStore: Login successful for user ${email}`);
       const shops = await shopRepo.getShopsByOwner(user.id);
       const shop = resolveActiveShop(user.id, shops);
+      let registrationRequest: ShopRegistrationRequest | null = null;
+      if (shop) {
+        registrationRequest = await shopRepo.getRegistrationRequestByShopId(shop.id);
+      }
+
       set({
         user,
         shops,
         shop,
+        registrationRequest,
         isAuthenticated: true,
-        isOnboarded: !!shop,
+        isOnboarded: isShopActive(shop),
         isLoading: false,
       });
     } catch (err: any) {
@@ -107,6 +157,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         user,
         shops: [],
         shop: null,
+        registrationRequest: null,
         isAuthenticated: true,
         isOnboarded: false,
         isLoading: false,
@@ -126,12 +177,18 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         Logger.info(`AuthStore: Google login successful for user ${user.email}`);
         const shops = await shopRepo.getShopsByOwner(user.id);
         const shop = resolveActiveShop(user.id, shops);
+        let registrationRequest: ShopRegistrationRequest | null = null;
+        if (shop) {
+          registrationRequest = await shopRepo.getRegistrationRequestByShopId(shop.id);
+        }
+
         set({
           user,
           shops,
           shop,
+          registrationRequest,
           isAuthenticated: true,
-          isOnboarded: !!shop,
+          isOnboarded: isShopActive(shop),
           isLoading: false,
         });
       }
@@ -163,16 +220,64 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       Logger.info(`AuthStore: Mobile OTP login successful for phone ${phone}`);
       const shops = await shopRepo.getShopsByOwner(user.id);
       const shop = resolveActiveShop(user.id, shops);
+      let registrationRequest: ShopRegistrationRequest | null = null;
+      if (shop) {
+        registrationRequest = await shopRepo.getRegistrationRequestByShopId(shop.id);
+      }
+
       set({
         user,
         shops,
         shop,
+        registrationRequest,
         isAuthenticated: true,
-        isOnboarded: !!shop,
+        isOnboarded: isShopActive(shop),
         isLoading: false,
       });
     } catch (err: any) {
       Logger.error('AuthStore: OTP verification failed', err);
+      set({ error: err.message, isLoading: false });
+      throw err;
+    }
+  },
+
+  sendEmailOtp: async (email: string) => {
+    set({ isLoading: true, error: null });
+    try {
+      const res = await authRepo.sendEmailOtp(email);
+      Logger.info(`AuthStore: Sent OTP to email ${email}`);
+      set({ isLoading: false });
+      return res;
+    } catch (err: any) {
+      Logger.error('AuthStore: Send Email OTP failed', err);
+      set({ error: err.message, isLoading: false });
+      throw err;
+    }
+  },
+
+  loginWithEmailOtp: async (email: string, otp: string) => {
+    set({ isLoading: true, error: null });
+    try {
+      const user = await authRepo.verifyEmailOtp(email, otp);
+      Logger.info(`AuthStore: Email OTP login successful for email ${email}`);
+      const shops = await shopRepo.getShopsByOwner(user.id);
+      const shop = resolveActiveShop(user.id, shops);
+      let registrationRequest: ShopRegistrationRequest | null = null;
+      if (shop) {
+        registrationRequest = await shopRepo.getRegistrationRequestByShopId(shop.id);
+      }
+
+      set({
+        user,
+        shops,
+        shop,
+        registrationRequest,
+        isAuthenticated: true,
+        isOnboarded: isShopActive(shop),
+        isLoading: false,
+      });
+    } catch (err: any) {
+      Logger.error('AuthStore: Email OTP verification failed', err);
       set({ error: err.message, isLoading: false });
       throw err;
     }
@@ -187,6 +292,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         user: null,
         shops: [],
         shop: null,
+        registrationRequest: null,
         isAuthenticated: false,
         isOnboarded: false,
         isLoading: false,
@@ -205,12 +311,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const newShop = await shopRepo.createShop(user.id, shopData);
-      Logger.info(`AuthStore: Registered shop "${newShop.name}" for user ${user.email}`);
+      const registrationRequest = await shopRepo.getRegistrationRequestByShopId(newShop.id);
+      Logger.info(`AuthStore: Registered shop "${newShop.name}" for user ${user.email} (Status: ${newShop.status})`);
       localStorage.setItem(`active_shop_id_${user.id}`, newShop.id);
+      
       set({
         shops: [...shops, newShop],
         shop: newShop,
-        isOnboarded: true,
+        registrationRequest,
+        isOnboarded: isShopActive(newShop),
         isLoading: false,
       });
     } catch (err: any) {
@@ -233,6 +342,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({
         shops: updatedShops,
         shop: updated,
+        isOnboarded: isShopActive(updated),
         isLoading: false,
       });
       return updated;
@@ -260,9 +370,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
     localStorage.setItem(`active_shop_id_${user.id}`, targetShop.id);
     Logger.info(`AuthStore: Switched active shop to "${targetShop.name}" (${targetShop.id})`);
+    
+    let registrationRequest: ShopRegistrationRequest | null = null;
+    if (targetShop) {
+      registrationRequest = await shopRepo.getRegistrationRequestByShopId(targetShop.id);
+    }
+
     set({
       shop: targetShop,
-      isOnboarded: true,
+      registrationRequest,
+      isOnboarded: isShopActive(targetShop),
     });
   },
 }));

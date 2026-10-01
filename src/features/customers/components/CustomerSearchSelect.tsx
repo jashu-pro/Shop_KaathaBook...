@@ -1,6 +1,6 @@
 /* features/customers/components/CustomerSearchSelect.tsx */
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { Search, X, Check, ChevronDown } from 'lucide-react';
+import { Search, X, Check, ChevronDown, Plus } from 'lucide-react';
 import type { Customer } from '../types';
 
 interface CustomerSearchSelectProps {
@@ -10,6 +10,7 @@ interface CustomerSearchSelectProps {
   placeholder?: string;
   label?: string;
   required?: boolean;
+  onQuickAddCustomer?: (name: string) => Promise<string | void>;
 }
 
 export const CustomerSearchSelect: React.FC<CustomerSearchSelectProps> = ({
@@ -18,7 +19,8 @@ export const CustomerSearchSelect: React.FC<CustomerSearchSelectProps> = ({
   customers = [],
   placeholder = 'Search customer by name, phone, or village...',
   label = 'Select Customer',
-  required = false
+  required = false,
+  onQuickAddCustomer
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -344,6 +346,40 @@ export const CustomerSearchSelect: React.FC<CustomerSearchSelectProps> = ({
                 </div>
               );
             })
+          )}
+          {onQuickAddCustomer && searchQuery.trim().length > 0 && (
+            <div style={{ padding: '0.4rem', borderTop: '1px solid #E2E8F0', marginTop: '0.25rem' }}>
+              <button
+                type="button"
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  const createdId = await onQuickAddCustomer(searchQuery.trim());
+                  if (createdId) {
+                    onChange(createdId);
+                  }
+                  setIsOpen(false);
+                  setSearchQuery('');
+                }}
+                style={{
+                  width: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.5rem',
+                  padding: '0.65rem 0.85rem',
+                  backgroundColor: '#EFF6FF',
+                  border: '1px dashed #3B82F6',
+                  borderRadius: '12px',
+                  color: '#2563EB',
+                  fontWeight: '700',
+                  fontSize: '0.85rem',
+                  cursor: 'pointer'
+                }}
+              >
+                <Plus size={16} />
+                <span>Add "{searchQuery.trim()}" as New Customer</span>
+              </button>
+            </div>
           )}
         </div>
       )}

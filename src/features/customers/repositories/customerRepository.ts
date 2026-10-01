@@ -33,102 +33,153 @@ export class SupabaseCustomerRepository implements ICustomerRepository {
   }
 
   async getCustomersByShop(shopId: string): Promise<Customer[]> {
-    if (!supabase) return [];
-    const { data, error } = await supabase
-      .from('customers')
-      .select('*')
-      .eq('shop_id', shopId)
-      .order('name', { ascending: true });
+    const localRepo = new LocalCustomerRepository();
+    const localCustomers = await localRepo.getCustomersByShop(shopId);
+    if (!supabase) return localCustomers;
+    try {
+      const { data, error } = await supabase
+        .from('customers')
+        .select('*')
+        .eq('shop_id', shopId)
+        .order('name', { ascending: true });
 
-    if (error || !data) return [];
-    return data.map((d) => this.mapEntityToDomain(d));
+      if (error || !data || data.length === 0) return localCustomers;
+      const remote = data.map((d) => this.mapEntityToDomain(d));
+      const ids = new Set(remote.map((c) => c.id));
+      return [...remote, ...localCustomers.filter((c) => !ids.has(c.id))];
+    } catch {
+      return localCustomers;
+    }
   }
 
   async getCustomerById(id: string, shopId?: string): Promise<Customer | null> {
-    if (!supabase) return null;
-    let query = supabase.from('customers').select('*').eq('id', id);
-    if (shopId) {
-      query = query.eq('shop_id', shopId);
-    }
-    const { data, error } = await query.maybeSingle();
+    const localRepo = new LocalCustomerRepository();
+    const localCustomer = await localRepo.getCustomerById(id, shopId);
+    if (!supabase) return localCustomer;
+    try {
+      let query = supabase.from('customers').select('*').eq('id', id);
+      if (shopId) {
+        query = query.eq('shop_id', shopId);
+      }
+      const { data, error } = await query.maybeSingle();
 
-    if (error || !data) return null;
-    return this.mapEntityToDomain(data);
+      if (error || !data) return localCustomer;
+      return this.mapEntityToDomain(data);
+    } catch {
+      return localCustomer;
+    }
   }
 
   async createCustomer(shopId: string, dto: CreateCustomerDTO): Promise<Customer> {
-    if (!supabase) throw new Error('Supabase client not initialized');
-    
-    const initialBalance = dto.openingBalance
-      ? (dto.balanceType === 'advance' ? -Math.abs(dto.openingBalance) : Math.abs(dto.openingBalance))
-      : 0;
+    const localRepo = new LocalCustomerRepository();
+    const localCreated = await localRepo.createCustomer(shopId, dto);
 
-    const { data, error } = await supabase
-      .from('customers')
-      .insert({
-        shop_id: shopId,
-        name: dto.name,
-        phone: dto.phone || null,
-        email: dto.email || null,
-        address: dto.address || null,
-        village: dto.village || null,
-        credit_limit: dto.creditLimit || 0,
-        current_balance: initialBalance,
-        tag: dto.tag || 'Regular',
-        photo_url: dto.photoUrl || null,
-        notes: dto.notes || null,
-      })
-      .select()
-      .single();
+    if (supabase) {
+      try {
+        const initialBalance = dto.openingBalance
+          ? (dto.balanceType === 'advance' ? -Math.abs(dto.openingBalance) : Math.abs(dto.openingBalance))
+          : 0;
 
-    if (error || !data) throw new Error(error?.message || 'Failed to create customer');
-    return this.mapEntityToDomain(data);
+        const { data, error } = await supabase
+          .from('customers')
+          .insert({
+            id: localCreated.id,
+            shop_id: shopId,
+            name: dto.name,
+            phone: dto.phone || null,
+            email: dto.email || null,
+            address: dto.address || null,
+            village: dto.village || null,
+            credit_limit: dto.creditLimit || 0,
+            current_balance: initialBalance,
+            tag: dto.tag || 'Regular',
+            photo_url: dto.photoUrl || null,
+            notes: dto.notes || null,
+          })
+          .select()
+          .maybeSingle();
+
+        if (!error && data) {
+          return this.mapEntityToDomain(data);
+        }
+      } catch (err) {
+        console.warn('Supabase createCustomer sync failed, using local customer:', err);
+      }
+    }
+
+    return localCreated;
   }
 
   async updateCustomer(id: string, updates: UpdateCustomerDTO): Promise<Customer> {
-    if (!supabase) throw new Error('Supabase client not initialized');
-    const { data, error } = await supabase
-      .from('customers')
-      .update({
-        name: updates.name,
-        phone: updates.phone || null,
-        email: updates.email || null,
-        address: updates.address || null,
-        village: updates.village || null,
-        credit_limit: updates.creditLimit,
-        tag: updates.tag,
-        photo_url: updates.photoUrl || null,
-        notes: updates.notes || null,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', id)
-      .select()
-      .single();
+    const localRepo = new LocalCustomerRepository();
+    const localUpdated = await localRepo.updateCustomer(id, updates);
 
-    if (error || !data) throw new Error(error?.message || 'Failed to update customer');
-    return this.mapEntityToDomain(data);
+    if (supabase) {
+      try {
+        const { data, error } = await supabase
+          .from('customers')
+          .update({
+            name: updates.name,
+            phone: updates.phone || null,
+            email: updates.email || null,
+            address: updates.address || null,
+            village: updates.village || null,
+            credit_limit: updates.creditLimit,
+            tag: updates.tag,
+            photo_url: updates.photoUrl || null,
+            notes: updates.notes || null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', id)
+          .select()
+          .maybeSingle();
+
+        if (!error && data) {
+          return this.mapEntityToDomain(data);
+        }
+      } catch (err) {
+        console.warn('Supabase updateCustomer sync error:', err);
+      }
+    }
+
+    return localUpdated;
   }
 
   async deleteCustomer(id: string, shopId?: string): Promise<boolean> {
-    if (!supabase) return false;
-    let query = supabase.from('customers').delete().eq('id', id);
-    if (shopId) {
-      query = query.eq('shop_id', shopId);
+    const localRepo = new LocalCustomerRepository();
+    await localRepo.deleteCustomer(id, shopId);
+
+    if (supabase) {
+      try {
+        let query = supabase.from('customers').delete().eq('id', id);
+        if (shopId) {
+          query = query.eq('shop_id', shopId);
+        }
+        await query;
+      } catch {
+        // ignore
+      }
     }
-    const { error } = await query;
-    return !error;
+    return true;
   }
 
   async findDuplicateByPhone(shopId: string, phone: string): Promise<Customer | null> {
-    if (!supabase || !phone) return null;
-    const { data } = await supabase
-      .from('customers')
-      .select('*')
-      .eq('shop_id', shopId)
-      .eq('phone', phone)
-      .maybeSingle();
+    const localRepo = new LocalCustomerRepository();
+    const localMatch = await localRepo.findDuplicateByPhone(shopId, phone);
+    if (localMatch || !supabase || !phone) return localMatch;
 
-    return data ? this.mapEntityToDomain(data) : null;
+    try {
+      const { data } = await supabase
+        .from('customers')
+        .select('*')
+        .eq('shop_id', shopId)
+        .eq('phone', phone)
+        .maybeSingle();
+
+      return data ? this.mapEntityToDomain(data) : null;
+    } catch {
+      return null;
+    }
   }
 }
 

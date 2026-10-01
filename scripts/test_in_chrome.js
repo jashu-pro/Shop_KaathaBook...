@@ -38,6 +38,12 @@ async function runChromePhaseAudit() {
     consoleErrors.push(`[Page Error] ${err.message}`);
   });
 
+  page.on('response', (res) => {
+    if (res.status() >= 400) {
+      console.log(`   [HTTP ${res.status()}] ${res.url()}`);
+    }
+  });
+
   try {
     // 1. Initial navigation to root & seed mock session if needed
     console.log('1️⃣ Navigating to root / ...');
@@ -46,8 +52,8 @@ async function runChromePhaseAudit() {
     // Seed test shop & customer data into localStorage so protected routes are authenticated
     await page.evaluate(() => {
       const now = new Date().toISOString();
-      const shopId = 'chrome_audit_shop';
-      const ownerId = 'chrome_audit_owner';
+      const shopId = '00000000-0000-4000-8000-000000000001';
+      const ownerId = '00000000-0000-4000-8000-000000000002';
 
       const activeUser = {
         id: ownerId,
@@ -68,6 +74,7 @@ async function runChromePhaseAudit() {
             phone: '9848022338',
             upiId: 'srikrishna@okaxis',
             currency: 'INR',
+            status: 'active',
           },
           isAuthenticated: true,
           isOnboarded: true,
@@ -87,6 +94,7 @@ async function runChromePhaseAudit() {
           phone: '9848022338',
           upi_id: 'srikrishna@okaxis',
           currency: 'INR',
+          status: 'active',
           created_at: now,
           updated_at: now,
         },

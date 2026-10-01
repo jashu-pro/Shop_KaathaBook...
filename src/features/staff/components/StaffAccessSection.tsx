@@ -98,7 +98,7 @@ export const StaffAccessSection: React.FC = () => {
       </div>
 
       {/* Stats Summary Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 150px), 1fr))', gap: '1rem' }}>
         <div
           className="glass-panel"
           style={{
@@ -153,7 +153,7 @@ export const StaffAccessSection: React.FC = () => {
 
       {/* Sub Tabs: Workers vs Activity Log */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.75rem' }}>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', maxWidth: '100%', paddingBottom: '0.2rem' }}>
           <button
             onClick={() => setActiveSubTab('workers')}
             className={`btn ${activeSubTab === 'workers' ? 'btn-primary' : 'btn-secondary'}`}

@@ -105,7 +105,7 @@ export const EditCustomerModal: React.FC<EditCustomerModalProps> = ({
             videoRef.current.play().catch(() => {});
           }
         }, 120);
-      } catch (err: any) {
+      } catch {
         cameraInputRef.current?.click();
       }
     } else {

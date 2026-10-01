@@ -41,8 +41,18 @@ import {
 import { type WorkerRepository } from '../features/staff/repositories/WorkerRepository';
 import { LocalWorkerRepository } from '../features/staff/repositories/LocalWorkerRepository';
 
+import { 
+  type IAdminRepository, 
+  SupabaseAdminRepository, 
+  LocalAdminRepository 
+} from '../features/admin/repositories/adminRepository';
+
 class RepositoryFactoryService {
   private useSupabase = isSupabaseConfigured();
+
+  getAdminRepository(): IAdminRepository {
+    return this.useSupabase ? new SupabaseAdminRepository() : new LocalAdminRepository();
+  }
 
   getAuthRepository(): IAuthRepository {
     return this.useSupabase ? new SupabaseAuthRepository() : new LocalAuthRepository();
@@ -82,3 +92,4 @@ class RepositoryFactoryService {
 }
 
 export const RepositoryFactory = new RepositoryFactoryService();
+

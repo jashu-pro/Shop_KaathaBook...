@@ -150,7 +150,7 @@ export const ProductListPage: React.FC = () => {
       </div>
 
       {/* INVENTORY STATS SUMMARY ROW */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 150px), 1fr))', gap: '0.85rem' }}>
         <div style={{ padding: '1rem 1.25rem', borderRadius: '20px', backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
           <span style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Total Catalog Products</span>
           <div style={{ fontSize: '1.4rem', fontWeight: '800', color: 'var(--text-heading)', marginTop: '0.2rem' }}>{totalProducts} Items</div>
@@ -319,7 +319,7 @@ export const ProductListPage: React.FC = () => {
         </div>
       ) : (
         /* Product Cards Grid */
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.25rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))', gap: '1rem' }}>
           {processedProducts.map((product) => (
             <ProductCard
               key={product.id}

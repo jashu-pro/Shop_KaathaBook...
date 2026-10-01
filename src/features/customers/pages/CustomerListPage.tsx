@@ -273,7 +273,7 @@ export const CustomerListPage: React.FC = () => {
         </div>
       ) : (
         /* Customer Profile Cards Grid */
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '0.85rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))', gap: '0.85rem' }}>
           {processedCustomers.map((customer) => (
             <CustomerProfileCard
               key={customer.id}

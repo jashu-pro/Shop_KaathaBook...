@@ -86,7 +86,7 @@ export const NewSaleWizardModal: React.FC<NewSaleWizardModalProps> = ({
           if (parsed.cart && parsed.cart.length > 0) {
             setCart(parsed.cart);
           }
-        } catch (e) {
+        } catch {
           // ignore
         }
       }

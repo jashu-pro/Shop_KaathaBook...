@@ -369,7 +369,7 @@ const MainLayout: React.FC = () => {
                   className="fab-action-card fab-amber"
                 >
                   <div className="fab-action-icon"><CreditCard size={26} /></div>
-                  <span>Receive Payment</span>
+                  <span>Got Payment (Deposit)</span>
                 </button>
               )}
               {can('customers', 'add') && (
@@ -470,7 +470,7 @@ const MainLayout: React.FC = () => {
 
               {/* Theme Toggle */}
               <button
-                onClick={() => { toggleTheme; toggleTheme(); }}
+                onClick={() => toggleTheme()}
                 style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', padding: '0.75rem 0.85rem', borderRadius: '16px', border: 'none', backgroundColor: 'transparent', cursor: 'pointer', textAlign: 'left', width: '100%', transition: 'background-color 0.15s ease' }}
                 onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--bg-secondary)')}
                 onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}

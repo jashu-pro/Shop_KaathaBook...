@@ -305,7 +305,7 @@ const LedgerPage: React.FC = () => {
       </div>
 
       {/* ------------------------------------------------------------- */}
-      {/* TRADITIONAL BAHI KHATTA TABLE                                 */}
+      {/* TRADITIONAL BAHI KHATTA TABLE (RESPONSIVE SCROLLABLE)          */}
       {/* ------------------------------------------------------------- */}
       <div style={{
         backgroundColor: 'var(--bg-card)',
@@ -314,24 +314,26 @@ const LedgerPage: React.FC = () => {
         overflow: 'hidden',
         boxShadow: '0 4px 16px rgba(15, 23, 42, 0.03)'
       }}>
-        {/* Table Bahi Header */}
-        <div style={{
-          backgroundColor: '#059669',
-          color: '#FFFFFF',
-          padding: '0.85rem 1.25rem',
-          display: 'grid',
-          gridTemplateColumns: '1.2fr 1.8fr 1fr 1fr 1.2fr',
-          gap: '0.5rem',
-          fontWeight: '800',
-          fontSize: '0.85rem',
-          alignItems: 'center'
-        }}>
-          <span>Date & Time</span>
-          <span>Customer & Details</span>
-          <span style={{ textAlign: 'right' }}>You Gave (Udhaar ₹)</span>
-          <span style={{ textAlign: 'right' }}>You Got (Jama ₹)</span>
-          <span style={{ textAlign: 'right' }}>Running Balance</span>
-        </div>
+        <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+          <div style={{ minWidth: '620px' }}>
+            {/* Table Bahi Header */}
+            <div style={{
+              backgroundColor: '#059669',
+              color: '#FFFFFF',
+              padding: '0.85rem 1.25rem',
+              display: 'grid',
+              gridTemplateColumns: '1.2fr 1.8fr 1fr 1fr 1.2fr',
+              gap: '0.5rem',
+              fontWeight: '800',
+              fontSize: '0.85rem',
+              alignItems: 'center'
+            }}>
+              <span>Date & Time</span>
+              <span>Customer & Details</span>
+              <span style={{ textAlign: 'right' }}>You Gave (Udhaar ₹)</span>
+              <span style={{ textAlign: 'right' }}>You Got (Jama ₹)</span>
+              <span style={{ textAlign: 'right' }}>Running Balance</span>
+            </div>
 
         {/* Table Entries */}
         {isLoading ? (
@@ -416,6 +418,8 @@ const LedgerPage: React.FC = () => {
             })}
           </div>
         )}
+          </div>
+        </div>
       </div>
 
       {/* Record Credit Sale Modal */}

@@ -37,7 +37,7 @@ const Register: React.FC = () => {
     try {
       await signup(email, password, fullName);
       navigate('/shop-setup');
-    } catch (err: any) {
+    } catch {
       // Error handled by store
     }
   };

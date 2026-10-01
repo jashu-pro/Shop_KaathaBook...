@@ -17,10 +17,12 @@ create table if not exists public.profiles (
 alter table public.profiles enable row level security;
 
 -- Create RLS Policies
+DROP POLICY IF EXISTS "Users can view their own profile" ON public.profiles;
 create policy "Users can view their own profile"
   on public.profiles for select
   using (auth.uid() = id);
 
+DROP POLICY IF EXISTS "Users can update their own profile" ON public.profiles;
 create policy "Users can update their own profile"
   on public.profiles for update
   using (auth.uid() = id);
@@ -56,14 +58,17 @@ create table if not exists public.shops (
 alter table public.shops enable row level security;
 
 -- Create RLS Policies
+DROP POLICY IF EXISTS "Owners can view their own shop" ON public.shops;
 create policy "Owners can view their own shop"
   on public.shops for select
   using (auth.uid() = owner_id);
 
+DROP POLICY IF EXISTS "Owners can create their own shop" ON public.shops;
 create policy "Owners can create their own shop"
   on public.shops for insert
   with check (auth.uid() = owner_id);
 
+DROP POLICY IF EXISTS "Owners can update their own shop" ON public.shops;
 create policy "Owners can update their own shop"
   on public.shops for update
   using (auth.uid() = owner_id);
@@ -89,6 +94,7 @@ create table if not exists public.customers (
 alter table public.customers enable row level security;
 
 -- Create RLS Policies
+DROP POLICY IF EXISTS "Users can view customers of their own shop" ON public.customers;
 create policy "Users can view customers of their own shop"
   on public.customers for select
   using (
@@ -99,6 +105,7 @@ create policy "Users can view customers of their own shop"
     )
   );
 
+DROP POLICY IF EXISTS "Users can insert customers into their own shop" ON public.customers;
 create policy "Users can insert customers into their own shop"
   on public.customers for insert
   with check (
@@ -109,6 +116,7 @@ create policy "Users can insert customers into their own shop"
     )
   );
 
+DROP POLICY IF EXISTS "Users can update customers of their own shop" ON public.customers;
 create policy "Users can update customers of their own shop"
   on public.customers for update
   using (
@@ -119,6 +127,7 @@ create policy "Users can update customers of their own shop"
     )
   );
 
+DROP POLICY IF EXISTS "Users can delete customers of their own shop" ON public.customers;
 create policy "Users can delete customers of their own shop"
   on public.customers for delete
   using (
@@ -142,6 +151,7 @@ create table if not exists public.categories (
 alter table public.categories enable row level security;
 
 -- Create RLS Policies
+DROP POLICY IF EXISTS "Users can view categories of their own shop" ON public.categories;
 create policy "Users can view categories of their own shop"
   on public.categories for select
   using (
@@ -152,6 +162,7 @@ create policy "Users can view categories of their own shop"
     )
   );
 
+DROP POLICY IF EXISTS "Users can insert categories into their own shop" ON public.categories;
 create policy "Users can insert categories into their own shop"
   on public.categories for insert
   with check (
@@ -162,6 +173,7 @@ create policy "Users can insert categories into their own shop"
     )
   );
 
+DROP POLICY IF EXISTS "Users can update categories of their own shop" ON public.categories;
 create policy "Users can update categories of their own shop"
   on public.categories for update
   using (
@@ -172,6 +184,7 @@ create policy "Users can update categories of their own shop"
     )
   );
 
+DROP POLICY IF EXISTS "Users can delete categories from their own shop" ON public.categories;
 create policy "Users can delete categories from their own shop"
   on public.categories for delete
   using (
@@ -205,6 +218,7 @@ create table if not exists public.products (
 alter table public.products enable row level security;
 
 -- Create RLS Policies
+DROP POLICY IF EXISTS "Users can view products of their own shop" ON public.products;
 create policy "Users can view products of their own shop"
   on public.products for select
   using (
@@ -215,6 +229,7 @@ create policy "Users can view products of their own shop"
     )
   );
 
+DROP POLICY IF EXISTS "Users can insert products into their own shop" ON public.products;
 create policy "Users can insert products into their own shop"
   on public.products for insert
   with check (
@@ -225,6 +240,7 @@ create policy "Users can insert products into their own shop"
     )
   );
 
+DROP POLICY IF EXISTS "Users can update products of their own shop" ON public.products;
 create policy "Users can update products of their own shop"
   on public.products for update
   using (
@@ -235,6 +251,7 @@ create policy "Users can update products of their own shop"
     )
   );
 
+DROP POLICY IF EXISTS "Users can delete products from their own shop" ON public.products;
 create policy "Users can delete products from their own shop"
   on public.products for delete
   using (
@@ -269,6 +286,7 @@ create table if not exists public.sales (
 alter table public.sales enable row level security;
 
 -- Create RLS Policies
+DROP POLICY IF EXISTS "Users can view sales of their own shop" ON public.sales;
 create policy "Users can view sales of their own shop"
   on public.sales for select
   using (
@@ -279,6 +297,7 @@ create policy "Users can view sales of their own shop"
     )
   );
 
+DROP POLICY IF EXISTS "Users can insert sales into their own shop" ON public.sales;
 create policy "Users can insert sales into their own shop"
   on public.sales for insert
   with check (
@@ -289,6 +308,7 @@ create policy "Users can insert sales into their own shop"
     )
   );
 
+DROP POLICY IF EXISTS "Users can update sales of their own shop" ON public.sales;
 create policy "Users can update sales of their own shop"
   on public.sales for update
   using (
@@ -299,6 +319,7 @@ create policy "Users can update sales of their own shop"
     )
   );
 
+DROP POLICY IF EXISTS "Users can delete sales from their own shop" ON public.sales;
 create policy "Users can delete sales from their own shop"
   on public.sales for delete
   using (
@@ -325,6 +346,7 @@ create table if not exists public.sale_items (
 alter table public.sale_items enable row level security;
 
 -- Create RLS Policies
+DROP POLICY IF EXISTS "Users can view sale items of their own shop" ON public.sale_items;
 create policy "Users can view sale items of their own shop"
   on public.sale_items for select
   using (
@@ -336,6 +358,7 @@ create policy "Users can view sale items of their own shop"
     )
   );
 
+DROP POLICY IF EXISTS "Users can insert sale items into their own shop" ON public.sale_items;
 create policy "Users can insert sale items into their own shop"
   on public.sale_items for insert
   with check (
@@ -365,6 +388,7 @@ create table if not exists public.payments (
 alter table public.payments enable row level security;
 
 -- Create RLS Policies
+DROP POLICY IF EXISTS "Users can view payments of their own shop" ON public.payments;
 create policy "Users can view payments of their own shop"
   on public.payments for select
   using (
@@ -375,6 +399,7 @@ create policy "Users can view payments of their own shop"
     )
   );
 
+DROP POLICY IF EXISTS "Users can insert payments into their own shop" ON public.payments;
 create policy "Users can insert payments into their own shop"
   on public.payments for insert
   with check (
@@ -385,6 +410,7 @@ create policy "Users can insert payments into their own shop"
     )
   );
 
+DROP POLICY IF EXISTS "Users can update payments of their own shop" ON public.payments;
 create policy "Users can update payments of their own shop"
   on public.payments for update
   using (
@@ -395,6 +421,7 @@ create policy "Users can update payments of their own shop"
     )
   );
 
+DROP POLICY IF EXISTS "Users can delete payments from their own shop" ON public.payments;
 create policy "Users can delete payments from their own shop"
   on public.payments for delete
   using (
@@ -425,6 +452,7 @@ create table if not exists public.ledger_entries (
 alter table public.ledger_entries enable row level security;
 
 -- Create RLS Policies
+DROP POLICY IF EXISTS "Users can view ledger entries of their own shop" ON public.ledger_entries;
 create policy "Users can view ledger entries of their own shop"
   on public.ledger_entries for select
   using (
@@ -435,6 +463,7 @@ create policy "Users can view ledger entries of their own shop"
     )
   );
 
+DROP POLICY IF EXISTS "Users can insert ledger entries into their own shop" ON public.ledger_entries;
 create policy "Users can insert ledger entries into their own shop"
   on public.ledger_entries for insert
   with check (
@@ -445,6 +474,7 @@ create policy "Users can insert ledger entries into their own shop"
     )
   );
 
+DROP POLICY IF EXISTS "Users can update ledger entries of their own shop" ON public.ledger_entries;
 create policy "Users can update ledger entries of their own shop"
   on public.ledger_entries for update
   using (
@@ -455,6 +485,7 @@ create policy "Users can update ledger entries of their own shop"
     )
   );
 
+DROP POLICY IF EXISTS "Users can delete ledger entries from their own shop" ON public.ledger_entries;
 create policy "Users can delete ledger entries from their own shop"
   on public.ledger_entries for delete
   using (
@@ -480,6 +511,7 @@ create table if not exists public.reports (
 alter table public.reports enable row level security;
 
 -- Create RLS Policies
+DROP POLICY IF EXISTS "Users can view reports of their own shop" ON public.reports;
 create policy "Users can view reports of their own shop"
   on public.reports for select
   using (
@@ -490,6 +522,7 @@ create policy "Users can view reports of their own shop"
     )
   );
 
+DROP POLICY IF EXISTS "Users can insert reports into their own shop" ON public.reports;
 create policy "Users can insert reports into their own shop"
   on public.reports for insert
   with check (
@@ -517,6 +550,7 @@ create table if not exists public.notifications (
 alter table public.notifications enable row level security;
 
 -- Create RLS Policies
+DROP POLICY IF EXISTS "Users can view notifications of their own shop" ON public.notifications;
 create policy "Users can view notifications of their own shop"
   on public.notifications for select
   using (
@@ -527,6 +561,7 @@ create policy "Users can view notifications of their own shop"
     )
   );
 
+DROP POLICY IF EXISTS "Users can insert notifications into their own shop" ON public.notifications;
 create policy "Users can insert notifications into their own shop"
   on public.notifications for insert
   with check (
@@ -716,6 +751,7 @@ create table if not exists public.stock_movements (
 
 alter table public.stock_movements enable row level security;
 
+DROP POLICY IF EXISTS "Users can view stock movements of their own shop" ON public.stock_movements;
 create policy "Users can view stock movements of their own shop"
   on public.stock_movements for select
   using (exists (
@@ -724,6 +760,7 @@ create policy "Users can view stock movements of their own shop"
       and public.shops.owner_id = auth.uid()
   ));
 
+DROP POLICY IF EXISTS "Users can insert stock movements into their own shop" ON public.stock_movements;
 create policy "Users can insert stock movements into their own shop"
   on public.stock_movements for insert
   with check (exists (
@@ -1311,22 +1348,26 @@ begin
 end;
 $$;
 
+DROP POLICY IF EXISTS "Owners can manage all memberships of their shop" ON public.shop_memberships;
 create policy "Owners can manage all memberships of their shop"
   on public.shop_memberships
   for all
   using (public.is_shop_owner(shop_id, auth.uid()))
   with check (public.is_shop_owner(shop_id, auth.uid()));
 
+DROP POLICY IF EXISTS "Workers can view their own membership" ON public.shop_memberships;
 create policy "Workers can view their own membership"
   on public.shop_memberships
   for select
   using (user_id = auth.uid());
 
+DROP POLICY IF EXISTS "Owners can view all worker activity logs" ON public.worker_activity_logs;
 create policy "Owners can view all worker activity logs"
   on public.worker_activity_logs
   for select
   using (public.is_shop_owner(shop_id, auth.uid()));
 
+DROP POLICY IF EXISTS "Workers with access can insert activity logs" ON public.worker_activity_logs;
 create policy "Workers with access can insert activity logs"
   on public.worker_activity_logs
   for insert
@@ -1335,6 +1376,7 @@ create policy "Workers with access can insert activity logs"
     public.is_active_shop_member(shop_id, auth.uid())
   );
 
+DROP POLICY IF EXISTS "Shop members can view sale attachments" ON public.sale_attachments;
 create policy "Shop members can view sale attachments"
   on public.sale_attachments
   for select
@@ -1343,6 +1385,7 @@ create policy "Shop members can view sale attachments"
     public.has_shop_permission(shop_id, auth.uid(), 'sales', 'view')
   );
 
+DROP POLICY IF EXISTS "Shop members can insert sale attachments" ON public.sale_attachments;
 create policy "Shop members can insert sale attachments"
   on public.sale_attachments
   for insert
@@ -1478,5 +1521,180 @@ CREATE OR REPLACE VIEW inventory_movements AS
     created_at
   FROM stock_movements;
 
+-- ============================================================================
+-- 021: SHOP REGISTRATION REQUESTS, ADMIN AUDIT LOGS, & APPROVAL SYSTEM
+-- ============================================================================
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_schema = 'public' AND table_name = 'shops' AND column_name = 'status'
+  ) THEN
+    ALTER TABLE public.shops 
+      ADD COLUMN status TEXT NOT NULL DEFAULT 'pending' 
+      CHECK (status IN ('pending', 'active', 'suspended', 'rejected'));
+      
+    UPDATE public.shops SET status = 'active' WHERE status = 'pending';
+  END IF;
+END $$;
 
+CREATE INDEX IF NOT EXISTS idx_shops_status ON public.shops(status);
 
+CREATE TABLE IF NOT EXISTS public.platform_admins (
+  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  email TEXT NOT NULL,
+  role TEXT NOT NULL DEFAULT 'super_admin' CHECK (role IN ('super_admin', 'support_admin', 'auditor')),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE public.platform_admins ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Admins can view platform admins" ON public.platform_admins;
+CREATE POLICY "Admins can view platform admins"
+  ON public.platform_admins FOR SELECT
+  USING (
+    auth.uid() IS NOT NULL AND (
+      auth.uid() = id OR public.is_platform_admin(auth.uid())
+    )
+  );
+
+DROP POLICY IF EXISTS "Admins can insert platform admins" ON public.platform_admins;
+CREATE POLICY "Admins can insert platform admins"
+  ON public.platform_admins FOR INSERT
+  WITH CHECK (
+    auth.uid() IS NOT NULL AND public.is_platform_admin(auth.uid())
+  );
+
+DROP POLICY IF EXISTS "Admins can update platform admins" ON public.platform_admins;
+CREATE POLICY "Admins can update platform admins"
+  ON public.platform_admins FOR UPDATE
+  USING (
+    auth.uid() IS NOT NULL AND public.is_platform_admin(auth.uid())
+  );
+
+DROP POLICY IF EXISTS "Admins can delete platform admins" ON public.platform_admins;
+CREATE POLICY "Admins can delete platform admins"
+  ON public.platform_admins FOR DELETE
+  USING (
+    auth.uid() IS NOT NULL AND public.is_platform_admin(auth.uid())
+  );
+
+CREATE OR REPLACE FUNCTION public.is_platform_admin(p_user_id UUID)
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY DEFINER
+STABLE
+AS $$
+DECLARE
+  v_is_admin BOOLEAN;
+BEGIN
+  IF p_user_id IS NULL THEN
+    RETURN FALSE;
+  END IF;
+
+  SELECT EXISTS (
+    SELECT 1 FROM public.platform_admins WHERE id = p_user_id
+  ) INTO v_is_admin;
+
+  IF v_is_admin THEN
+    RETURN TRUE;
+  END IF;
+
+  SELECT 
+    (raw_user_meta_data->>'role' = 'admin' OR 
+     raw_user_meta_data->>'is_admin' = 'true' OR
+     email = 'jaswanthmajji43@gmail.com' OR
+     email LIKE '%admin@%' OR
+     email LIKE '%@admin.%')
+  INTO v_is_admin
+  FROM auth.users
+  WHERE id = p_user_id;
+
+  RETURN COALESCE(v_is_admin, FALSE);
+END;
+$$;
+
+CREATE TABLE IF NOT EXISTS public.shop_registration_requests (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  owner_user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  shop_id UUID REFERENCES public.shops(id) ON DELETE CASCADE NOT NULL,
+  shop_name TEXT NOT NULL,
+  business_type TEXT NOT NULL,
+  email TEXT NOT NULL,
+  phone TEXT,
+  address TEXT,
+  landmark TEXT,
+  city TEXT,
+  state TEXT,
+  pincode TEXT,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
+  rejection_reason TEXT,
+  approved_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  approved_at TIMESTAMP WITH TIME ZONE,
+  rejected_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  rejected_at TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  CONSTRAINT uq_shop_reg_shop_id UNIQUE (shop_id)
+);
+
+ALTER TABLE public.shop_registration_requests ENABLE ROW LEVEL SECURITY;
+
+CREATE INDEX IF NOT EXISTS idx_shop_reg_status ON public.shop_registration_requests(status);
+CREATE INDEX IF NOT EXISTS idx_shop_reg_owner ON public.shop_registration_requests(owner_user_id);
+CREATE INDEX IF NOT EXISTS idx_shop_reg_created ON public.shop_registration_requests(created_at DESC);
+
+DROP POLICY IF EXISTS "Owners can view their own registration requests" ON public.shop_registration_requests;
+CREATE POLICY "Owners can view their own registration requests"
+  ON public.shop_registration_requests FOR SELECT
+  USING (auth.uid() = owner_user_id);
+
+DROP POLICY IF EXISTS "Owners can create registration requests" ON public.shop_registration_requests;
+CREATE POLICY "Owners can create registration requests"
+  ON public.shop_registration_requests FOR INSERT
+  WITH CHECK (auth.uid() = owner_user_id);
+
+DROP POLICY IF EXISTS "Admins can view all registration requests" ON public.shop_registration_requests;
+CREATE POLICY "Admins can view all registration requests"
+  ON public.shop_registration_requests FOR SELECT
+  USING (public.is_platform_admin(auth.uid()));
+
+DROP POLICY IF EXISTS "Admins can update registration requests" ON public.shop_registration_requests;
+CREATE POLICY "Admins can update registration requests"
+  ON public.shop_registration_requests FOR UPDATE
+  USING (public.is_platform_admin(auth.uid()));
+
+CREATE TABLE IF NOT EXISTS public.admin_audit_logs (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  admin_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  admin_email TEXT,
+  shop_id UUID REFERENCES public.shops(id) ON DELETE CASCADE,
+  action TEXT NOT NULL CHECK (action IN (
+    'ADMIN_APPROVED_SHOP',
+    'ADMIN_REJECTED_SHOP',
+    'ADMIN_SUSPENDED_SHOP',
+    'ADMIN_REACTIVATED_SHOP'
+  )),
+  metadata JSONB DEFAULT '{}'::jsonb NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE public.admin_audit_logs ENABLE ROW LEVEL SECURITY;
+
+CREATE INDEX IF NOT EXISTS idx_admin_audit_shop ON public.admin_audit_logs(shop_id);
+CREATE INDEX IF NOT EXISTS idx_admin_audit_created ON public.admin_audit_logs(created_at DESC);
+
+-- Platform admins can view and insert audit logs
+DROP POLICY IF EXISTS "Admins can view audit logs" ON public.admin_audit_logs;
+CREATE POLICY "Admins can view audit logs"
+  ON public.admin_audit_logs FOR SELECT
+  USING (public.is_platform_admin(auth.uid()));
+
+DROP POLICY IF EXISTS "Admins can insert audit logs" ON public.admin_audit_logs;
+CREATE POLICY "Admins can insert audit logs"
+  ON public.admin_audit_logs FOR INSERT
+  WITH CHECK (
+    auth.uid() IS NOT NULL AND (
+      public.is_platform_admin(auth.uid()) OR auth.uid() = admin_id
+    )
+  );

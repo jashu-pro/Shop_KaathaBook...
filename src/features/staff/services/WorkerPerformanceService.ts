@@ -89,9 +89,11 @@ export class WorkerPerformanceService {
     const baseTarget = (settings.dailySalesTargetPerWorker || 25000) * targetMultiplier;
 
     // Ensure Owner is included as a benchmark participant alongside workers
-    const participants: { id: string; name: string; role: string }[] = [
-      ...workers.map((w) => ({ id: w.id, name: w.name, role: (w as any).role || 'Staff Member' })),
-    ];
+    const participants: { id: string; name: string; role: string }[] = workers.map((w) => ({
+      id: w.id,
+      name: w.name,
+      role: (w as any).role || 'Staff Member',
+    }));
 
     // If no workers exist yet, add dummy or owner for immediate viewability
     if (participants.length === 0) {

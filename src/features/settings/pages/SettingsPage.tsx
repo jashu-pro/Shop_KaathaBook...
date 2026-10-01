@@ -14,12 +14,15 @@ import {
   Download, 
   QrCode,
   Users,
-  Trash2
+  Trash2,
+  FileText,
+  Upload
 } from 'lucide-react';
 import { LocalStorageDB } from '../../../services/localStorageDB';
 import { useAuthStore } from '../../../stores/authStore';
 import { useTheme } from '../../../providers/ThemeProvider';
 import { ImageUploader } from '../../../components/common/ImageUploader';
+import { generateAiPassbookPdf } from '../../../modules/documents/AiPassbookPdfGenerator';
 import { useCustomers } from '../../customers/hooks/useCustomers';
 import { useLedger } from '../../ledger/hooks/useLedger';
 import { useSales } from '../../sales/hooks/useSales';
@@ -129,6 +132,69 @@ export const SettingsPage: React.FC = () => {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+  };
+
+  const handleExportMasterPassbook = () => {
+    const totalGaveUdhaar = ledgerEntries.filter(e => e.entryType === 'debit').reduce((s, e) => s + e.amount, 0);
+    const totalGotJama = ledgerEntries.filter(e => e.entryType === 'credit').reduce((s, e) => s + e.amount, 0);
+    const netBalance = totalGaveUdhaar - totalGotJama;
+
+    const doc = generateAiPassbookPdf({
+      shop: {
+        name: shop?.name || 'Shop KhattaBook',
+        tagline: shop?.tagline,
+        businessType: shop?.businessType,
+        address: shop?.address,
+        landmark: shop?.landmark,
+        city: shop?.city,
+        state: shop?.state,
+        pincode: shop?.pincode,
+        phone: shop?.phone,
+        gstin: shop?.gstin,
+        upiId: shop?.upiId,
+      },
+      customer: null,
+      entries: ledgerEntries,
+      dateRangeLabel: 'All-Time Master Ledger Statement',
+      totalGaveUdhaar,
+      totalGotJama,
+      netBalance,
+    });
+    const safeShopName = (shop?.name || 'Shop').replace(/[^a-zA-Z0-9]/g, '_');
+    doc.save(`${safeShopName}_Master_Passbook_${new Date().toISOString().slice(0, 10)}.pdf`);
+  };
+
+  const handleImportBackup = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const content = event.target?.result as string;
+        const parsed = JSON.parse(content);
+        if (parsed.customers && Array.isArray(parsed.customers)) {
+          localStorage.setItem('db_customers', JSON.stringify(parsed.customers));
+        }
+        if (parsed.sales && Array.isArray(parsed.sales)) {
+          localStorage.setItem('db_sales', JSON.stringify(parsed.sales));
+        }
+        if (parsed.payments && Array.isArray(parsed.payments)) {
+          localStorage.setItem('db_payments', JSON.stringify(parsed.payments));
+        }
+        if (parsed.ledgerEntries && Array.isArray(parsed.ledgerEntries)) {
+          localStorage.setItem('db_ledger_entries', JSON.stringify(parsed.ledgerEntries));
+        }
+        if (parsed.shop) {
+          localStorage.setItem('db_shops', JSON.stringify([parsed.shop]));
+        }
+        alert('Data backup successfully restored! Reloading shop records...');
+        window.location.reload();
+      } catch {
+        alert('Invalid backup JSON file. Please provide a valid KhattaBook backup.');
+      }
+    };
+    reader.readAsText(file);
   };
 
   return (
@@ -336,7 +402,7 @@ export const SettingsPage: React.FC = () => {
             </div>
 
             {/* City, State, Pincode */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.85rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 150px), 1fr))', gap: '0.85rem' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '0.825rem', fontWeight: '700', color: 'var(--text-heading)', marginBottom: '0.35rem' }}>
                   City / Town
@@ -433,7 +499,7 @@ export const SettingsPage: React.FC = () => {
             </p>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '1rem' }}>
             {/* Light Mode Card */}
             <div
               onClick={() => { if (theme === 'dark') toggleTheme(); }}
@@ -601,11 +667,30 @@ export const SettingsPage: React.FC = () => {
               type="button"
               onClick={handleExportDataBackup}
               className="btn btn-primary"
-              style={{ padding: '0.85rem 1.5rem', fontWeight: '800', borderRadius: '16px', gap: '0.5rem' }}
+              style={{ padding: '0.85rem 1.35rem', fontWeight: '800', borderRadius: '16px', gap: '0.5rem', backgroundColor: '#059669' }}
             >
               <Download size={18} />
               <span>Download Complete JSON Backup</span>
             </button>
+
+            <button
+              type="button"
+              onClick={handleExportMasterPassbook}
+              className="btn btn-secondary"
+              style={{ padding: '0.85rem 1.35rem', fontWeight: '800', borderRadius: '16px', gap: '0.5rem', borderColor: '#059669', color: '#059669' }}
+            >
+              <FileText size={18} />
+              <span>Export Master Passbook (PDF)</span>
+            </button>
+
+            <label
+              className="btn btn-secondary"
+              style={{ padding: '0.85rem 1.35rem', fontWeight: '800', borderRadius: '16px', gap: '0.5rem', cursor: 'pointer' }}
+            >
+              <Upload size={18} />
+              <span>Restore from Backup</span>
+              <input type="file" accept=".json" onChange={handleImportBackup} style={{ display: 'none' }} />
+            </label>
 
             <button
               type="button"
@@ -618,7 +703,7 @@ export const SettingsPage: React.FC = () => {
               }}
               className="btn btn-secondary"
               style={{ 
-                padding: '0.85rem 1.5rem', 
+                padding: '0.85rem 1.35rem', 
                 fontWeight: '800', 
                 borderRadius: '16px', 
                 gap: '0.5rem',

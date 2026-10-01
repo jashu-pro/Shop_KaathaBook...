@@ -628,7 +628,7 @@ export const Dashboard: React.FC = () => {
             }}
           >
             <CreditCard size={16} />
-            <span>Receive Payment</span>
+            <span>Got Payment (Deposit)</span>
           </button>
 
           {/* Action 3: Add Customer */}

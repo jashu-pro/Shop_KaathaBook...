@@ -128,7 +128,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
             videoRef.current.play().catch(() => {});
           }
         }, 100);
-      } catch (err: any) {
+      } catch {
         // Permission denied or camera missing -> fallback to file picker input
         setErrorMessage('Camera access denied or unavailable. Opening file selector.');
         cameraInputRef.current?.click();

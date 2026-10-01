@@ -68,12 +68,16 @@ const extractPhoneDigits = (user: any): string => {
 
 export const ShopRegistration: React.FC = () => {
   const navigate = useNavigate();
-  const { user, isOnboarded, registerShop, isLoading, error, signOut } = useAuthStore();
+  const { user, shop, isOnboarded, registerShop, isLoading, error, signOut } = useAuthStore();
 
-  // Redirect if already onboarded
+  // Redirect if already onboarded (active) or currently waiting for approval
   useEffect(() => {
-    if (isOnboarded) navigate('/', { replace: true });
-  }, [isOnboarded, navigate]);
+    if (isOnboarded && shop?.status === 'active') {
+      navigate('/', { replace: true });
+    } else if (shop?.status === 'pending') {
+      navigate('/approval-status', { replace: true });
+    }
+  }, [isOnboarded, shop?.status, navigate]);
 
   const [step, setStep] = useState<1 | 2 | 3 | 4 | 5>(1);
   const [submitting, setSubmitting] = useState(false);
@@ -257,7 +261,7 @@ export const ShopRegistration: React.FC = () => {
 
       setSubmitting(false);
       setSuccessState(true);
-      setTimeout(() => navigate('/', { replace: true }), 1200);
+      setTimeout(() => navigate('/approval-status', { replace: true }), 1200);
     } catch (err: any) {
       setSubmitting(false);
       setLocalError(err.message || 'Shop account creation failed. Please try again.');
@@ -724,7 +728,7 @@ export const ShopRegistration: React.FC = () => {
                   </div>
 
                   {/* City & State */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.1rem' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '1rem', marginBottom: '1.1rem' }}>
                     <div className="form-group">
                       <label className="form-label">City / Town *</label>
                       <input
@@ -751,7 +755,7 @@ export const ShopRegistration: React.FC = () => {
                   </div>
 
                   {/* Pincode & Phone */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '1rem', marginBottom: '1rem' }}>
                     <div className="form-group">
                       <label className="form-label">Pincode *</label>
                       <input
@@ -996,7 +1000,7 @@ export const ShopRegistration: React.FC = () => {
                     </div>
                   )}
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '1rem', marginBottom: '1rem' }}>
                     {/* Business Card */}
                     {!logoUrl && (
                       <div style={{
@@ -1055,7 +1059,7 @@ export const ShopRegistration: React.FC = () => {
                     </div>
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '2rem' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '1rem', marginBottom: '2rem' }}>
                     {/* Financial Card */}
                     <div style={{
                       padding: '1.25rem', borderRadius: '18px',
