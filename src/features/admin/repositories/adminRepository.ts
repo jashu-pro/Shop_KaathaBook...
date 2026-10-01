@@ -363,14 +363,26 @@ export class SupabaseAdminRepository implements IAdminRepository {
         };
       }) : [];
 
-      // Merge remote & local logs without duplicates
-      const merged = [...remoteLogs];
-      for (const loc of localLogs) {
-        if (!merged.some((l) => l.id === loc.id)) {
-          merged.push(loc);
+      // Combine remote and local logs and deduplicate
+      const combined = [...remoteLogs, ...localLogs];
+      const deduplicated: AdminAuditLog[] = [];
+
+      for (const log of combined) {
+        const isDuplicate = deduplicated.some((existing) => {
+          if (existing.id === log.id) return true;
+          const sameShop = existing.shopId === log.shopId;
+          const sameAction = existing.action === log.action;
+          const sameReq = existing.metadata?.request_id && log.metadata?.request_id && existing.metadata.request_id === log.metadata.request_id;
+          const sameTime = Math.abs(new Date(existing.createdAt).getTime() - new Date(log.createdAt).getTime()) < 5000;
+          return sameShop && sameAction && (sameReq || sameTime);
+        });
+
+        if (!isDuplicate) {
+          deduplicated.push(log);
         }
       }
-      return merged.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+      return deduplicated.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     } catch {
       return localLogs;
     }
@@ -845,18 +857,33 @@ export class LocalAdminRepository implements IAdminRepository {
     const shops = await LocalStorageDB.select('shops');
     const shopMap = new Map<string, string>(shops.map((s: any) => [s.id, s.name]));
 
-    return logs
-      .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-      .map((l: any) => ({
-        id: l.id,
-        adminId: l.admin_id,
-        adminEmail: l.admin_email || 'jaswanthmajji43@gmail.com',
-        shopId: l.shop_id,
-        shopName: shopMap.get(l.shop_id) || 'Shop',
-        action: l.action,
-        metadata: l.metadata || {},
-        createdAt: l.created_at,
-      }));
+    const mapped: AdminAuditLog[] = logs.map((l: any) => ({
+      id: l.id,
+      adminId: l.admin_id,
+      adminEmail: l.admin_email || 'jaswanthmajji43@gmail.com',
+      shopId: l.shop_id,
+      shopName: shopMap.get(l.shop_id) || 'Shop',
+      action: l.action,
+      metadata: l.metadata || {},
+      createdAt: l.created_at,
+    }));
+
+    const deduplicated: AdminAuditLog[] = [];
+    for (const log of mapped) {
+      const isDuplicate = deduplicated.some((existing) => {
+        if (existing.id === log.id) return true;
+        const sameShop = existing.shopId === log.shopId;
+        const sameAction = existing.action === log.action;
+        const sameReq = existing.metadata?.request_id && log.metadata?.request_id && existing.metadata.request_id === log.metadata.request_id;
+        const sameTime = Math.abs(new Date(existing.createdAt).getTime() - new Date(log.createdAt).getTime()) < 4000;
+        return sameShop && sameAction && (sameReq || sameTime);
+      });
+      if (!isDuplicate) {
+        deduplicated.push(log);
+      }
+    }
+
+    return deduplicated.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }
 
   async approveRegistration(requestId: string, adminId?: string): Promise<{ success: boolean; shopId: string }> {
