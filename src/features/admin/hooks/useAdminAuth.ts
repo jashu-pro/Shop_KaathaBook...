@@ -32,15 +32,15 @@ export function useAdminAuth() {
               isAdmin: true,
               role: authRes.role || 'super_admin',
               loading: false,
-              adminEmail: user.email || 'admin@khattabook.com',
+              adminEmail: user.email || null,
             });
             return;
           }
         }
       }
 
-      // 2. Check local admin session fallback
-      const localAdminSession = localStorage.getItem('shop_khattabook_admin_session');
+      // 2. Local demo session (only when Supabase is not configured)
+      const localAdminSession = supabase ? null : localStorage.getItem('shop_khattabook_admin_session');
       if (localAdminSession) {
         try {
           const parsed = JSON.parse(localAdminSession);
@@ -97,18 +97,19 @@ export function useAdminAuth() {
             return true;
           }
         }
+        // Signed in but not an admin: don't leave a merchant session behind.
+        if (!error && data.user) await supabase.auth.signOut();
       } catch (err) {
         console.warn('Supabase admin login error:', err);
       }
+      // With Supabase configured, admin access comes only from Supabase Auth
+      // plus a platform_admins row. There is no client-side fallback.
+      return false;
     }
 
-    // Authorized admin fallback check
-    if (
-      (email.toLowerCase() === 'jaswanthmajji43@gmail.com' ||
-       email.toLowerCase() === 'admin@khattabook.com' || 
-       email.toLowerCase().includes('admin')) &&
-      (pass === 'Jaswanth@2007' || pass.length >= 6)
-    ) {
+    // Local demo mode only: all data lives in this browser, so there is
+    // nothing to protect. Never reachable when Supabase is configured.
+    if (email.trim() && pass.length >= 6) {
       localStorage.setItem('shop_khattabook_admin_session', JSON.stringify({
         isAdmin: true,
         email: email.trim(),

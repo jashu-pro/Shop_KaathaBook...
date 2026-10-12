@@ -613,7 +613,7 @@ create index if not exists idx_ledger_entries_date on public.ledger_entries(entr
 -- Views for derived ledger metrics and sales reporting
 
 -- Customer balances derived dynamically from ledger entries
-create or replace view public.customer_balances_view as
+create or replace view public.customer_balances_view with (security_invoker = on) as
 select 
   c.id as customer_id,
   c.shop_id,
@@ -632,7 +632,7 @@ left join public.ledger_entries le on c.id = le.customer_id
 group by c.id, c.shop_id, c.name, c.phone, c.credit_limit;
 
 -- Daily summaries grouping total sales and total collections by shop and date
-create or replace view public.daily_summary_view as
+create or replace view public.daily_summary_view with (security_invoker = on) as
 select
   s.id as shop_id,
   d.date_val::date as summary_date,
@@ -1509,7 +1509,7 @@ CREATE TRIGGER trg_immutable_worker_activity_logs
     EXECUTE FUNCTION enforce_strict_immutability();
 
 -- Backward compatibility view for inventory_movements
-CREATE OR REPLACE VIEW inventory_movements AS 
+CREATE OR REPLACE VIEW inventory_movements WITH (security_invoker = on) AS
   SELECT 
     id,
     shop_id,
@@ -1579,39 +1579,17 @@ CREATE POLICY "Admins can delete platform admins"
     auth.uid() IS NOT NULL AND public.is_platform_admin(auth.uid())
   );
 
+-- Admin rights come only from platform_admins rows. Never trust user_metadata
+-- or email patterns here: users control both.
 CREATE OR REPLACE FUNCTION public.is_platform_admin(p_user_id UUID)
 RETURNS BOOLEAN
-LANGUAGE plpgsql
+LANGUAGE sql
 SECURITY DEFINER
 STABLE
+SET search_path = public
 AS $$
-DECLARE
-  v_is_admin BOOLEAN;
-BEGIN
-  IF p_user_id IS NULL THEN
-    RETURN FALSE;
-  END IF;
-
-  SELECT EXISTS (
-    SELECT 1 FROM public.platform_admins WHERE id = p_user_id
-  ) INTO v_is_admin;
-
-  IF v_is_admin THEN
-    RETURN TRUE;
-  END IF;
-
-  SELECT 
-    (raw_user_meta_data->>'role' = 'admin' OR 
-     raw_user_meta_data->>'is_admin' = 'true' OR
-     email = 'jaswanthmajji43@gmail.com' OR
-     email LIKE '%admin@%' OR
-     email LIKE '%@admin.%')
-  INTO v_is_admin
-  FROM auth.users
-  WHERE id = p_user_id;
-
-  RETURN COALESCE(v_is_admin, FALSE);
-END;
+  SELECT p_user_id IS NOT NULL
+     AND EXISTS (SELECT 1 FROM public.platform_admins WHERE id = p_user_id);
 $$;
 
 CREATE TABLE IF NOT EXISTS public.shop_registration_requests (

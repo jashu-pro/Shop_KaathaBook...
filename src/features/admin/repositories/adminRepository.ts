@@ -11,6 +11,16 @@ import type {
   AdminProfile 
 } from '../types';
 
+// Local demo mode: the admin email recorded in audit logs is whoever signed in
+// to the demo admin portal in this browser.
+const getLocalAdminEmail = (): string => {
+  try {
+    const session = JSON.parse(localStorage.getItem('shop_khattabook_admin_session') || '{}');
+    return session.email || 'demo-admin@localhost';
+  } catch {
+    return 'demo-admin@localhost';
+  }
+};
 
 export interface IAdminRepository {
   getKPIStats(): Promise<AdminKPIStats>;
@@ -43,26 +53,9 @@ export class SupabaseAdminRepository implements IAdminRepository {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return { isAdmin: false };
 
-      // 1. Quick client-side check on user metadata
-      const metaRole = user.user_metadata?.role;
-      const isSuper = user.user_metadata?.is_admin === true || user.user_metadata?.is_admin === 'true';
-      const email = user.email || '';
-      const isAdminEmail = email.toLowerCase().includes('admin');
-
-      if (metaRole === 'admin' || isSuper || isAdminEmail) {
-        return { isAdmin: true, role: 'super_admin' };
-      }
-
-      // 2. Server RPC verification
-      const { data: isServerAdmin, error } = await supabase.rpc('is_platform_admin', {
-        p_user_id: user.id,
-      });
-
-      if (!error && isServerAdmin) {
-        return { isAdmin: true, role: 'super_admin' };
-      }
-
-      // 3. Check platform_admins table directly
+      // Admin rights come only from a platform_admins row (RLS lets a user read
+      // their own row). user_metadata and email are user-controlled, so never
+      // use them here.
       const { data: adminRow } = await supabase
         .from('platform_admins')
         .select('role')
@@ -167,7 +160,7 @@ export class SupabaseAdminRepository implements IAdminRepository {
           shopId: shop.id,
           shopName: shop.name,
           businessType: shop.businessType || 'Retail',
-          email: shop.ownerEmail && shop.ownerEmail !== 'N/A' ? shop.ownerEmail : 'jaswanthmajji43@gmail.com',
+          email: shop.ownerEmail || 'N/A',
           phone: shop.ownerPhone,
           address: shop.address,
           city: shop.city,
@@ -440,7 +433,7 @@ export class SupabaseAdminRepository implements IAdminRepository {
 
             await supabase.from('admin_audit_logs').insert({
               admin_id: activeAdminId || null,
-              admin_email: user?.email || 'jaswanthmajji43@gmail.com',
+              admin_email: user?.email || null,
               shop_id: targetShopId,
               action: 'ADMIN_APPROVED_SHOP',
               metadata: { request_id: requestId, timestamp: new Date().toISOString() },
@@ -516,7 +509,7 @@ export class SupabaseAdminRepository implements IAdminRepository {
 
             await supabase.from('admin_audit_logs').insert({
               admin_id: activeAdminId || null,
-              admin_email: user?.email || 'jaswanthmajji43@gmail.com',
+              admin_email: user?.email || null,
               shop_id: targetShopId,
               action: 'ADMIN_REJECTED_SHOP',
               metadata: { request_id: requestId, reason, timestamp: new Date().toISOString() },
@@ -554,7 +547,7 @@ export class SupabaseAdminRepository implements IAdminRepository {
           await supabase.from('shops').update({ status: 'suspended' }).eq('id', shopId);
           await supabase.from('admin_audit_logs').insert({
             admin_id: activeAdminId || null,
-            admin_email: user?.email || 'jaswanthmajji43@gmail.com',
+            admin_email: user?.email || null,
             shop_id: shopId,
             action: 'ADMIN_SUSPENDED_SHOP',
             metadata: { reason },
@@ -585,7 +578,7 @@ export class SupabaseAdminRepository implements IAdminRepository {
           await supabase.from('shops').update({ status: 'active' }).eq('id', shopId);
           await supabase.from('admin_audit_logs').insert({
             admin_id: activeAdminId || null,
-            admin_email: user?.email || 'jaswanthmajji43@gmail.com',
+            admin_email: user?.email || null,
             shop_id: shopId,
             action: 'ADMIN_REACTIVATED_SHOP',
             metadata: {},
@@ -736,7 +729,7 @@ export class LocalAdminRepository implements IAdminRepository {
           shop_id: s.id,
           shop_name: s.name,
           business_type: s.business_type || 'Retail',
-          email: (ownerMembership?.email_or_phone?.includes('@') ? ownerMembership.email_or_phone : null) || 'jaswanthmajji43@gmail.com',
+          email: (ownerMembership?.email_or_phone?.includes('@') ? ownerMembership.email_or_phone : null) || 'N/A',
           phone: s.phone || (ownerMembership?.email_or_phone && !ownerMembership.email_or_phone.includes('@') ? ownerMembership.email_or_phone : undefined),
           address: s.address || undefined,
           landmark: s.landmark || undefined,
@@ -764,7 +757,7 @@ export class LocalAdminRepository implements IAdminRepository {
       shopId: d.shop_id,
       shopName: d.shop_name,
       businessType: d.business_type,
-      email: d.email || 'jaswanthmajji43@gmail.com',
+      email: d.email || 'N/A',
       phone: d.phone || undefined,
       address: d.address || undefined,
       landmark: d.landmark || undefined,
@@ -860,7 +853,7 @@ export class LocalAdminRepository implements IAdminRepository {
     const mapped: AdminAuditLog[] = logs.map((l: any) => ({
       id: l.id,
       adminId: l.admin_id,
-      adminEmail: l.admin_email || 'jaswanthmajji43@gmail.com',
+      adminEmail: l.admin_email || 'Unknown',
       shopId: l.shop_id,
       shopName: shopMap.get(l.shop_id) || 'Shop',
       action: l.action,
@@ -924,7 +917,7 @@ export class LocalAdminRepository implements IAdminRepository {
     // 3. Insert audit log
     await LocalStorageDB.insert('admin_audit_logs', {
       admin_id: adminId || 'admin',
-      admin_email: 'jaswanthmajji43@gmail.com',
+      admin_email: getLocalAdminEmail(),
       shop_id: shopId,
       action: 'ADMIN_APPROVED_SHOP',
       metadata: { request_id: requestId, shop_name: request?.shop_name || 'Shop' },
@@ -979,7 +972,7 @@ export class LocalAdminRepository implements IAdminRepository {
     // 3. Insert audit log
     await LocalStorageDB.insert('admin_audit_logs', {
       admin_id: adminId || 'admin',
-      admin_email: 'jaswanthmajji43@gmail.com',
+      admin_email: getLocalAdminEmail(),
       shop_id: shopId,
       action: 'ADMIN_REJECTED_SHOP',
       metadata: { request_id: requestId, reason, shop_name: request?.shop_name || 'Shop' },
@@ -1001,7 +994,7 @@ export class LocalAdminRepository implements IAdminRepository {
 
     await LocalStorageDB.insert('admin_audit_logs', {
       admin_id: adminId || 'admin',
-      admin_email: 'jaswanthmajji43@gmail.com',
+      admin_email: getLocalAdminEmail(),
       shop_id: shopId,
       action: 'ADMIN_SUSPENDED_SHOP',
       metadata: { reason },
@@ -1020,7 +1013,7 @@ export class LocalAdminRepository implements IAdminRepository {
 
     await LocalStorageDB.insert('admin_audit_logs', {
       admin_id: adminId || 'admin',
-      admin_email: 'jaswanthmajji43@gmail.com',
+      admin_email: getLocalAdminEmail(),
       shop_id: shopId,
       action: 'ADMIN_REACTIVATED_SHOP',
       metadata: {},
@@ -1031,21 +1024,11 @@ export class LocalAdminRepository implements IAdminRepository {
   }
 
   async getAdminUsers(): Promise<AdminProfile[]> {
-    let admins = await LocalStorageDB.select('platform_admins');
-    
-    // Automatically migrate any legacy placeholder admin to jaswanthmajji43@gmail.com
-    const hasLegacy = admins?.some((a: any) => a.email === 'admin@khattabook.com');
-    if (hasLegacy) {
-      await LocalStorageDB.update('platform_admins', (a: any) => a.email === 'admin@khattabook.com', {
-        email: 'jaswanthmajji43@gmail.com',
-        role: 'super_admin',
-      });
-      admins = await LocalStorageDB.select('platform_admins');
-    }
+    const admins = await LocalStorageDB.select('platform_admins');
 
     if (!admins || admins.length === 0) {
       const seeded = await LocalStorageDB.insert('platform_admins', {
-        email: 'jaswanthmajji43@gmail.com',
+        email: getLocalAdminEmail(),
         role: 'super_admin',
       });
       return [{

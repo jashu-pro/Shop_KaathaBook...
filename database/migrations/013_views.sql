@@ -2,7 +2,7 @@
 -- Views for derived ledger metrics and sales reporting
 
 -- Customer balances derived dynamically from ledger entries
-create or replace view public.customer_balances_view as
+create or replace view public.customer_balances_view with (security_invoker = on) as
 select 
   c.id as customer_id,
   c.shop_id,
@@ -21,7 +21,7 @@ left join public.ledger_entries le on c.id = le.customer_id
 group by c.id, c.shop_id, c.name, c.phone, c.credit_limit;
 
 -- Daily summaries grouping total sales and total collections by shop and date
-create or replace view public.daily_summary_view as
+create or replace view public.daily_summary_view with (security_invoker = on) as
 select
   s.id as shop_id,
   d.date_val::date as summary_date,

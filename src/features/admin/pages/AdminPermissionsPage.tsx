@@ -64,8 +64,8 @@ export const AdminPermissionsPage: React.FC = () => {
   };
 
   const handleRevoke = async (admin: AdminProfile) => {
-    if (admin.email.toLowerCase() === 'jaswanthmajji43@gmail.com' && admins.length === 1) {
-      alert('Cannot revoke access from the primary system administrator.');
+    if (admins.length === 1) {
+      alert('Cannot revoke access from the last remaining administrator.');
       return;
     }
 

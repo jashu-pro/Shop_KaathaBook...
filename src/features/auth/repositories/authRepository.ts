@@ -129,19 +129,17 @@ export class SupabaseAuthRepository implements IAuthRepository {
           return user;
         }
 
-        // If Supabase gave "Email not confirmed", allow login gracefully since merchant knows their password
+        // Supabase is the only source of truth when configured: never fall back to
+        // browser-only accounts, which have no access to the real shop data.
         if (error?.message?.toLowerCase().includes('email not confirmed')) {
-          console.warn('Supabase email not confirmed, allowing merchant local session');
-          const user: User = {
-            id: `user_${cleanEmail.replace(/[^a-zA-Z0-9]/g, '_')}`,
-            email: cleanEmail,
-            fullName: cleanEmail.split('@')[0],
-          };
-          localStorage.setItem(this.activeUserKey, JSON.stringify(user));
-          return user;
+          throw new Error('Please confirm your email first. Check your inbox for the confirmation link.');
         }
+        throw new Error(
+          'Incorrect email or password. If you created your account with Google, use "Continue with Google".'
+        );
       } catch (err: any) {
-        console.warn('Supabase signInWithPassword error, falling back to local credentials:', err?.message);
+        if (err instanceof Error && err.message) throw err;
+        throw new Error('Could not reach the login server. Please check your internet connection and try again.');
       }
     }
 

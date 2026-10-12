@@ -43,10 +43,15 @@ async function testAdminPortal() {
     await page.screenshot({ path: path.join(SCREENSHOTS_DIR, '01_admin_login.png') });
     console.log('   📸 Captured /admin/login');
 
-    // 2. Perform Login as Super Admin
-    console.log('2️⃣ Submitting Admin Login form with jaswanthmajji43@gmail.com...');
-    await page.type('input[type="email"]', 'jaswanthmajji43@gmail.com');
-    await page.type('input[type="password"]', 'Jaswanth@2007');
+    // 2. Perform Login as Super Admin (credentials from env, never hardcoded)
+    const adminEmail = process.env.ADMIN_TEST_EMAIL;
+    const adminPassword = process.env.ADMIN_TEST_PASSWORD;
+    if (!adminEmail || !adminPassword) {
+      throw new Error('Set ADMIN_TEST_EMAIL and ADMIN_TEST_PASSWORD to run this test.');
+    }
+    console.log('2️⃣ Submitting Admin Login form...');
+    await page.type('input[type="email"]', adminEmail);
+    await page.type('input[type="password"]', adminPassword);
     await page.click('button[type="submit"]');
 
     // Wait for redirect to /admin

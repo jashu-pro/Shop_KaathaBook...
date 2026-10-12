@@ -91,7 +91,6 @@ begin
   select 
     (raw_user_meta_data->>'role' = 'admin' or 
      raw_user_meta_data->>'is_admin' = 'true' or
-     email = 'jaswanthmajji43@gmail.com' or
      email like '%admin@%' or
      email like '%@admin.%')
   into v_is_admin
