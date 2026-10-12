@@ -167,6 +167,116 @@ input::placeholder, textarea::placeholder {
   transform: scale(0.985);
 }
 
+/* ═══════════════════════════════════════════════════════════════ */
+/* KHATTABOOK COMPACT KPI CARDS (COLLECTED | DUE | EXPENSES)       */
+/* ═══════════════════════════════════════════════════════════════ */
+.compact-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.65rem;
+  width: 100%;
+}
+
+.compact-kpi-card {
+  background-color: var(--bg-card, #ffffff);
+  border: 1px solid var(--border-color, rgba(0, 0, 0, 0.08));
+  border-radius: 18px;
+  padding: 0.75rem 0.85rem;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+  justifyContent: space-between;
+  min-width: 0;
+  cursor: pointer;
+  user-select: none;
+  outline: none;
+  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.compact-kpi-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+  border-color: rgba(16, 185, 129, 0.35);
+}
+
+.compact-kpi-card:active {
+  transform: scale(0.98);
+}
+
+.compact-kpi-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.25rem;
+}
+
+.compact-kpi-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.compact-kpi-info-icon {
+  color: #9ca3af;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 50%;
+  transition: color 0.15s ease;
+}
+
+.compact-kpi-card:hover .compact-kpi-info-icon {
+  color: #4b5563;
+}
+
+.compact-kpi-value {
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: -0.4px;
+  line-height: 1.15;
+  margin-top: 0.35rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.compact-kpi-value-collected {
+  color: #047857; /* Deep emerald matching reference image */
+}
+
+.compact-kpi-value-due {
+  color: #b91c1c; /* Terracotta red matching reference image */
+}
+
+.compact-kpi-value-expenses,
+.compact-kpi-value-sales {
+  color: var(--text-heading, #111827); /* Crisp dark neutral matching reference image */
+}
+
+@media (max-width: 640px) {
+  .compact-kpi-grid {
+    gap: 0.45rem;
+  }
+  .compact-kpi-card {
+    padding: 0.65rem 0.55rem;
+    border-radius: 16px;
+  }
+  .compact-kpi-label {
+    font-size: 0.64rem;
+  }
+  .compact-kpi-value {
+    font-size: 1.2rem;
+    margin-top: 0.2rem;
+  }
+}
+
+
 /* RESPONSIVE LAYOUT BREAKPOINTS & UTILITIES */
 
 /* Desktop (min-width: 1024px) */
@@ -180,7 +290,7 @@ input::placeholder, textarea::placeholder {
   .dashboard-main-grid {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 1.25rem;
+    gap: 0.85rem;
   }
   .welcome-card-span {
     grid-column: span 4 / span 4;
@@ -197,18 +307,18 @@ input::placeholder, textarea::placeholder {
     font-size: 1.75rem;
   }
   .dashboard-udhaar-card {
-    padding: 1.5rem 1.75rem;
-    border-radius: 28px;
+    padding: 1.1rem 1.4rem;
+    border-radius: 20px;
   }
   .dashboard-udhaar-value {
-    font-size: 2.25rem;
+    font-size: 1.9rem;
   }
   .dashboard-stat-card {
-    padding: 1.25rem 1.5rem;
-    border-radius: 24px;
+    padding: 0.85rem 1.1rem;
+    border-radius: 18px;
   }
   .dashboard-stat-value {
-    font-size: 1.75rem;
+    font-size: 1.4rem;
   }
 }
 
@@ -243,18 +353,18 @@ input::placeholder, textarea::placeholder {
     font-size: 1.5rem;
   }
   .dashboard-udhaar-card {
-    padding: 1.25rem 1.5rem;
-    border-radius: 24px;
-  }
-  .dashboard-udhaar-value {
-    font-size: 2rem;
-  }
-  .dashboard-stat-card {
     padding: 1rem 1.25rem;
     border-radius: 20px;
   }
+  .dashboard-udhaar-value {
+    font-size: 1.7rem;
+  }
+  .dashboard-stat-card {
+    padding: 0.75rem 1rem;
+    border-radius: 16px;
+  }
   .dashboard-stat-value {
-    font-size: 1.5rem;
+    font-size: 1.3rem;
   }
 }
 
@@ -294,14 +404,14 @@ input::placeholder, textarea::placeholder {
     border-radius: 18px;
   }
   .dashboard-udhaar-value {
-    font-size: 1.6rem;
+    font-size: 1.45rem;
   }
   .dashboard-stat-card {
-    padding: 0.75rem 0.9rem;
-    border-radius: 16px;
+    padding: 0.65rem 0.8rem;
+    border-radius: 14px;
   }
   .dashboard-stat-value {
-    font-size: 1.3rem;
+    font-size: 1.15rem;
   }
 }
 

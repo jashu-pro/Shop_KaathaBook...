@@ -15,6 +15,7 @@ import { EditCustomerModal } from '../components/EditCustomerModal';
 import { CustomerDetailsModal } from '../components/CustomerDetailsModal';
 import { CustomerProfileCard } from '../components/CustomerProfileCard';
 import { RecordCreditSaleModal } from '../../sales/components/RecordCreditSaleModal';
+import { formatCompactAmount } from '../../../utils/formatCompactAmount';
 import type { Customer } from '../types';
 
 export const CustomerListPage: React.FC = () => {
@@ -120,7 +121,7 @@ export const CustomerListPage: React.FC = () => {
             </span>
           </div>
           <p style={{ color: 'var(--text-body)', fontSize: '0.875rem', marginTop: '0.2rem' }}>
-            Total Pending Udhaar: <strong style={{ color: 'var(--error)' }}>₹{totalUdhaarBalance.toLocaleString('en-IN')}</strong>
+            Total Pending Udhaar: <strong style={{ color: 'var(--error)' }}>{formatCompactAmount(totalUdhaarBalance)}</strong>
           </p>
         </div>
 

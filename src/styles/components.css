@@ -413,7 +413,21 @@
   .top-nav-avatar {
     width: 34px !important;
     height: 34px !important;
+    padding: 0 !important;
+    justify-content: center !important;
+    flex-shrink: 0;
     font-size: 0.85rem !important;
+  }
+
+  /* Initials only on mobile; the shop name and chevron don't fit in the circle */
+  .top-nav-avatar-name {
+    display: none !important;
+  }
+
+  .top-nav-avatar > div:first-child {
+    width: 100% !important;
+    height: 100% !important;
+    background-color: transparent !important;
   }
 }
 

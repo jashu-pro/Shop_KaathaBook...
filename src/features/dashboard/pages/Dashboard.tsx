@@ -10,6 +10,7 @@ import { useCustomers } from '../../customers/hooks/useCustomers';
 import { useSales } from '../../sales/hooks/useSales';
 import { usePayments } from '../../payments/hooks/usePayments';
 import { useLedger } from '../../ledger/hooks/useLedger';
+import { formatCompactAmount } from '../../../utils/formatCompactAmount';
 import { EventBus } from '../../../services/EventBus';
 import { 
   QrCode, 
@@ -23,7 +24,8 @@ import {
   BookOpen, 
   Mic, 
   ArrowRight,
-  Receipt
+  Receipt,
+  Info
 } from 'lucide-react';
 
 export const Dashboard: React.FC = () => {
@@ -120,6 +122,26 @@ export const Dashboard: React.FC = () => {
 
     return Math.max(fromLedger, fromPayments);
   }, [ledgerEntries, payments]);
+
+  // All-Time Collections (from payments or ledger credits)
+  const totalCollections = useMemo(() => {
+    const fromLedger = ledgerEntries
+      .filter((e) => e.entryType === 'credit')
+      .reduce((acc, e) => acc + (Number(e.amount) || 0), 0);
+    const fromPayments = payments
+      .reduce((acc, p) => acc + (Number(p.amount) || 0), 0);
+    return Math.max(fromLedger, fromPayments);
+  }, [ledgerEntries, payments]);
+
+  // All-Time Sales Volume
+  const totalSales = useMemo(() => {
+    const fromLedger = ledgerEntries
+      .filter((e) => e.entryType === 'debit')
+      .reduce((acc, e) => acc + (Number(e.amount) || 0), 0);
+    const fromSales = sales
+      .reduce((acc, s) => acc + (Number(s.totalAmount) || 0), 0);
+    return Math.max(fromLedger, fromSales);
+  }, [ledgerEntries, sales]);
 
   // Total Transactions Count
   const totalTransactionsCount = useMemo(() => {
@@ -367,59 +389,80 @@ export const Dashboard: React.FC = () => {
       </div>
 
       {/* ------------------------------------------------------------- */}
-      {/* ROW 2 & 3: STAT CARDS GRID                                   */}
+      {/* ROW 2: KHATTABOOK 3-KPI COMPACT CARDS (COLLECTED | DUE | EXPENSES) */}
       {/* ------------------------------------------------------------- */}
-      <div className="dashboard-main-grid">
-        
-        {/* TOTAL CUSTOMER DEBT (UDHAAR) CARD */}
-        <div 
-          className="udhaar-card-span dashboard-udhaar-card"
+      <div className="compact-kpi-grid">
+        {/* COLLECTED */}
+        <div
+          className="compact-kpi-card"
+          onClick={() => navigate('/payments')}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') navigate('/payments'); }}
+          role="button"
+          tabIndex={0}
+          title={`Total Collections Received: ₹${totalCollections.toLocaleString('en-IN')}`}
+        >
+          <div className="compact-kpi-header">
+            <span className="compact-kpi-label">COLLECTED</span>
+            <span className="compact-kpi-info-icon" title="Total payment collections received">
+              <Info size={13} />
+            </span>
+          </div>
+          <div className="compact-kpi-value compact-kpi-value-collected">
+            {formatCompactAmount(totalCollections)}
+          </div>
+        </div>
+
+        {/* DUE */}
+        <div
+          className="compact-kpi-card"
           onClick={() => navigate('/customers?tab=udhaar')}
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') navigate('/customers?tab=udhaar'); }}
           role="button"
           tabIndex={0}
-          title="Click to view all customers with Udhaar"
-          style={{
-            backgroundColor: '#047857',
-            color: '#FFFFFF',
-            boxShadow: '0 6px 20px rgba(4, 120, 87, 0.18)',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between',
-            gap: '0.85rem',
-            position: 'relative'
-          }}
+          title={`Total Customer Debt (Udhaar): ₹${totalUdhaar.toLocaleString('en-IN')} across ${activeCustomersCount} customers`}
         >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.85rem', fontWeight: '600', opacity: 0.9 }}>
-              Total Customer Debt (Udhaar)
-            </span>
-            <span style={{
-              backgroundColor: 'rgba(255, 255, 255, 0.15)',
-              padding: '0.2rem 0.6rem', borderRadius: '12px',
-              fontSize: '0.7rem', fontWeight: '700'
-            }}>
-              {activeCustomersCount} Customers
+          <div className="compact-kpi-header">
+            <span className="compact-kpi-label">DUE</span>
+            <span className="compact-kpi-info-icon" title="Total customer Udhaar balance pending collection">
+              <Info size={13} />
             </span>
           </div>
-
-          <div>
-            <div className="dashboard-udhaar-value" style={{ fontWeight: '800', letterSpacing: '-0.5px', lineHeight: 1.1 }}>
-              ₹{totalUdhaar.toLocaleString('en-IN')}
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.25rem' }}>
-              <p style={{ fontSize: '0.775rem', opacity: '0.85', margin: 0 }}>
-                Total pending collections across all villages
-              </p>
-              <span style={{ fontSize: '0.75rem', fontWeight: '700', opacity: 0.9 }}>
-                View →
-              </span>
-            </div>
+          <div className="compact-kpi-value compact-kpi-value-due">
+            {formatCompactAmount(totalUdhaar)}
           </div>
         </div>
 
-        {/* TODAY'S CREDIT SALES */}
-        <div 
+        {/* EXPENSES / SALES */}
+        <div
+          className="compact-kpi-card"
+          onClick={() => navigate('/sales')}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') navigate('/sales'); }}
+          role="button"
+          tabIndex={0}
+          title={`Total Sales / Outlays: ₹${totalSales.toLocaleString('en-IN')}`}
+        >
+          <div className="compact-kpi-header">
+            <span className="compact-kpi-label">EXPENSES</span>
+            <span className="compact-kpi-info-icon" title="Total sales and outlays recorded">
+              <Info size={13} />
+            </span>
+          </div>
+          <div className="compact-kpi-value compact-kpi-value-expenses">
+            {formatCompactAmount(totalSales)}
+          </div>
+        </div>
+      </div>
+
+      {/* ------------------------------------------------------------- */}
+      {/* ROW 3: TODAY'S ACTIVITY & METRICS (COMPACT)                   */}
+      {/* ------------------------------------------------------------- */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
+        gap: '0.55rem',
+      }}>
+        {/* TODAY'S SALES */}
+        <div
           className="dashboard-stat-card"
           onClick={() => navigate('/sales?date=today')}
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') navigate('/sales?date=today'); }}
@@ -429,42 +472,34 @@ export const Dashboard: React.FC = () => {
           style={{
             backgroundColor: 'var(--bg-card)',
             border: '1px solid var(--border-color)',
-            boxShadow: '0 2px 12px rgba(15, 23, 42, 0.03)',
+            boxShadow: '0 1px 3px rgba(15, 23, 42, 0.03)',
+            padding: '0.65rem 0.8rem',
+            borderRadius: '16px',
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'space-between',
-            gap: '0.75rem'
+            gap: '0.35rem',
           }}
         >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '0.68rem', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+              Today's Sales
+            </span>
             <div style={{
-              width: '36px', height: '36px', borderRadius: '12px',
+              width: '24px', height: '24px', borderRadius: '8px',
               backgroundColor: 'rgba(16, 185, 129, 0.1)', color: '#10B981',
               display: 'flex', alignItems: 'center', justifyContent: 'center'
             }}>
-              <TrendingUp size={18} />
+              <TrendingUp size={13} />
             </div>
-            <span style={{ fontSize: '0.7rem', fontWeight: '700', color: '#10B981', backgroundColor: 'rgba(16, 185, 129, 0.1)', padding: '0.15rem 0.5rem', borderRadius: '8px' }}>
-              Live
-            </span>
           </div>
-          <div>
-            <div className="dashboard-stat-value" style={{ fontWeight: '800', color: 'var(--text-heading)', lineHeight: 1.1 }}>
-              ₹{todaysSales.toLocaleString('en-IN')}
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.2rem' }}>
-              <span style={{ fontSize: '0.775rem', fontWeight: '600', color: 'var(--text-body)' }}>
-                Today's Credit Sales
-              </span>
-              <span style={{ fontSize: '0.7rem', fontWeight: '700', color: '#10B981' }}>
-                View →
-              </span>
-            </div>
+          <div style={{ fontSize: '1.2rem', fontWeight: '800', color: 'var(--text-heading)', lineHeight: 1.15 }}>
+            {formatCompactAmount(todaysSales)}
           </div>
         </div>
 
         {/* TODAY'S COLLECTIONS */}
-        <div 
+        <div
           className="dashboard-stat-card"
           onClick={() => navigate('/payments?date=today')}
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') navigate('/payments?date=today'); }}
@@ -474,42 +509,34 @@ export const Dashboard: React.FC = () => {
           style={{
             backgroundColor: 'var(--bg-card)',
             border: '1px solid var(--border-color)',
-            boxShadow: '0 2px 12px rgba(15, 23, 42, 0.03)',
+            boxShadow: '0 1px 3px rgba(15, 23, 42, 0.03)',
+            padding: '0.65rem 0.8rem',
+            borderRadius: '16px',
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'space-between',
-            gap: '0.75rem'
+            gap: '0.35rem',
           }}
         >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '0.68rem', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+              Today's Got
+            </span>
             <div style={{
-              width: '36px', height: '36px', borderRadius: '12px',
+              width: '24px', height: '24px', borderRadius: '8px',
               backgroundColor: 'rgba(245, 158, 11, 0.1)', color: '#F59E0B',
               display: 'flex', alignItems: 'center', justifyContent: 'center'
             }}>
-              <TrendingDown size={18} />
+              <TrendingDown size={13} />
             </div>
-            <span style={{ fontSize: '0.7rem', fontWeight: '700', color: '#F59E0B', backgroundColor: 'rgba(245, 158, 11, 0.1)', padding: '0.15rem 0.5rem', borderRadius: '8px' }}>
-              Live
-            </span>
           </div>
-          <div>
-            <div className="dashboard-stat-value" style={{ fontWeight: '800', color: 'var(--text-heading)', lineHeight: 1.1 }}>
-              ₹{todaysCollections.toLocaleString('en-IN')}
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.2rem' }}>
-              <span style={{ fontSize: '0.775rem', fontWeight: '600', color: 'var(--text-body)' }}>
-                Today's Collections
-              </span>
-              <span style={{ fontSize: '0.7rem', fontWeight: '700', color: '#F59E0B' }}>
-                View →
-              </span>
-            </div>
+          <div style={{ fontSize: '1.2rem', fontWeight: '800', color: '#047857', lineHeight: 1.15 }}>
+            {formatCompactAmount(todaysCollections)}
           </div>
         </div>
 
         {/* ACTIVE CUSTOMERS */}
-        <div 
+        <div
           className="dashboard-stat-card"
           onClick={() => navigate('/customers')}
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') navigate('/customers'); }}
@@ -519,39 +546,34 @@ export const Dashboard: React.FC = () => {
           style={{
             backgroundColor: 'var(--bg-card)',
             border: '1px solid var(--border-color)',
-            boxShadow: '0 2px 12px rgba(15, 23, 42, 0.03)',
+            boxShadow: '0 1px 3px rgba(15, 23, 42, 0.03)',
+            padding: '0.65rem 0.8rem',
+            borderRadius: '16px',
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'space-between',
-            gap: '0.75rem'
+            gap: '0.35rem',
           }}
         >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '0.68rem', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+              Customers
+            </span>
             <div style={{
-              width: '36px', height: '36px', borderRadius: '12px',
+              width: '24px', height: '24px', borderRadius: '8px',
               backgroundColor: 'rgba(16, 185, 129, 0.1)', color: '#10B981',
               display: 'flex', alignItems: 'center', justifyContent: 'center'
             }}>
-              <Users size={18} />
+              <Users size={13} />
             </div>
           </div>
-          <div>
-            <div className="dashboard-stat-value" style={{ fontWeight: '800', color: 'var(--text-heading)', lineHeight: 1.1 }}>
-              {activeCustomersCount}
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.2rem' }}>
-              <span style={{ fontSize: '0.775rem', fontWeight: '600', color: 'var(--text-body)' }}>
-                Active Customers
-              </span>
-              <span style={{ fontSize: '0.7rem', fontWeight: '700', color: '#10B981' }}>
-                View →
-              </span>
-            </div>
+          <div style={{ fontSize: '1.2rem', fontWeight: '800', color: 'var(--text-heading)', lineHeight: 1.15 }}>
+            {activeCustomersCount}
           </div>
         </div>
 
         {/* TOTAL TRANSACTIONS */}
-        <div 
+        <div
           className="dashboard-stat-card"
           onClick={() => navigate('/ledger')}
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') navigate('/ledger'); }}
@@ -561,37 +583,31 @@ export const Dashboard: React.FC = () => {
           style={{
             backgroundColor: 'var(--bg-card)',
             border: '1px solid var(--border-color)',
-            boxShadow: '0 2px 12px rgba(15, 23, 42, 0.03)',
+            boxShadow: '0 1px 3px rgba(15, 23, 42, 0.03)',
+            padding: '0.65rem 0.8rem',
+            borderRadius: '16px',
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'space-between',
-            gap: '0.75rem'
+            gap: '0.35rem',
           }}
         >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '0.68rem', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+              Transactions
+            </span>
             <div style={{
-              width: '36px', height: '36px', borderRadius: '12px',
+              width: '24px', height: '24px', borderRadius: '8px',
               backgroundColor: 'rgba(245, 158, 11, 0.1)', color: '#F59E0B',
               display: 'flex', alignItems: 'center', justifyContent: 'center'
             }}>
-              <ArrowUpRight size={18} />
+              <ArrowUpRight size={13} />
             </div>
           </div>
-          <div>
-            <div className="dashboard-stat-value" style={{ fontWeight: '800', color: 'var(--text-heading)', lineHeight: 1.1 }}>
-              {totalTransactionsCount}
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.2rem' }}>
-              <span style={{ fontSize: '0.775rem', fontWeight: '600', color: 'var(--text-body)' }}>
-                Total Transactions
-              </span>
-              <span style={{ fontSize: '0.7rem', fontWeight: '700', color: '#F59E0B' }}>
-                View →
-              </span>
-            </div>
+          <div style={{ fontSize: '1.2rem', fontWeight: '800', color: 'var(--text-heading)', lineHeight: 1.15 }}>
+            {totalTransactionsCount}
           </div>
         </div>
-
       </div>
 
       {/* ------------------------------------------------------------- */}
@@ -787,7 +803,7 @@ export const Dashboard: React.FC = () => {
                       color: isDebit ? '#EF4444' : '#10B981',
                       display: 'flex', alignItems: 'center', justifyContent: 'center'
                     }}>
-                      {isDebit ? <TrendingUp size={18} /> : <TrendingDown size={18} />}
+                      {isDebit ? <TrendingUp size={15} /> : <TrendingDown size={15} />}
                     </div>
                     <div>
                       <h4 style={{ fontWeight: '700', fontSize: '0.875rem', color: 'var(--text-heading)', margin: 0 }}>

@@ -6,15 +6,13 @@ import {
   Plus, 
   CreditCard, 
   FileText, 
-  ArrowUpRight, 
-  ArrowDownLeft, 
-  UserCheck
 } from 'lucide-react';
 import { useLedger } from '../hooks/useLedger';
 import { useCustomers } from '../../customers/hooks/useCustomers';
 import { RecordCreditSaleModal } from '../../sales/components/RecordCreditSaleModal';
 import { AiPassbookModal } from '../components/AiPassbookModal';
 import { useAuthStore } from '../../../stores/authStore';
+import { formatCompactAmount } from '../../../utils/formatCompactAmount';
 import type { LedgerDateFilter } from '../types';
 
 const LedgerPage: React.FC = () => {
@@ -154,75 +152,30 @@ const LedgerPage: React.FC = () => {
       {/* ------------------------------------------------------------- */}
       {/* KPI METRICS CARDS: GAVE vs GOT vs NET                         */}
       {/* ------------------------------------------------------------- */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.85rem' }}>
-        {/* You Gave (Udhaar / Debit) */}
-        <div style={{
-          backgroundColor: 'var(--bg-card)',
-          borderRadius: '18px',
-          padding: '1.1rem 1.25rem',
-          border: '1px solid rgba(239, 68, 68, 0.3)',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center'
-        }}>
-          <div>
-            <span style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-              You Gave (Udhaar Debit)
-            </span>
-            <div style={{ fontSize: '1.35rem', fontWeight: '800', color: '#EF4444', marginTop: '0.1rem' }}>
-              ₹{totalGaveUdhaar.toLocaleString('en-IN')}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '0.6rem' }}>
+        {[
+          { label: 'You Gave', value: formatCompactAmount(totalGaveUdhaar), color: '#EF4444', border: 'rgba(239, 68, 68, 0.3)' },
+          { label: 'You Got', value: formatCompactAmount(totalGotJama), color: '#10B981', border: 'rgba(16, 185, 129, 0.3)' },
+          { label: netBalance > 0 ? 'Net Udhaar' : 'Net Clear', value: formatCompactAmount(netBalance), color: netBalance > 0 ? '#EF4444' : '#10B981', border: 'var(--border-color)' },
+        ].map((card) => (
+          <div
+            key={card.label}
+            style={{
+              backgroundColor: 'var(--bg-card)',
+              borderRadius: '14px',
+              padding: '0.7rem 0.85rem',
+              border: `1px solid ${card.border}`,
+              minWidth: 0,
+            }}
+          >
+            <div style={{ fontSize: '0.65rem', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              {card.label}
+            </div>
+            <div style={{ fontSize: '1.15rem', fontWeight: '800', color: card.color, marginTop: '0.15rem' }}>
+              {card.value}
             </div>
           </div>
-          <div style={{ width: '40px', height: '40px', borderRadius: '12px', backgroundColor: 'rgba(239, 68, 68, 0.1)', color: '#EF4444', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <ArrowUpRight size={22} />
-          </div>
-        </div>
-
-        {/* You Got (Jama / Credit) */}
-        <div style={{
-          backgroundColor: 'var(--bg-card)',
-          borderRadius: '18px',
-          padding: '1.1rem 1.25rem',
-          border: '1px solid rgba(16, 185, 129, 0.3)',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center'
-        }}>
-          <div>
-            <span style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-              You Got (Jama Credit)
-            </span>
-            <div style={{ fontSize: '1.35rem', fontWeight: '800', color: '#10B981', marginTop: '0.1rem' }}>
-              ₹{totalGotJama.toLocaleString('en-IN')}
-            </div>
-          </div>
-          <div style={{ width: '40px', height: '40px', borderRadius: '12px', backgroundColor: 'rgba(16, 185, 129, 0.1)', color: '#10B981', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <ArrowDownLeft size={22} />
-          </div>
-        </div>
-
-        {/* Net Outstanding Balance */}
-        <div style={{
-          backgroundColor: 'var(--bg-card)',
-          borderRadius: '18px',
-          padding: '1.1rem 1.25rem',
-          border: '1px solid var(--border-color)',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center'
-        }}>
-          <div>
-            <span style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-              Net Outstanding Debt
-            </span>
-            <div style={{ fontSize: '1.35rem', fontWeight: '800', color: netBalance > 0 ? '#EF4444' : '#10B981', marginTop: '0.1rem' }}>
-              ₹{netBalance.toLocaleString('en-IN')} {netBalance > 0 ? 'Udhaar' : 'Clear'}
-            </div>
-          </div>
-          <div style={{ width: '40px', height: '40px', borderRadius: '12px', backgroundColor: 'var(--bg-secondary)', color: 'var(--text-heading)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <UserCheck size={22} />
-          </div>
-        </div>
+        ))}
       </div>
 
       {/* ------------------------------------------------------------- */}

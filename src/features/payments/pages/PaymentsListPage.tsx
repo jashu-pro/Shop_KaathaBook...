@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { usePayments } from '../hooks/usePayments';
 import { PaymentDetailsModal } from '../components/PaymentDetailsModal';
+import { formatCompactAmount } from '../../../utils/formatCompactAmount';
 import type { Payment, PaymentMode } from '../types';
 
 export const PaymentsListPage: React.FC = () => {
@@ -151,7 +152,7 @@ export const PaymentsListPage: React.FC = () => {
               Total Collections (All Time)
             </span>
             <div style={{ fontSize: '1.35rem', fontWeight: '900', color: 'var(--text-heading)', lineHeight: 1.1 }}>
-              ₹{totalCollected.toLocaleString('en-IN')}
+              {formatCompactAmount(totalCollected)}
             </div>
           </div>
 
@@ -169,34 +170,34 @@ export const PaymentsListPage: React.FC = () => {
       {/* KPI Collection Breakdown Cards */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-        gap: '0.75rem'
+        gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+        gap: '0.65rem'
       }}>
-        <div style={{ backgroundColor: 'var(--bg-card)', padding: '1rem', borderRadius: '18px', border: '1px solid var(--border-color)' }}>
-          <span style={{ fontSize: '0.725rem', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Today's Collection</span>
+        <div style={{ backgroundColor: 'var(--bg-card)', padding: '0.75rem 0.9rem', borderRadius: '16px', border: '1px solid var(--border-color)' }}>
+          <span style={{ fontSize: '0.7rem', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Today's Got</span>
           <div style={{ fontSize: '1.35rem', fontWeight: '900', color: '#10B981', marginTop: '0.2rem' }}>
-            ₹{todayCollected.toLocaleString('en-IN')}
+            {formatCompactAmount(todayCollected)}
           </div>
         </div>
 
-        <div style={{ backgroundColor: 'var(--bg-card)', padding: '1rem', borderRadius: '18px', border: '1px solid var(--border-color)' }}>
-          <span style={{ fontSize: '0.725rem', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Cash Collections</span>
+        <div style={{ backgroundColor: 'var(--bg-card)', padding: '0.75rem 0.9rem', borderRadius: '16px', border: '1px solid var(--border-color)' }}>
+          <span style={{ fontSize: '0.7rem', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Cash Got</span>
           <div style={{ fontSize: '1.35rem', fontWeight: '900', color: '#047857', marginTop: '0.2rem' }}>
-            ₹{cashCollected.toLocaleString('en-IN')}
+            {formatCompactAmount(cashCollected)}
           </div>
         </div>
 
-        <div style={{ backgroundColor: 'var(--bg-card)', padding: '1rem', borderRadius: '18px', border: '1px solid var(--border-color)' }}>
-          <span style={{ fontSize: '0.725rem', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase' }}>UPI (PhonePe/GPay)</span>
+        <div style={{ backgroundColor: 'var(--bg-card)', padding: '0.75rem 0.9rem', borderRadius: '16px', border: '1px solid var(--border-color)' }}>
+          <span style={{ fontSize: '0.7rem', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase' }}>UPI (GPay/PhonePe)</span>
           <div style={{ fontSize: '1.35rem', fontWeight: '900', color: '#2563EB', marginTop: '0.2rem' }}>
-            ₹{upiCollected.toLocaleString('en-IN')}
+            {formatCompactAmount(upiCollected)}
           </div>
         </div>
 
-        <div style={{ backgroundColor: 'var(--bg-card)', padding: '1rem', borderRadius: '18px', border: '1px solid var(--border-color)' }}>
-          <span style={{ fontSize: '0.725rem', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Bank Transfers</span>
+        <div style={{ backgroundColor: 'var(--bg-card)', padding: '0.75rem 0.9rem', borderRadius: '16px', border: '1px solid var(--border-color)' }}>
+          <span style={{ fontSize: '0.7rem', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Bank Transfers</span>
           <div style={{ fontSize: '1.35rem', fontWeight: '900', color: '#7C3AED', marginTop: '0.2rem' }}>
-            ₹{bankCollected.toLocaleString('en-IN')}
+            {formatCompactAmount(bankCollected)}
           </div>
         </div>
       </div>

@@ -195,7 +195,7 @@ const MainLayout: React.FC = () => {
                 {shopInitials}
               </div>
               {!isWorker && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                <div className="top-nav-avatar-name" style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                   <span style={{ maxWidth: '110px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{shop?.name || 'Shop'}</span>
                   <ChevronDown size={14} style={{ opacity: 0.8 }} />
                 </div>
