@@ -14,6 +14,7 @@ import { useSales } from '../../sales/hooks/useSales';
 import { usePayments } from '../../payments/hooks/usePayments';
 import { useCustomers } from '../../customers/hooks/useCustomers';
 import { exportToCSV } from '../utils/csvExporter';
+import { formatCompactAmount } from '../../../utils/formatCompactAmount';
 import { useAuthStore } from '../../../stores/authStore';
 import { CalendarPdfExportModal } from '../components/CalendarPdfExportModal';
 import type { ReportPeriod, ReportTab } from '../types';
@@ -231,7 +232,7 @@ const Reports: React.FC = () => {
               Sales Revenue
             </span>
             <div style={{ fontSize: '1.35rem', fontWeight: '800', color: 'var(--text-heading)', marginTop: '0.1rem' }}>
-              ₹{totalRevenue.toLocaleString('en-IN')}
+              {formatCompactAmount(totalRevenue)}
             </div>
             <span style={{ fontSize: '0.7rem', color: '#10B981', fontWeight: '700' }}>
               {periodSales.length} Transactions
@@ -257,7 +258,7 @@ const Reports: React.FC = () => {
               Payments Collected
             </span>
             <div style={{ fontSize: '1.35rem', fontWeight: '800', color: '#10B981', marginTop: '0.1rem' }}>
-              ₹{totalCollected.toLocaleString('en-IN')}
+              {formatCompactAmount(totalCollected)}
             </div>
             <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
               {periodPayments.length} Collections
@@ -283,7 +284,7 @@ const Reports: React.FC = () => {
               Outstanding Debt
             </span>
             <div style={{ fontSize: '1.35rem', fontWeight: '800', color: '#EF4444', marginTop: '0.1rem' }}>
-              ₹{totalUdhaarOutstanding.toLocaleString('en-IN')}
+              {formatCompactAmount(totalUdhaarOutstanding)}
             </div>
             <span style={{ fontSize: '0.7rem', color: '#EF4444', fontWeight: '700' }}>
               {debtorsList.length} Debtors
@@ -309,7 +310,7 @@ const Reports: React.FC = () => {
               Gross Profit
             </span>
             <div style={{ fontSize: '1.35rem', fontWeight: '800', color: '#059669', marginTop: '0.1rem' }}>
-              ₹{grossProfit.toLocaleString('en-IN')}
+              {formatCompactAmount(grossProfit)}
             </div>
             <span style={{ fontSize: '0.7rem', color: '#059669', fontWeight: '700' }}>
               {profitMarginPercent}% Profit Margin

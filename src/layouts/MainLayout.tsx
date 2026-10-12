@@ -5,6 +5,7 @@ import { useAuthStore } from '../stores/authStore';
 import { useTheme } from '../providers/ThemeProvider';
 import {
   LayoutDashboard,
+  Home,
   Users,
   BarChart3,
   Sparkles,
@@ -22,7 +23,6 @@ import {
   Store,
   ChevronDown,
   Wallet,
-  User as UserIcon,
   ChevronRight,
   ShieldCheck,
   Bell,
@@ -43,7 +43,6 @@ const MainLayout: React.FC = () => {
 
   useInactivityLogout();
 
-  const [onlineStatus, setOnlineStatus] = useState(true);
   const [fabMenuOpen, setFabMenuOpen] = useState(false);
   const [isRecordSaleModalOpen, setIsRecordSaleModalOpen] = useState(false);
   const [shopMenuOpen, setShopMenuOpen] = useState(false);
@@ -100,22 +99,32 @@ const MainLayout: React.FC = () => {
       <header className="top-navbar">
         {/* Left: Brand */}
         <div className="top-nav-brand-container">
-          <NavLink to="/" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', textDecoration: 'none', minWidth: 0, overflow: 'hidden' }}>
-            <div style={{
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: 0, overflow: 'hidden' }}>
+            <button
+              onClick={() => setProfileSheetOpen(true)}
+              aria-label="Open profile"
+              title="Profile"
+              style={{
+              border: 'none', padding: 0, cursor: 'pointer',
               width: '38px', height: '38px', borderRadius: '12px', flexShrink: 0,
               backgroundColor: isWorker ? '#0284C7' : 'var(--primary)', color: '#FFFFFF',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontWeight: '800', fontSize: '1.15rem', boxShadow: '0 4px 12px var(--primary-glow)',
+              overflow: 'hidden',
             }}>
-              {isWorker ? '👷' : 'K'}
-            </div>
+              {isWorker ? '👷' : shop?.logoUrl ? (
+                <img src={shop.logoUrl} alt="Shop profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              ) : shopInitials}
+            </button>
+            <NavLink to="/" style={{ textDecoration: 'none', minWidth: 0, overflow: 'hidden' }}>
             <div className="top-nav-brand-text">
-              <h1 className="top-nav-brand-title">Shop KhattaBook</h1>
-              <span className="top-nav-brand-subtitle" title={isWorker && activeWorker ? `${activeWorker.name} • Worker Space` : shop?.name || 'POS SaaS'}>
-                {isWorker && activeWorker ? `${activeWorker.name} • Worker Space` : shop?.name || 'POS SaaS'}
+              <h1 className="top-nav-brand-title">{shop?.name || 'Shop KhattaBook'}</h1>
+              <span className="top-nav-brand-subtitle">
+                {isWorker && activeWorker ? `${activeWorker.name} • Worker Space` : 'Shop KhattaBook'}
               </span>
             </div>
-          </NavLink>
+            </NavLink>
+          </div>
         </div>
 
         {/* Center: Desktop Nav Links */}
@@ -152,16 +161,6 @@ const MainLayout: React.FC = () => {
               <Plus size={18} /><span>New Sale</span>
             </button>
           )}
-
-          <button
-            onClick={() => setOnlineStatus(!onlineStatus)}
-            className="btn btn-secondary top-nav-status-btn"
-            style={{ padding: '0.5rem 0.75rem', fontSize: '0.75rem', borderRadius: '12px', gap: '0.35rem', color: onlineStatus ? '#10B981' : 'var(--text-muted)' }}
-            title="Toggle Online/Offline mode"
-          >
-            <span style={{ width: '8px', height: '8px', borderRadius: '50%', flexShrink: 0, backgroundColor: onlineStatus ? '#10B981' : '#94A3B8', boxShadow: onlineStatus ? '0 0 8px #10B981' : 'none' }} />
-            <span className="online-status-text">{onlineStatus ? 'Online' : 'Offline'}</span>
-          </button>
 
           <button onClick={toggleTheme} className="btn btn-secondary btn-icon top-nav-icon-btn" style={{ width: '38px', height: '38px', borderRadius: '12px' }} title="Toggle Theme" aria-label="Toggle theme">
             {theme === 'dark' ? <Sun size={17} /> : <Moon size={17} />}
@@ -244,14 +243,6 @@ const MainLayout: React.FC = () => {
                       );
                     })}
                   </div>
-                  <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '0.5rem', marginTop: '0.25rem' }}>
-                    <button
-                      onClick={() => { setShopMenuOpen(false); navigate('/shop-setup'); }}
-                      style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 0.75rem', borderRadius: '10px', border: '1px dashed var(--border-color)', backgroundColor: 'transparent', color: 'var(--primary)', fontWeight: '700', fontSize: '0.8rem', cursor: 'pointer', justifyContent: 'center' }}
-                    >
-                      <Plus size={15} /><span>+ Register New Shop</span>
-                    </button>
-                  </div>
                 </div>
               </>
             )}
@@ -270,7 +261,20 @@ const MainLayout: React.FC = () => {
       {/* MOBILE BOTTOM NAVIGATION BAR — 4 Tabs + Center FAB        */}
       {/* ─────────────────────────────────────────────────────────── */}
       <nav className="bottom-nav-bar" aria-label="Main navigation">
-        {/* Tab 1: Customers (Khata) */}
+        {/* Tab 1: Home */}
+        <NavLink
+          to="/"
+          end
+          className={({ isActive }) => `bottom-nav-tab ${isActive ? 'active' : ''}`}
+          aria-label="Home"
+        >
+          <div className="bottom-nav-icon-wrap">
+            <Home size={22} />
+          </div>
+          <span className="bottom-nav-label">Home</span>
+        </NavLink>
+
+        {/* Tab 2: Customers (Khata) */}
         <NavLink
           to="/customers"
           className={({ isActive }) => `bottom-nav-tab ${isActive ? 'active' : ''}`}
@@ -280,18 +284,6 @@ const MainLayout: React.FC = () => {
             <Users size={22} />
           </div>
           <span className="bottom-nav-label">Khata</span>
-        </NavLink>
-
-        {/* Tab 2: Cashbook */}
-        <NavLink
-          to="/cashbook"
-          className={({ isActive }) => `bottom-nav-tab ${isActive || location.pathname.startsWith('/ledger') ? 'active' : ''}`}
-          aria-label="Cashbook"
-        >
-          <div className="bottom-nav-icon-wrap">
-            <Wallet size={22} />
-          </div>
-          <span className="bottom-nav-label">Cashbook</span>
         </NavLink>
 
         {/* Center FAB */}
@@ -307,7 +299,19 @@ const MainLayout: React.FC = () => {
           </div>
         )}
 
-        {/* Tab 3: Reports */}
+        {/* Tab 3: Cashbook */}
+        <NavLink
+          to="/cashbook"
+          className={({ isActive }) => `bottom-nav-tab ${isActive || location.pathname.startsWith('/ledger') ? 'active' : ''}`}
+          aria-label="Cashbook"
+        >
+          <div className="bottom-nav-icon-wrap">
+            <Wallet size={22} />
+          </div>
+          <span className="bottom-nav-label">Cashbook</span>
+        </NavLink>
+
+        {/* Tab 4: Reports */}
         <NavLink
           to="/reports"
           className={({ isActive }) => `bottom-nav-tab ${isActive ? 'active' : ''}`}
@@ -318,22 +322,6 @@ const MainLayout: React.FC = () => {
           </div>
           <span className="bottom-nav-label">Reports</span>
         </NavLink>
-
-        {/* Tab 4: Profile */}
-        <button
-          onClick={() => setProfileSheetOpen(true)}
-          className={`bottom-nav-tab ${profileSheetOpen ? 'active' : ''}`}
-          aria-label="Profile"
-        >
-          <div className="bottom-nav-icon-wrap">
-            {shop?.logoUrl ? (
-              <img src={shop.logoUrl} alt="Shop" style={{ width: '24px', height: '24px', borderRadius: '6px', objectFit: 'cover' }} />
-            ) : (
-              <UserIcon size={22} />
-            )}
-          </div>
-          <span className="bottom-nav-label">Profile</span>
-        </button>
       </nav>
 
       {/* ─────────────────────────────────────────────────────────── */}
