@@ -83,7 +83,6 @@ export const ShopRegistration: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
   const [successState, setSuccessState] = useState(false);
-  const [avatarImgError, setAvatarImgError] = useState(false);
 
   /* ── STEP 1: Business Identity ── */
   const [shopName, setShopName] = useState('');
@@ -222,10 +221,36 @@ export const ShopRegistration: React.FC = () => {
     setStep((prev) => Math.min(prev + 1, 5) as any);
   };
 
-  const handleBack = () => {
+  // Only the card scrolls: lock the page behind it while the wizard is open.
+  useEffect(() => {
+    const html = document.documentElement;
+    const prev = { html: html.style.overflow, body: document.body.style.overflow, overscroll: document.body.style.overscrollBehavior };
+    html.style.overflow = 'hidden';
+    document.body.style.overflow = 'hidden';
+    document.body.style.overscrollBehavior = 'none';
+    return () => {
+      html.style.overflow = prev.html;
+      document.body.style.overflow = prev.body;
+      document.body.style.overscrollBehavior = prev.overscroll;
+    };
+  }, []);
+
+  // Keep the current step visible in the scrollable step bar on small screens.
+  useEffect(() => {
+    document
+      .querySelector(`[data-step="${step}"]`)
+      ?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    // Start each step at the top of the form.
+    document.querySelector('[data-wizard-body]')?.scrollTo({ top: 0 });
+  }, [step]);
+
+  const handleBack = async () => {
     setLocalError(null);
     if (step === 1) {
-      navigate('/login');
+      // Signed-in users without a shop are always sent back to /shop-setup,
+      // so leaving the wizard means signing out first.
+      await signOut();
+      navigate('/', { replace: true });
       return;
     }
     setStep((prev) => Math.max(prev - 1, 1) as any);
@@ -273,12 +298,14 @@ export const ShopRegistration: React.FC = () => {
   /* ────────────────────────────────────────────────────────── */
   return (
     <div style={{
-      minHeight: '100vh',
+      height: '100dvh',
+      overflow: 'hidden',
+      boxSizing: 'border-box',
       backgroundColor: 'var(--bg-primary)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      padding: '2rem 1rem',
+      padding: '1rem 0.75rem',
       fontFamily: 'var(--font-sans)',
     }}>
       <div
@@ -286,6 +313,9 @@ export const ShopRegistration: React.FC = () => {
         style={{
           width: '100%',
           maxWidth: '860px',
+          height: 'min(100%, 780px)',
+          display: 'flex',
+          flexDirection: 'column',
           backgroundColor: 'var(--bg-card)',
           borderRadius: 'var(--radius-card, 28px)',
           border: '1px solid var(--border-color)',
@@ -295,39 +325,32 @@ export const ShopRegistration: React.FC = () => {
       >
         {/* ── Top Header ── */}
         <div style={{
-          padding: '1.75rem 2rem 1.25rem',
+          flexShrink: 0,
+          padding: '1rem 1.5rem',
           borderBottom: '1px solid var(--border-color)',
           display: 'flex',
-          justifyContent: 'space-between',
           alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: '1rem',
+          gap: '0.65rem',
         }}>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-              <div style={{
-                width: '36px', height: '36px', borderRadius: '12px',
-                backgroundColor: 'var(--primary)', color: '#FFFFFF',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800',
-              }}>K</div>
-              <span style={{ fontSize: '1.35rem', fontWeight: '800', color: 'var(--text-heading)', letterSpacing: '-0.5px' }}>
-                Shop KhattaBook
-              </span>
-              <span className="badge badge-success" style={{ marginLeft: '0.5rem' }}>Verified Merchant</span>
+          <div style={{
+            width: '34px', height: '34px', borderRadius: '11px', flexShrink: 0,
+            backgroundColor: 'var(--primary)', color: '#FFFFFF',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800',
+          }}>K</div>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: '1.2rem', fontWeight: '800', color: 'var(--text-heading)', letterSpacing: '-0.3px', lineHeight: 1.2 }}>
+              Shop KhattaBook
             </div>
-            <p style={{ color: 'var(--text-body)', fontSize: '0.85rem', marginTop: '0.25rem' }}>
-              5-Step Merchant Onboarding Wizard
-            </p>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
-            <ShieldCheck size={16} style={{ color: 'var(--primary)' }} />
-            <span>Bank-Grade Encryption</span>
+            <div style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>
+              Set up your shop &middot; 5 quick steps
+            </div>
           </div>
         </div>
 
         {/* ── Step Progress Bar ── */}
         <div style={{
-          padding: '1rem 2rem',
+          flexShrink: 0,
+          padding: '0.65rem 1.5rem',
           backgroundColor: 'var(--bg-secondary)',
           borderBottom: '1px solid var(--border-color)',
           display: 'flex',
@@ -343,6 +366,7 @@ export const ShopRegistration: React.FC = () => {
             return (
               <div
                 key={st.number}
+                data-step={st.number}
                 onClick={() => isDone && setStep(st.number as any)}
                 style={{
                   display: 'flex', alignItems: 'center', gap: '0.5rem',
@@ -377,7 +401,7 @@ export const ShopRegistration: React.FC = () => {
         </div>
 
         {/* ── Form Body ── */}
-        <div style={{ padding: '2rem 2.25rem' }}>
+        <div data-wizard-body style={{ flex: 1, minHeight: 0, overflowY: 'auto', overscrollBehavior: 'contain', padding: '1.25rem 1.5rem' }}>
 
           {/* Success State */}
           {successState ? (
@@ -440,81 +464,21 @@ export const ShopRegistration: React.FC = () => {
                       <ArrowLeft size={18} />
                     </button>
                     <h3 style={{ fontSize: '1.25rem', fontWeight: '800', color: 'var(--text-heading)', margin: 0 }}>
-                      Step 1: Business Identity
+                      Your shop details
                     </h3>
                   </div>
-                  <p style={{ color: 'var(--text-body)', fontSize: '0.875rem', marginBottom: '1.25rem' }}>
-                    Tell us your shop name, category, and optionally upload a logo for bills & receipts.
+                  <p style={{ color: 'var(--text-body)', fontSize: '0.85rem', marginBottom: '0.85rem' }}>
+                    Add your shop name and pick a category. A logo is optional.
                   </p>
 
-                  {/* Connected Google / Merchant Account Banner */}
-                  {user?.email && (
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '0.75rem 1.15rem',
-                      backgroundColor: 'rgba(59, 130, 246, 0.08)',
-                      borderRadius: '14px',
-                      border: '1px solid rgba(59, 130, 246, 0.25)',
-                      marginBottom: '1.75rem',
-                      flexWrap: 'wrap',
-                      gap: '0.75rem',
-                    }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        {user.avatarUrl && !avatarImgError ? (
-                          <img
-                            src={user.avatarUrl}
-                            alt=""
-                            onError={() => setAvatarImgError(true)}
-                            referrerPolicy="no-referrer"
-                            style={{ width: '34px', height: '34px', borderRadius: '50%', objectFit: 'cover' }}
-                          />
-                        ) : (
-                          <div style={{
-                            width: '34px', height: '34px', borderRadius: '50%',
-                            backgroundColor: '#4285F4', color: '#FFFFFF',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            fontWeight: '700', fontSize: '0.9rem',
-                          }}>
-                            {user.email.charAt(0).toUpperCase()}
-                          </div>
-                        )}
-                        <div>
-                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Connected Account</div>
-                          <div style={{ fontSize: '0.875rem', fontWeight: '700', color: 'var(--text-heading)' }}>{user.email}</div>
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          await signOut();
-                          navigate('/login');
-                        }}
-                        style={{
-                          background: 'none',
-                          border: 'none',
-                          color: 'var(--primary)',
-                          fontSize: '0.825rem',
-                          fontWeight: '700',
-                          cursor: 'pointer',
-                          textDecoration: 'underline',
-                          padding: '0.2rem 0.4rem',
-                        }}
-                      >
-                        Switch Account / Login
-                      </button>
-                    </div>
-                  )}
-
                   {/* Logo Upload */}
-                  <div style={{ marginBottom: '2rem', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <div style={{ marginBottom: '1rem', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                     <label style={{
                       display: 'block', fontSize: '0.8rem', fontWeight: '700',
-                      color: 'var(--text-heading)', marginBottom: '0.75rem', textAlign: 'center',
+                      color: 'var(--text-heading)', marginBottom: '0.5rem', textAlign: 'center',
                     }}>
-                      Shop Logo / Profile Photo{' '}
-                      <span style={{ color: 'var(--text-muted)', fontWeight: '500' }}>(Optional)</span>
+                      Shop logo{' '}
+                      <span style={{ color: 'var(--text-muted)', fontWeight: '500' }}>(optional, shown on your bills)</span>
                     </label>
                     <ImageUploader
                       value={logoUrl}
@@ -522,15 +486,13 @@ export const ShopRegistration: React.FC = () => {
                       variant="logo"
                       label="Shop Logo"
                       facingMode="environment"
+                      compact
                     />
-                    <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.5rem', textAlign: 'center' }}>
-                      Your logo will appear on customer invoices & receipts
-                    </p>
                   </div>
 
                   {/* Shop Name */}
-                  <div className="form-group" style={{ marginBottom: '1.5rem' }}>
-                    <label className="form-label">Business / Shop Name *</label>
+                  <div className="form-group" style={{ marginBottom: '1rem' }}>
+                    <label className="form-label">Shop name *</label>
                     <input
                       type="text"
                       className="input-field"
@@ -543,12 +505,12 @@ export const ShopRegistration: React.FC = () => {
 
                   {/* Business Category Chips */}
                   <div className="form-group" style={{ marginBottom: '1rem' }}>
-                    <label className="form-label">Business Category *</label>
+                    <label className="form-label">Category *</label>
                     <div style={{
                       display: 'flex',
                       flexWrap: 'wrap',
-                      gap: '0.6rem',
-                      marginTop: '0.5rem',
+                      gap: '0.4rem',
+                      marginTop: '0.35rem',
                     }}>
                       {BUSINESS_CATEGORIES.map((cat) => {
                         const isSelected = businessCategory === cat.label;
@@ -561,8 +523,8 @@ export const ShopRegistration: React.FC = () => {
                               display: 'flex',
                               alignItems: 'center',
                               gap: '0.4rem',
-                              padding: '0.5rem 0.9rem',
-                              borderRadius: '24px',
+                              padding: '0.35rem 0.7rem',
+                              borderRadius: '20px',
                               border: isSelected
                                 ? '2px solid var(--primary)'
                                 : '1px solid var(--border-color)',
@@ -571,7 +533,7 @@ export const ShopRegistration: React.FC = () => {
                                 : 'var(--bg-secondary)',
                               color: isSelected ? 'var(--primary)' : 'var(--text-body)',
                               fontWeight: isSelected ? '800' : '600',
-                              fontSize: '0.85rem',
+                              fontSize: '0.8rem',
                               cursor: 'pointer',
                               transition: 'all 150ms ease',
                               boxShadow: isSelected ? '0 0 0 1px var(--primary)' : 'none',
@@ -621,15 +583,15 @@ export const ShopRegistration: React.FC = () => {
                       <ArrowLeft size={18} />
                     </button>
                     <h3 style={{ fontSize: '1.25rem', fontWeight: '800', color: 'var(--text-heading)', margin: 0 }}>
-                      Step 2: Location & Address
+                      Your shop address
                     </h3>
                   </div>
-                  <p style={{ color: 'var(--text-body)', fontSize: '0.875rem', marginBottom: '1.5rem' }}>
-                    Use GPS to auto-fill your address or enter details manually. Your location helps customers find your shop.
+                  <p style={{ color: 'var(--text-body)', fontSize: '0.85rem', marginBottom: '0.85rem' }}>
+                    Use GPS to fill it in, or type it below.
                   </p>
 
                   {/* GPS Auto-Detect Button */}
-                  <div style={{ marginBottom: '1.5rem' }}>
+                  <div style={{ marginBottom: '0.85rem' }}>
                     <button
                       type="button"
                       onClick={handleDetectLocation}
@@ -640,8 +602,8 @@ export const ShopRegistration: React.FC = () => {
                         alignItems: 'center',
                         justifyContent: 'center',
                         gap: '0.6rem',
-                        padding: '0.85rem 1.25rem',
-                        borderRadius: '16px',
+                        padding: '0.65rem 1rem',
+                        borderRadius: '14px',
                         border: gpsStatus === 'success'
                           ? '2px solid #10B981'
                           : gpsStatus === 'error'
@@ -658,7 +620,7 @@ export const ShopRegistration: React.FC = () => {
                             ? '#EF4444'
                             : 'var(--primary)',
                         fontWeight: '700',
-                        fontSize: '0.925rem',
+                        fontSize: '0.875rem',
                         cursor: gpsStatus === 'loading' ? 'wait' : 'pointer',
                         transition: 'all 0.2s ease',
                       }}
@@ -678,7 +640,7 @@ export const ShopRegistration: React.FC = () => {
                       ) : (
                         <>
                           <LocateFixed size={18} />
-                          <span>Use Current GPS Location</span>
+                          <span>Use my current location</span>
                           <Navigation size={15} style={{ opacity: 0.6 }} />
                         </>
                       )}
@@ -697,14 +659,14 @@ export const ShopRegistration: React.FC = () => {
                   </div>
 
                   {/* Divider */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}>
                     <hr style={{ flex: 1, border: 'none', borderTop: '1px solid var(--border-color)' }} />
-                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: '700' }}>OR ENTER MANUALLY</span>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: '700' }}>OR TYPE IT</span>
                     <hr style={{ flex: 1, border: 'none', borderTop: '1px solid var(--border-color)' }} />
                   </div>
 
                   {/* Address */}
-                  <div className="form-group" style={{ marginBottom: '1.1rem' }}>
+                  <div className="form-group" style={{ marginBottom: '0.75rem' }}>
                     <label className="form-label">Shop No., Street & Area *</label>
                     <input
                       type="text"
@@ -716,7 +678,7 @@ export const ShopRegistration: React.FC = () => {
                   </div>
 
                   {/* Landmark */}
-                  <div className="form-group" style={{ marginBottom: '1.1rem' }}>
+                  <div className="form-group" style={{ marginBottom: '0.75rem' }}>
                     <label className="form-label">Landmark</label>
                     <input
                       type="text"
@@ -728,8 +690,8 @@ export const ShopRegistration: React.FC = () => {
                   </div>
 
                   {/* City & State */}
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '1rem', marginBottom: '1.1rem' }}>
-                    <div className="form-group">
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '0.75rem', marginBottom: '0.75rem' }}>
+                    <div className="form-group" style={{ marginBottom: 0 }}>
                       <label className="form-label">City / Town *</label>
                       <input
                         type="text"
@@ -740,7 +702,7 @@ export const ShopRegistration: React.FC = () => {
                       />
                     </div>
 
-                    <div className="form-group">
+                    <div className="form-group" style={{ marginBottom: 0 }}>
                       <label className="form-label">State *</label>
                       <select
                         className="input-field"
@@ -755,8 +717,8 @@ export const ShopRegistration: React.FC = () => {
                   </div>
 
                   {/* Pincode & Phone */}
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '1rem', marginBottom: '1rem' }}>
-                    <div className="form-group">
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '0.75rem', marginBottom: '0.5rem' }}>
+                    <div className="form-group" style={{ marginBottom: 0 }}>
                       <label className="form-label">Pincode *</label>
                       <input
                         type="text"
@@ -768,7 +730,7 @@ export const ShopRegistration: React.FC = () => {
                       />
                     </div>
 
-                    <div className="form-group">
+                    <div className="form-group" style={{ marginBottom: 0 }}>
                       <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                         <Phone size={13} />
                         <span>Shop Contact Number *</span>
@@ -1111,14 +1073,21 @@ export const ShopRegistration: React.FC = () => {
                 </div>
               )}
 
+            </>
+          )}
+        </div>
+
+        {!successState && (
+          <>
               {/* ── Navigation Buttons ── */}
               <div style={{
+                flexShrink: 0,
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                marginTop: '1.5rem',
-                paddingTop: '1.25rem',
+                padding: '0.85rem 1.5rem',
                 borderTop: '1px solid var(--border-color)',
+                backgroundColor: 'var(--bg-card)',
                 gap: '1rem',
               }}>
                 <button
@@ -1184,9 +1153,8 @@ export const ShopRegistration: React.FC = () => {
                   </button>
                 )}
               </div>
-            </>
-          )}
-        </div>
+          </>
+        )}
       </div>
     </div>
   );
