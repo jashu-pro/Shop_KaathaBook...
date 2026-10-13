@@ -29,13 +29,15 @@ const Reports: React.FC = () => {
   const [activeTab, setActiveTab] = useState<ReportTab>('overview');
   const [isCalendarPdfModalOpen, setIsCalendarPdfModalOpen] = useState(false);
 
+  // Snapshot of the current time, taken once on mount, for date-range filters
+  const [now] = useState(() => Date.now());
+
   // Time Window Filter Helper
   const periodWindowTime = useMemo(() => {
-    const now = Date.now();
     if (period === 'daily') return now - 1 * 24 * 3600 * 1000;
     if (period === 'weekly') return now - 7 * 24 * 3600 * 1000;
     return now - 30 * 24 * 3600 * 1000; // monthly
-  }, [period]);
+  }, [period, now]);
 
   // Filtered Sales & Payments
   const periodSales = useMemo(() => {

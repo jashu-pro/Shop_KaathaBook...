@@ -52,6 +52,9 @@ const LedgerPage: React.FC = () => {
 
   const netBalance = totalGaveUdhaar - totalGotJama;
 
+  // Snapshot of the current time, taken once on mount, for date-range filters
+  const [now] = useState(() => Date.now());
+
   // Filtered entries by date & search query
   const filteredEntries = useMemo(() => {
     return entries.filter((entry) => {
@@ -64,7 +67,6 @@ const LedgerPage: React.FC = () => {
 
       let matchesDate = true;
       const entryTime = new Date(entry.entryDate).getTime();
-      const now = Date.now();
 
       if (dateFilter === 'today') {
         const startOfDay = new Date().setHours(0, 0, 0, 0);
@@ -79,7 +81,7 @@ const LedgerPage: React.FC = () => {
 
       return matchesSearch && matchesDate;
     });
-  }, [entries, searchQuery, dateFilter]);
+  }, [entries, searchQuery, dateFilter, now]);
 
   const handleExportPassbook = () => {
     setIsPassbookModalOpen(true);

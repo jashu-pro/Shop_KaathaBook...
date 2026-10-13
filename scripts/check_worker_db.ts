@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { LocalWorkerRepository } from '../src/features/staff/repositories/LocalWorkerRepository';
-import { hashSecret, generate4DigitCode } from '../src/features/staff/utils/security';
+import { hashSecret } from '../src/features/staff/utils/security';
 
 const SUPABASE_URL = 'https://ngsudgrpwssbfpdpbjud.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5nc3VkZ3Jwd3NzYmZwZHBianVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg0OTM1MDgsImV4cCI6MjEwNDA2OTUwOH0.d5gKgQkpGfOpcQgHDQ-RdTFwO-zy05MkKkv0m5bgbdA';
@@ -14,7 +14,7 @@ async function checkWorkerDB() {
 
   // 1. Supabase Cloud Table Check: shop_memberships
   console.log('1. Checking Supabase Cloud "shop_memberships" table...');
-  const { data: memberships, error: memErr, count: memCount } = await supabase
+  const { error: memErr, count: memCount } = await supabase
     .from('shop_memberships')
     .select('*', { count: 'exact' });
 
@@ -26,7 +26,7 @@ async function checkWorkerDB() {
 
   // 2. Supabase Cloud Table Check: worker_activity_logs
   console.log('\n2. Checking Supabase Cloud "worker_activity_logs" table...');
-  const { data: logs, error: logErr, count: logCount } = await supabase
+  const { error: logErr, count: logCount } = await supabase
     .from('worker_activity_logs')
     .select('*', { count: 'exact' });
 
@@ -40,7 +40,7 @@ async function checkWorkerDB() {
   console.log('\n3. Testing Supabase RPC stored procedure "authenticate_worker_pin"...');
   try {
     const testHash = await hashSecret('1234');
-    const { data: rpcRes, error: rpcErr } = await supabase.rpc('authenticate_worker_pin', {
+    const { error: rpcErr } = await supabase.rpc('authenticate_worker_pin', {
       p_shop_id: '00000000-0000-0000-0000-000000000000',
       p_email_or_phone: 'test@example.com',
       p_pin_hash: testHash
@@ -70,9 +70,6 @@ async function checkWorkerDB() {
   const testShopId = 'shop_test_worker_audit';
 
   // Add a test worker
-  const tempCode = generate4DigitCode();
-  const tempHash = await hashSecret(tempCode);
-  const pinHash = await hashSecret('9999');
 
   const addRes = await localRepo.addWorker(testShopId, {
     name: 'Jaswanth Worker Test',

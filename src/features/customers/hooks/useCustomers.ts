@@ -11,10 +11,12 @@ export const useCustomers = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const customerRepo = RepositoryFactory.getCustomerRepository();
+  const [customerRepo] = useState(() => RepositoryFactory.getCustomerRepository());
+
+  const shopId = shop?.id;
 
   const loadCustomers = useCallback(async () => {
-    if (!shop?.id) {
+    if (!shopId) {
       setIsLoading(false);
       return;
     }
@@ -22,14 +24,14 @@ export const useCustomers = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const data = await customerRepo.getCustomersByShop(shop.id);
+      const data = await customerRepo.getCustomersByShop(shopId);
       setCustomers(data);
     } catch (err: any) {
       setError(err.message || 'Failed to load customer directory');
     } finally {
       setIsLoading(false);
     }
-  }, [shop?.id]);
+  }, [shopId, customerRepo]);
 
   useEffect(() => {
     // Purge legacy sample customers from browser localStorage if present

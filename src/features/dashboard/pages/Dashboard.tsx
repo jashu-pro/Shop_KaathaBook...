@@ -18,11 +18,7 @@ import {
   TrendingDown, 
   Users, 
   ArrowUpRight, 
-  Plus, 
-  CreditCard, 
-  UserPlus, 
-  BookOpen, 
-  Mic, 
+  Plus,
   ArrowRight,
   Receipt,
   Info
@@ -607,88 +603,6 @@ export const Dashboard: React.FC = () => {
           <div style={{ fontSize: '1.2rem', fontWeight: '800', color: 'var(--text-heading)', lineHeight: 1.15 }}>
             {totalTransactionsCount}
           </div>
-        </div>
-      </div>
-
-      {/* ------------------------------------------------------------- */}
-      {/* ROW 4: QUICK ACTIONS                                          */}
-      {/* ------------------------------------------------------------- */}
-      <div style={{ marginTop: '0.25rem' }}>
-        <h3 style={{ fontSize: '0.9rem', fontWeight: '800', color: 'var(--text-heading)', marginBottom: '0.6rem' }}>
-          Quick Actions
-        </h3>
-
-        <div className="quick-actions-scroll">
-          {/* Action 1: New Credit Sale */}
-          <button
-            onClick={() => setIsRecordSaleOpen(true)}
-            className="quick-action-pill"
-            style={{
-              backgroundColor: 'rgba(16, 185, 129, 0.1)',
-              color: '#10B981',
-              border: '1px solid rgba(16, 185, 129, 0.25)'
-            }}
-          >
-            <Plus size={16} />
-            <span>New Credit Sale</span>
-          </button>
-
-          {/* Action 2: Receive Payment */}
-          <button
-            onClick={() => navigate('/payments/receive')}
-            className="quick-action-pill"
-            style={{
-              backgroundColor: 'rgba(245, 158, 11, 0.1)',
-              color: '#F59E0B',
-              border: '1px solid rgba(245, 158, 11, 0.25)'
-            }}
-          >
-            <CreditCard size={16} />
-            <span>Got Payment (Deposit)</span>
-          </button>
-
-          {/* Action 3: Add Customer */}
-          <button
-            onClick={() => navigate('/customers?add=true')}
-            className="quick-action-pill"
-            style={{
-              backgroundColor: 'var(--bg-card)',
-              color: 'var(--text-heading)',
-              border: '1px solid var(--border-color)'
-            }}
-          >
-            <UserPlus size={16} />
-            <span>Add Customer</span>
-          </button>
-
-          {/* Action 4: Open Ledger */}
-          <button
-            onClick={() => navigate('/ledger')}
-            className="quick-action-pill"
-            style={{
-              backgroundColor: 'var(--bg-card)',
-              color: 'var(--text-heading)',
-              border: '1px solid var(--border-color)'
-            }}
-          >
-            <BookOpen size={16} />
-            <span>Open Ledger</span>
-          </button>
-
-          {/* Action 5: AI Assistant */}
-          <button
-            onClick={() => navigate('/ai-assistant')}
-            className="quick-action-pill"
-            style={{
-              backgroundColor: '#8B5CF6',
-              color: '#FFFFFF',
-              border: 'none',
-              boxShadow: '0 3px 10px rgba(139, 92, 246, 0.25)'
-            }}
-          >
-            <Mic size={16} />
-            <span>AI Voice Entry</span>
-          </button>
         </div>
       </div>
 

@@ -8,6 +8,8 @@ interface ImageUploaderProps {
   variant?: 'avatar' | 'logo';
   label?: string;
   facingMode?: 'user' | 'environment';
+  /** Small preview with the buttons beside it (used in tight forms). */
+  compact?: boolean;
 }
 
 export const ImageUploader: React.FC<ImageUploaderProps> = ({
@@ -16,6 +18,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
   variant = 'avatar',
   label = 'Photo',
   facingMode = 'user',
+  compact = false,
 }) => {
   const [processing, setProcessing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -163,9 +166,10 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
   };
 
   const isAvatar = variant === 'avatar';
+  const previewSize = compact ? 84 : 160;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }}>
+    <div style={{ display: 'flex', flexDirection: compact ? 'row' : 'column', alignItems: 'center', gap: compact ? '1rem' : '0.75rem' }}>
       {/* Hidden Inputs */}
       <input
         type="file"
@@ -186,9 +190,9 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
       {/* Main Image Container */}
       <div style={{ position: 'relative' }}>
         <div style={{
-          width: '160px',
-          height: '160px',
-          borderRadius: isAvatar ? '50%' : 'var(--radius-card, 28px)',
+          width: `${previewSize}px`,
+          height: `${previewSize}px`,
+          borderRadius: isAvatar ? '50%' : compact ? '20px' : 'var(--radius-card, 28px)',
           overflow: 'hidden',
           border: value ? '3px solid var(--primary)' : '2px dashed var(--border-color)',
           boxShadow: value ? '0 10px 25px rgba(16, 185, 129, 0.15)' : 'none',
@@ -233,10 +237,12 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
               justifyContent: 'center',
               color: isAvatar ? 'var(--text-muted)' : 'var(--primary)'
             }}>
-              {isAvatar ? <UserIcon size={56} /> : <Store size={48} />}
-              <span style={{ fontSize: '0.75rem', marginTop: '0.35rem', fontWeight: '600' }}>
-                Add {label}
-              </span>
+              {isAvatar ? <UserIcon size={compact ? 30 : 56} /> : <Store size={compact ? 30 : 48} />}
+              {!compact && (
+                <span style={{ fontSize: '0.75rem', marginTop: '0.35rem', fontWeight: '600' }}>
+                  Add {label}
+                </span>
+              )}
             </div>
           )}
         </div>
@@ -308,12 +314,12 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
       )}
 
       {/* Camera & Gallery Action Buttons */}
-      <div style={{ display: 'flex', gap: '0.6rem' }}>
+      <div style={{ display: 'flex', gap: '0.6rem', flexDirection: compact ? 'column' : 'row' }}>
         <button
           type="button"
           onClick={handleCameraClick}
           className="btn btn-secondary"
-          style={{ padding: '0.6rem 1.1rem', fontSize: '0.85rem', borderRadius: '18px' }}
+          style={{ padding: compact ? '0.4rem 0.9rem' : '0.6rem 1.1rem', fontSize: '0.85rem', borderRadius: '18px' }}
         >
           <Camera size={16} /> Camera
         </button>
@@ -322,7 +328,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
           type="button"
           onClick={() => galleryInputRef.current?.click()}
           className="btn btn-secondary"
-          style={{ padding: '0.6rem 1.1rem', fontSize: '0.85rem', borderRadius: '18px' }}
+          style={{ padding: compact ? '0.4rem 0.9rem' : '0.6rem 1.1rem', fontSize: '0.85rem', borderRadius: '18px' }}
         >
           <ImageIcon size={16} /> Gallery
         </button>

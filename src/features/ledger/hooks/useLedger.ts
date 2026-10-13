@@ -11,10 +11,12 @@ export const useLedger = (customerId?: string, startDate?: string, endDate?: str
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const ledgerRepo = RepositoryFactory.getLedgerRepository();
+  const [ledgerRepo] = useState(() => RepositoryFactory.getLedgerRepository());
+
+  const shopId = shop?.id;
 
   const loadLedger = useCallback(async () => {
-    if (!shop?.id) {
+    if (!shopId) {
       setIsLoading(false);
       return;
     }
@@ -22,14 +24,14 @@ export const useLedger = (customerId?: string, startDate?: string, endDate?: str
     setIsLoading(true);
     setError(null);
     try {
-      const data = await ledgerRepo.listLedgerEntries(shop.id, customerId, startDate, endDate);
+      const data = await ledgerRepo.listLedgerEntries(shopId, customerId, startDate, endDate);
       setEntries(data);
     } catch (err: any) {
       setError(err.message || 'Failed to load ledger notebook');
     } finally {
       setIsLoading(false);
     }
-  }, [shop?.id, customerId, startDate, endDate]);
+  }, [shopId, customerId, startDate, endDate, ledgerRepo]);
 
   useEffect(() => {
     loadLedger();

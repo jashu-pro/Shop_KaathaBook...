@@ -12,7 +12,7 @@ import {
 import type { WorkerSalesPerformance, LeaderboardTimeframe, ShopPerformanceSettings } from '../types';
 import { WorkerPerformanceService } from '../services/WorkerPerformanceService';
 import { useAuthStore } from '../../../stores/authStore';
-import { useTheme } from '../../../providers/ThemeProvider';
+import { useTheme } from '../../../providers/themeContext';
 import { EventBus } from '../../../services/EventBus';
 
 export const WorkerLeaderboardStudio: React.FC = () => {
@@ -32,19 +32,21 @@ export const WorkerLeaderboardStudio: React.FC = () => {
   const [tempTarget, setTempTarget] = useState<string>(String(settings.dailySalesTargetPerWorker));
   const [tempCommission, setTempCommission] = useState<string>(String(settings.commissionPercentage));
 
+  const shopId = shop?.id;
+
   const loadData = useCallback(async () => {
-    if (!shop?.id) return;
+    if (!shopId) return;
     setIsLoading(true);
     try {
-      const data = await WorkerPerformanceService.computeLeaderboard(shop.id, timeframe);
+      const data = await WorkerPerformanceService.computeLeaderboard(shopId, timeframe);
       setLeaderboard(data);
-      setSettings(WorkerPerformanceService.getShopSettings(shop.id));
+      setSettings(WorkerPerformanceService.getShopSettings(shopId));
     } catch (e) {
       console.error('Failed to load leaderboard', e);
     } finally {
       setIsLoading(false);
     }
-  }, [shop?.id, timeframe]);
+  }, [shopId, timeframe]);
 
   useEffect(() => {
     loadData();

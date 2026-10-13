@@ -13,10 +13,12 @@ export const useSales = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const saleRepo = RepositoryFactory.getSaleRepository();
+  const [saleRepo] = useState(() => RepositoryFactory.getSaleRepository());
+
+  const shopId = shop?.id;
 
   const loadSales = useCallback(async () => {
-    if (!shop?.id) {
+    if (!shopId) {
       setIsLoading(false);
       return;
     }
@@ -24,14 +26,14 @@ export const useSales = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const data = await saleRepo.listSales(shop.id);
+      const data = await saleRepo.listSales(shopId);
       setSales(data);
     } catch (err: any) {
       setError(err.message || 'Failed to load sales directory');
     } finally {
       setIsLoading(false);
     }
-  }, [shop?.id]);
+  }, [shopId, saleRepo]);
 
   useEffect(() => {
     loadSales();

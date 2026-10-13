@@ -10,7 +10,7 @@ async function testConnection() {
   
   // 1. Auth test
   try {
-    const { data: authData, error: authError } = await supabase.auth.getSession();
+    const { error: authError } = await supabase.auth.getSession();
     console.log('Auth check status:', authError ? `Error: ${authError.message}` : 'Success (No active session)');
   } catch (err) {
     console.error('Auth check threw:', err);

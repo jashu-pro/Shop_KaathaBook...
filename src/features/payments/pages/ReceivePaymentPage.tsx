@@ -75,8 +75,8 @@ export const ReceivePaymentPage: React.FC = () => {
 
   // Auto-populate default amount to current debt when customer selected if empty
   useEffect(() => {
-    if (paymentType === 'customer' && selectedCustomer && isDebt && !amount) {
-      setAmount(currentBalance.toString());
+    if (paymentType === 'customer' && selectedCustomer && isDebt) {
+      setAmount((prev) => prev || currentBalance.toString());
     }
   }, [selectedCustomer, isDebt, currentBalance, paymentType]);
 

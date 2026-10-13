@@ -29,8 +29,8 @@ async function runVerification() {
   console.log('🧪 ========================================================\n');
 
   // Import Phase 9 modules
-  const { PERMISSION_PRESETS, DEFAULT_WORKER_PERMISSIONS } = await import('../src/features/staff/types/index.ts');
-  const { hashSecret, generate4DigitCode, isCodeExpired } = await import('../src/features/staff/utils/security.ts');
+  const { PERMISSION_PRESETS } = await import('../src/features/staff/types/index.ts');
+  const { generate4DigitCode, isCodeExpired } = await import('../src/features/staff/utils/security.ts');
   const { LocalWorkerRepository } = await import('../src/features/staff/repositories/LocalWorkerRepository.ts');
 
   const repo = new LocalWorkerRepository();

@@ -13,7 +13,7 @@ async function benchmarkSupabase() {
 
   // 1. Auth Latency Check
   const tAuthStart = performance.now();
-  const { data: authData, error: authError } = await supabase.auth.getSession();
+  const { error: authError } = await supabase.auth.getSession();
   const authLatency = Math.round(performance.now() - tAuthStart);
   console.log(`🔐 1. Supabase Auth Ping: ${authLatency}ms (Status: ${authError ? 'Error: ' + authError.message : 'Active & Responding'})`);
 
@@ -41,7 +41,7 @@ async function benchmarkSupabase() {
   for (const table of coreTables) {
     const t0 = performance.now();
     try {
-      const { data, error, count } = await supabase
+      const { error, count } = await supabase
         .from(table)
         .select('*', { count: 'exact', head: true });
       const elapsed = Math.round(performance.now() - t0);
@@ -62,7 +62,7 @@ async function benchmarkSupabase() {
   
   // Test authenticate_worker_pin RPC ping
   const tRpcStart = performance.now();
-  const { data: rpcData, error: rpcError } = await supabase.rpc('authenticate_worker_pin', {
+  const { error: rpcError } = await supabase.rpc('authenticate_worker_pin', {
     p_shop_id: '00000000-0000-0000-0000-000000000000',
     p_email_or_phone: 'test@ping.com',
     p_pin_hash: 'dummy_hash'

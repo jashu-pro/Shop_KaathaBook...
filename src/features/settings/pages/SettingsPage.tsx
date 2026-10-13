@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { LocalStorageDB } from '../../../services/localStorageDB';
 import { useAuthStore } from '../../../stores/authStore';
-import { useTheme } from '../../../providers/ThemeProvider';
+import { useTheme } from '../../../providers/themeContext';
 import { ImageUploader } from '../../../components/common/ImageUploader';
 import { generateAiPassbookPdf } from '../../../modules/documents/AiPassbookPdfGenerator';
 import { useCustomers } from '../../customers/hooks/useCustomers';

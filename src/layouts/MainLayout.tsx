@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../stores/authStore';
-import { useTheme } from '../providers/ThemeProvider';
+import { useTheme } from '../providers/themeContext';
 import {
   LayoutDashboard,
   Home,

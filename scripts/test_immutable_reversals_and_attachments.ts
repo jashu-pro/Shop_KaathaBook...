@@ -35,7 +35,6 @@ if (!globalThis.navigator) {
 
 import { LocalStorageDB } from '../src/services/localStorageDB';
 import { LocalSaleRepository } from '../src/features/sales/repositories/salesRepository';
-import { LocalWorkerRepository } from '../src/features/staff/repositories/LocalWorkerRepository';
 import { hashSecret } from '../src/features/staff/utils/security';
 
 
@@ -46,7 +45,6 @@ async function runStep68Audit() {
 
   const shopId = 'shop_audit_' + Date.now();
   const salesRepo = new LocalSaleRepository();
-  const workerRepo = new LocalWorkerRepository();
 
   // --------------------------------------------------------------------------
   // TEST 1: Multi-Image Sale Attachments & Stock Deduction

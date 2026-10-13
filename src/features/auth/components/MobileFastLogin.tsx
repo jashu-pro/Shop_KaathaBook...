@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { useLanguage } from '../../../providers/LanguageProvider';
+import { useLanguage } from '../../../providers/languageContext';
 import { 
   ArrowRight, 
   ShieldCheck, 

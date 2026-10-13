@@ -221,7 +221,6 @@ async function verifyAllPhases() {
   // -------------------------------------------------------------
   console.log('\n🛡️ [PHASE 9] Testing Staff Management & Security RBAC...');
   const { LocalWorkerRepository } = await import('../src/features/staff/repositories/LocalWorkerRepository.ts');
-  const { generate4DigitCode, hashSecret } = await import('../src/features/staff/utils/security.ts');
   const workerRepo = new LocalWorkerRepository();
 
   const { worker: newStaff, tempCode } = await repoAddWorkerHelper(workerRepo, testShopId, 'Suresh Singh', '7766554433');

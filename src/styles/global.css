@@ -185,7 +185,7 @@ input::placeholder, textarea::placeholder {
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
   display: flex;
   flex-direction: column;
-  justifyContent: space-between;
+  justify-content: space-between;
   min-width: 0;
   cursor: pointer;
   user-select: none;
@@ -634,41 +634,6 @@ input::placeholder, textarea::placeholder {
 }
 .fab-default .fab-action-icon { background-color: var(--bg-tertiary); }
 
-/* Horizontal Scrolling Pill Container */
-.quick-actions-scroll {
-  display: flex;
-  gap: 0.65rem;
-  overflow-x: auto;
-  width: 100%;
-  max-width: 100%;
-  padding-bottom: 0.4rem;
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none;  /* IE 10+ */
-  -webkit-overflow-scrolling: touch;
-}
-
-.quick-actions-scroll::-webkit-scrollbar {
-  display: none; /* Chrome Safari */
-}
-
-.quick-action-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.6rem 1rem;
-  border-radius: 16px;
-  font-size: 0.8rem;
-  font-weight: 700;
-  white-space: nowrap;
-  cursor: pointer;
-  transition: all var(--transition-fast);
-  border: 1px solid transparent;
-}
-
-.quick-action-pill:hover {
-  transform: translateY(-1px);
-}
-
 .badge {
   display: inline-flex;
   align-items: center;
@@ -715,8 +680,7 @@ input::placeholder, textarea::placeholder {
   .no-print,
   input,
   select,
-  .search-box,
-  .quick-actions-scroll {
+  .search-box {
     display: none !important;
   }
 

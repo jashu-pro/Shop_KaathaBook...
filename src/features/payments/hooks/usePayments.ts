@@ -13,10 +13,12 @@ export const usePayments = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const paymentRepo = RepositoryFactory.getPaymentRepository();
+  const [paymentRepo] = useState(() => RepositoryFactory.getPaymentRepository());
+
+  const shopId = shop?.id;
 
   const loadPayments = useCallback(async () => {
-    if (!shop?.id) {
+    if (!shopId) {
       setIsLoading(false);
       return;
     }
@@ -24,14 +26,14 @@ export const usePayments = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const data = await paymentRepo.listPayments(shop.id);
+      const data = await paymentRepo.listPayments(shopId);
       setPayments(data);
     } catch (err: any) {
       setError(err.message || 'Failed to load payments history');
     } finally {
       setIsLoading(false);
     }
-  }, [shop?.id]);
+  }, [shopId, paymentRepo]);
 
   useEffect(() => {
     loadPayments();

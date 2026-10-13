@@ -8,5 +8,9 @@ export default defineConfig({
     preserveSymlinks: true,
     dedupe: ['react', 'react-dom', 'react-router-dom'],
   },
+  server: {
+    // Allow requests proxied through Cloudflare quick tunnels (npm run tunnel)
+    allowedHosts: ['.trycloudflare.com'],
+  },
 })
 

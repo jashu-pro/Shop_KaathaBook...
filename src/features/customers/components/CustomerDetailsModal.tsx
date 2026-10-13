@@ -44,6 +44,8 @@ export const CustomerDetailsModal: React.FC<CustomerDetailsModalProps> = ({
   const [currentTag, setCurrentTag] = useState('Regular');
   const [dateFilter, setDateFilter] = useState<'all' | 'this_month' | 'last_30'>('all');
   const [isAiPassbookOpen, setIsAiPassbookOpen] = useState(false);
+  // Snapshot of the current time, taken once on mount, for date-range filters
+  const [now] = useState(() => Date.now());
 
   useEffect(() => {
     if (customer?.tag) {
@@ -93,7 +95,6 @@ export const CustomerDetailsModal: React.FC<CustomerDetailsModalProps> = ({
   // Apply Date Filtering
   const filteredLedgerEntries = rawLedgerEntries.filter((entry) => {
     const entryDate = new Date(entry.date).getTime();
-    const now = Date.now();
 
     if (dateFilter === 'this_month') {
       const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).getTime();

@@ -11,11 +11,13 @@ export const useInventory = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const categoryRepo = RepositoryFactory.getCategoryRepository();
-  const productRepo = RepositoryFactory.getProductRepository();
+  const [categoryRepo] = useState(() => RepositoryFactory.getCategoryRepository());
+  const [productRepo] = useState(() => RepositoryFactory.getProductRepository());
+
+  const shopId = shop?.id;
 
   const loadData = useCallback(async () => {
-    if (!shop?.id) {
+    if (!shopId) {
       setIsLoading(false);
       return;
     }
@@ -24,8 +26,8 @@ export const useInventory = () => {
     setError(null);
     try {
       const [cats, prods] = await Promise.all([
-        categoryRepo.list(shop.id),
-        productRepo.list(shop.id),
+        categoryRepo.list(shopId),
+        productRepo.list(shopId),
       ]);
       setCategories(cats);
       setProducts(prods);
@@ -34,7 +36,7 @@ export const useInventory = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [shop?.id]);
+  }, [shopId, categoryRepo, productRepo]);
 
   useEffect(() => {
     loadData();

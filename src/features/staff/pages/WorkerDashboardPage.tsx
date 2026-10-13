@@ -35,16 +35,19 @@ export const WorkerDashboardPage: React.FC = () => {
   const [myPerf, setMyPerf] = useState<WorkerSalesPerformance | null>(null);
   const [showLeaderboardModal, setShowLeaderboardModal] = useState(false);
 
+  const shopId = shop?.id;
+  const activeWorkerId = activeWorker?.id;
+
   const loadMyPerformance = useCallback(async () => {
-    if (!shop?.id) return;
+    if (!shopId) return;
     try {
-      const list = await WorkerPerformanceService.computeLeaderboard(shop.id, 'today');
-      const mine = list.find((w) => w.workerId === activeWorker?.id) || list[0] || null;
+      const list = await WorkerPerformanceService.computeLeaderboard(shopId, 'today');
+      const mine = list.find((w) => w.workerId === activeWorkerId) || list[0] || null;
       setMyPerf(mine);
     } catch (e) {
       console.error('Failed to load performance', e);
     }
-  }, [shop?.id, activeWorker?.id]);
+  }, [shopId, activeWorkerId]);
 
   useEffect(() => {
     loadMyPerformance();

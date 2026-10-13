@@ -645,18 +645,18 @@ export const ShopRegistration: React.FC = () => {
                         border: gpsStatus === 'success'
                           ? '2px solid #10B981'
                           : gpsStatus === 'error'
-                          ? '2px solid #EF4444'
-                          : '2px dashed var(--primary)',
+                            ? '2px solid #EF4444'
+                            : '2px dashed var(--primary)',
                         backgroundColor: gpsStatus === 'success'
                           ? 'rgba(16,185,129,0.1)'
                           : gpsStatus === 'error'
-                          ? 'rgba(239,68,68,0.08)'
-                          : 'rgba(59,130,246,0.08)',
+                            ? 'rgba(239,68,68,0.08)'
+                            : 'rgba(59,130,246,0.08)',
                         color: gpsStatus === 'success'
                           ? '#10B981'
                           : gpsStatus === 'error'
-                          ? '#EF4444'
-                          : 'var(--primary)',
+                            ? '#EF4444'
+                            : 'var(--primary)',
                         fontWeight: '700',
                         fontSize: '0.925rem',
                         cursor: gpsStatus === 'loading' ? 'wait' : 'pointer',

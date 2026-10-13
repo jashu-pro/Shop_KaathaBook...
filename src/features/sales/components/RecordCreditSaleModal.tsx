@@ -20,7 +20,7 @@ import { useCustomers } from '../../customers/hooks/useCustomers';
 import { useInventory } from '../../inventory/hooks/useInventory';
 import { useSales } from '../hooks/useSales';
 import { AddCustomerModal } from '../../customers/components/AddCustomerModal';
-import { useTheme } from '../../../providers/ThemeProvider';
+import { useTheme } from '../../../providers/themeContext';
 import { LiveCameraStudio } from '../../../components/common/LiveCameraStudio';
 
 
@@ -142,8 +142,8 @@ export const RecordCreditSaleModal: React.FC<RecordCreditSaleModalProps> = ({
   useEffect(() => {
     if (initialCustomerId) {
       setSelectedCustomerId(initialCustomerId);
-    } else if (customers.length > 0 && !selectedCustomerId) {
-      setSelectedCustomerId(customers[0].id);
+    } else if (customers.length > 0) {
+      setSelectedCustomerId((prev) => prev || customers[0].id);
     }
   }, [initialCustomerId, customers]);
 

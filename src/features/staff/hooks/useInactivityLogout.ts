@@ -1,5 +1,5 @@
 /* features/staff/hooks/useInactivityLogout.ts */
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useWorkerStore } from '../stores/workerStore';
 import { RepositoryFactory } from '../../../repositories/RepositoryFactory';
 import { Logger } from '../../../services/Logger';
@@ -9,8 +9,9 @@ const HEARTBEAT_INTERVAL_MS = 15 * 1000; // 15 seconds session check
 
 export function useInactivityLogout(timeoutMs: number = DEFAULT_INACTIVITY_TIMEOUT_MS) {
   const { sessionMode, activeWorker, exitWorkerSpace } = useWorkerStore();
-  const lastActivityRef = useRef<number>(Date.now());
-  const workerRepo = useRef(RepositoryFactory.getWorkerRepository()).current;
+  // Reset to Date.now() when the worker session effect starts below
+  const lastActivityRef = useRef<number>(0);
+  const [workerRepo] = useState(() => RepositoryFactory.getWorkerRepository());
 
   useEffect(() => {
     if (sessionMode !== 'worker' || !activeWorker) {

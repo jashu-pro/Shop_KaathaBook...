@@ -101,6 +101,8 @@ export const LiveCameraStudio: React.FC<LiveCameraStudioProps> = ({
     return () => {
       stopCurrentStream();
     };
+    // Only (re)start the camera when the studio opens/closes; facing changes are handled by toggleCameraFacing
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
   const toggleCameraFacing = () => {
