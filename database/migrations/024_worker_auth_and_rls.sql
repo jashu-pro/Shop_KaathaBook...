@@ -762,6 +762,39 @@ begin
 end;
 $$;
 
+-- One worker the caller may manage, same safe columns as staff_list. Empty
+-- when not found or not allowed.
+create or replace function public.staff_get(p_member_id uuid)
+returns table (
+  id uuid,
+  shop_id uuid,
+  name text,
+  email_or_phone text,
+  status text,
+  permissions jsonb,
+  has_pin boolean,
+  code_expires_at timestamptz,
+  session_version int,
+  sessions_revoked_at timestamptz,
+  last_active_at timestamptz,
+  created_at timestamptz
+)
+language plpgsql
+security definer
+stable
+set search_path = public
+as $$
+begin
+  return query
+    select m.id, m.shop_id, m.name, m.email_or_phone, m.status, m.permissions,
+           m.pin_hash is not null, m.temp_code_expires_at, m.session_version,
+           m.sessions_revoked_at, m.last_active_at, m.created_at
+    from public.shop_memberships m
+    where m.id = p_member_id and m.member_type = 'worker' and m.status <> 'removed'
+      and public.can_manage_staff(m.shop_id);
+end;
+$$;
+
 create or replace function public.staff_add(
   p_shop_id uuid,
   p_name text,
@@ -1353,6 +1386,11 @@ drop policy if exists sales_insert on public.sales;
 drop policy if exists ledger_read on public.ledger_entries;
 drop policy if exists ledger_insert on public.ledger_entries;
 
+-- 017 let a linked worker select their own membership row, which includes
+-- pin_hash and temp_code_hash. Workers get their profile from worker_touch,
+-- so shop_memberships stays owner-only.
+drop policy if exists "Workers can view their own membership" on public.shop_memberships;
+
 -- shops: a worker can read their own shop, never change it.
 drop policy if exists worker_shops_select on public.shops;
 create policy worker_shops_select on public.shops for select to authenticated
@@ -1559,6 +1597,7 @@ begin
     'public.worker_logout()',
     'public.log_shop_activity(uuid, text, text, numeric)',
     'public.staff_list(uuid)',
+    'public.staff_get(uuid)',
     'public.staff_add(uuid, text, text, jsonb)',
     'public.staff_update(uuid, text, text, jsonb, text)',
     'public.staff_new_code(uuid, boolean)',

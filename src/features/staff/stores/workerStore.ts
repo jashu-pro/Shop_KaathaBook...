@@ -285,7 +285,9 @@ export const useWorkerStore = create<WorkerSessionState>((set, get) => ({
     if (useServerAuth) {
       // Ends the server-side link and this device's anonymous session.
       await workerAuthService.logout();
-      useAuthStore.setState({ shop: null, isOnboarded: false });
+      // Also clear the owner sign-in cached on this device, or a reload would
+      // fall back to it and reopen the owner's account.
+      await useAuthStore.getState().signOut();
       Logger.info('WorkerStore: Worker signed out');
       return;
     }

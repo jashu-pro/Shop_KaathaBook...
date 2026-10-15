@@ -47,6 +47,13 @@ drop policy if exists worker_activity_select on public.worker_activity_logs;
 drop policy if exists no_worker_shop_insert on public.shops;
 drop policy if exists no_worker_registration_insert on public.shop_registration_requests;
 
+-- 017's self-read policy, which 024 removed.
+drop policy if exists "Workers can view their own membership" on public.shop_memberships;
+create policy "Workers can view their own membership"
+  on public.shop_memberships
+  for select
+  using (user_id = auth.uid());
+
 -- 3. Original finance and registration functions back under their names
 drop function if exists public.record_sale(uuid, uuid, text, numeric, numeric, numeric, numeric, numeric, text, text, text, jsonb, uuid);
 alter function public._record_sale_impl(uuid, uuid, text, numeric, numeric, numeric, numeric, numeric, text, text, text, jsonb)
@@ -88,6 +95,7 @@ drop function if exists public.worker_touch(boolean);
 drop function if exists public.worker_logout();
 drop function if exists public.log_shop_activity(uuid, text, text, numeric);
 drop function if exists public.staff_list(uuid);
+drop function if exists public.staff_get(uuid);
 drop function if exists public.staff_add(uuid, text, text, jsonb);
 drop function if exists public.staff_update(uuid, text, text, jsonb, text);
 drop function if exists public.staff_new_code(uuid, boolean);

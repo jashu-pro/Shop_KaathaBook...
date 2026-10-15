@@ -6,9 +6,6 @@ import type { WorkerRepository } from './WorkerRepository';
 import type { WorkerMember, WorkerActivityLog, AddWorkerDTO, UpdateWorkerDTO, WorkerStatus } from '../types';
 import { supabase } from '../../../config/supabase';
 
-const MEMBER_COLUMNS =
-  'id, shop_id, name, email_or_phone, status, permissions, session_version, sessions_revoked_at, last_active_at, created_at';
-
 const client = () => {
   if (!supabase) throw new Error('Supabase is not configured');
   return supabase;
@@ -51,11 +48,9 @@ export class SupabaseWorkerRepository implements WorkerRepository {
   }
 
   async getWorkerById(workerId: string): Promise<WorkerMember | null> {
-    // Owner-only RLS on shop_memberships; hash columns are never selected.
-    const row = unwrap(
-      await client().from('shop_memberships').select(MEMBER_COLUMNS).eq('id', workerId).eq('member_type', 'worker').maybeSingle()
-    );
-    return row && (row as any).status !== 'removed' ? toWorker(row) : null;
+    // shop_memberships is owner-only, so staff managers read through staff_get.
+    const rows = unwrap(await client().rpc('staff_get', { p_member_id: workerId })) as any[];
+    return rows?.[0] ? toWorker(rows[0]) : null;
   }
 
   async findWorkerByEmailOrPhone(shopId: string, emailOrPhone: string): Promise<WorkerMember | null> {

@@ -200,6 +200,13 @@ do $$ begin
   end;
 end $$;
 
+-- T25: worker cannot read membership rows (PIN hash) directly
+do $$ begin
+  if exists (select 1 from public.shop_memberships) then
+    raise exception 'FAIL T25: worker can read shop_memberships directly';
+  end if;
+end $$;
+
 -- T24: heartbeat returns permissions
 do $$ begin
   if not (public.worker_touch(false)->>'ok')::boolean then raise exception 'FAIL T24: valid session rejected by worker_touch'; end if;
@@ -329,6 +336,11 @@ begin
   v := public.staff_add('aa000000-0000-0000-0000-0000000000aa', 'New Hire', '9000000003',
        '{"customers":{"view":true}}'::jsonb);
   if v->>'code' !~ '^\d{6}$' then raise exception 'FAIL T40: no 6-digit code returned'; end if;
+
+  -- T40b: can read back the worker they added
+  if not exists (select 1 from public.staff_get((v->>'workerId')::uuid)) then
+    raise exception 'FAIL T40b: manager cannot read back the added worker';
+  end if;
 
   -- T41: may not grant staff management / settings
   begin
