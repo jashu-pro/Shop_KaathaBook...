@@ -80,7 +80,7 @@ const MainLayout: React.FC = () => {
             <span>Worker Space: <strong>{activeWorker.name}</strong> ({activeWorker.emailOrPhone})</span>
           </div>
           <button
-            onClick={() => { exitWorkerSpace(); navigate('/login'); }}
+            onClick={async () => { await exitWorkerSpace(); navigate('/login'); }}
             style={{
               backgroundColor: 'rgba(255,255,255,0.2)', color: '#FFFFFF',
               border: 'none', borderRadius: '8px', padding: '0.2rem 0.65rem',
@@ -167,7 +167,7 @@ const MainLayout: React.FC = () => {
           </button>
 
           <button
-            onClick={async () => { if (isWorker) { exitWorkerSpace(); navigate('/worker-login'); } else { await signOut(); navigate('/login'); } }}
+            onClick={async () => { if (isWorker) { await exitWorkerSpace(); navigate('/worker-login'); } else { await signOut(); navigate('/login'); } }}
             className="btn btn-secondary btn-icon top-nav-icon-btn"
             style={{ width: '38px', height: '38px', borderRadius: '12px', color: '#EF4444' }}
             title="Sign Out" aria-label="Sign out"
@@ -481,7 +481,7 @@ const MainLayout: React.FC = () => {
               <button
                 onClick={async () => {
                   setProfileSheetOpen(false);
-                  if (isWorker) { exitWorkerSpace(); navigate('/worker-login'); }
+                  if (isWorker) { await exitWorkerSpace(); navigate('/worker-login'); }
                   else { await signOut(); navigate('/login'); }
                 }}
                 style={{

@@ -40,6 +40,7 @@ import {
 } from '../features/ledger/repositories/ledgerRepository';
 import { type WorkerRepository } from '../features/staff/repositories/WorkerRepository';
 import { LocalWorkerRepository } from '../features/staff/repositories/LocalWorkerRepository';
+import { SupabaseWorkerRepository } from '../features/staff/repositories/SupabaseWorkerRepository';
 
 import { 
   type IAdminRepository, 
@@ -87,7 +88,7 @@ class RepositoryFactoryService {
   }
 
   getWorkerRepository(): WorkerRepository {
-    return new LocalWorkerRepository();
+    return this.useSupabase ? new SupabaseWorkerRepository() : new LocalWorkerRepository();
   }
 }
 

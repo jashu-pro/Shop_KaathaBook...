@@ -135,6 +135,8 @@ export const RecordCreditSaleModal: React.FC<RecordCreditSaleModalProps> = ({
 
   // Submission & Success Confirmation State
   const [submitting, setSubmitting] = useState<boolean>(false);
+  // One id per sale, kept across retries so the server records it once.
+  const requestIdRef = useRef(crypto.randomUUID());
   const [error, setError] = useState<string | null>(null);
   const [savedSuccessRecord, setSavedSuccessRecord] = useState<any | null>(null);
 
@@ -284,7 +286,9 @@ export const RecordCreditSaleModal: React.FC<RecordCreditSaleModalProps> = ({
         billImageUrls: billPhotos,
         notes: notes || undefined,
         items: saleItemsPayload,
+        requestId: requestIdRef.current,
       });
+      requestIdRef.current = crypto.randomUUID();
 
       if (sendWhatsApp && selectedCustomer?.phone) {
         const cleanPhone = selectedCustomer.phone.replace(/[^0-9]/g, '');

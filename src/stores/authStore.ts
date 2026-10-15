@@ -80,13 +80,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           isLoading: false,
         });
       } else {
+        const hasWorkerSession = !!localStorage.getItem('khattabook_worker_session');
         set({
           user: null,
           shops: [],
-          shop: null,
+          shop: hasWorkerSession ? get().shop : null,
           registrationRequest: null,
           isAuthenticated: false,
-          isOnboarded: false,
+          isOnboarded: hasWorkerSession ? get().isOnboarded : false,
           isLoading: false,
         });
       }

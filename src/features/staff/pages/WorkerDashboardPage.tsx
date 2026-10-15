@@ -42,7 +42,7 @@ export const WorkerDashboardPage: React.FC = () => {
     if (!shopId) return;
     try {
       const list = await WorkerPerformanceService.computeLeaderboard(shopId, 'today');
-      const mine = list.find((w) => w.workerId === activeWorkerId) || list[0] || null;
+      const mine = list.find((w) => w.workerId === activeWorkerId) || null;
       setMyPerf(mine);
     } catch (e) {
       console.error('Failed to load performance', e);
@@ -119,8 +119,8 @@ export const WorkerDashboardPage: React.FC = () => {
         </div>
 
         <button
-          onClick={() => {
-            exitWorkerSpace();
+          onClick={async () => {
+            await exitWorkerSpace();
             navigate('/login');
           }}
           className="btn btn-secondary"

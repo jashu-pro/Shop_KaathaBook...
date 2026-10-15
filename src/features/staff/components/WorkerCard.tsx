@@ -37,23 +37,33 @@ export const WorkerCard: React.FC<WorkerCardProps> = ({ worker, onManageAccess }
   const [activeCode, setActiveCode] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [revokedBanner, setRevokedBanner] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  const showError = (err: any, fallback: string) => {
+    setActionError(err?.message || fallback);
+    setTimeout(() => setActionError(null), 4000);
+  };
 
   const initials = worker.name.substring(0, 2).toUpperCase();
 
   const handleToggleStatus = async () => {
     const nextStatus = worker.status === 'suspended' ? 'active' : 'suspended';
-    await updateWorker({
-      workerId: worker.id,
-      updates: { status: nextStatus },
-    });
+    try {
+      await updateWorker({
+        workerId: worker.id,
+        updates: { status: nextStatus },
+      });
+    } catch (err) {
+      showError(err, 'Could not change this worker\'s access. Try again.');
+    }
   };
 
   const handleRegenerateCode = async () => {
     try {
       const res = await regenerateCode(worker.id);
       setActiveCode(res.tempCode);
-    } catch {
-      // Ignore
+    } catch (err) {
+      showError(err, 'Could not create a new approval code. Try again.');
     }
   };
 
@@ -61,8 +71,8 @@ export const WorkerCard: React.FC<WorkerCardProps> = ({ worker, onManageAccess }
     try {
       const res = await resetPin(worker.id);
       setActiveCode(res.tempCode);
-    } catch {
-      // Ignore
+    } catch (err) {
+      showError(err, 'Could not reset the PIN. Try again.');
     }
   };
 
@@ -71,13 +81,13 @@ export const WorkerCard: React.FC<WorkerCardProps> = ({ worker, onManageAccess }
       await revokeSessions(worker.id);
       setRevokedBanner(true);
       setTimeout(() => setRevokedBanner(false), 3000);
-    } catch {
-      // Ignore
+    } catch (err) {
+      showError(err, 'Could not sign this worker out. Try again.');
     }
   };
 
   const getInvitationText = (code: string) => {
-    return `Namaste ${worker.name}! Use your Shop KhattaBook 4-digit Approval Code: ${code} to activate your Worker Space PIN.`;
+    return `Namaste ${worker.name}! Use your Shop KhattaBook activation code ${code} to set your Worker PIN. Open the app, tap "Staff Login with PIN", then "First time? Activate PIN".`;
   };
 
   const handleCopyCode = () => {
@@ -258,7 +268,7 @@ export const WorkerCard: React.FC<WorkerCardProps> = ({ worker, onManageAccess }
         >
           <div>
             <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'block', fontWeight: '600' }}>
-              4-Digit Approval Code:
+              Activation code:
             </span>
             <span style={{ fontSize: '1.35rem', fontWeight: '800', color: 'var(--primary)', letterSpacing: '0.25rem' }}>
               {activeCode}
@@ -302,11 +312,17 @@ export const WorkerCard: React.FC<WorkerCardProps> = ({ worker, onManageAccess }
           disabled={isRegeneratingCode}
         >
           <Key size={14} />
-          <span>{isRegeneratingCode ? 'Generating...' : '🔑 Show 4-Digit Approval Code'}</span>
+          <span>{isRegeneratingCode ? 'Generating...' : '🔑 New activation code'}</span>
         </button>
       ) : null}
 
       {/* Revocation Success Banner */}
+      {actionError && (
+        <div role="alert" style={{ padding: '0.45rem 0.75rem', borderRadius: '10px', backgroundColor: 'rgba(239, 68, 68, 0.1)', color: '#EF4444', fontSize: '0.725rem', fontWeight: '700' }}>
+          {actionError}
+        </div>
+      )}
+
       {revokedBanner && (
         <div style={{ padding: '0.45rem 0.75rem', borderRadius: '10px', backgroundColor: 'rgba(16, 185, 129, 0.1)', color: '#10B981', fontSize: '0.725rem', fontWeight: '700' }}>
           ✓ Active sessions revoked successfully.

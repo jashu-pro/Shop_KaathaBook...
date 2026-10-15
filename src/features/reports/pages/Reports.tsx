@@ -16,6 +16,7 @@ import { useCustomers } from '../../customers/hooks/useCustomers';
 import { exportToCSV } from '../utils/csvExporter';
 import { formatCompactAmount } from '../../../utils/formatCompactAmount';
 import { useAuthStore } from '../../../stores/authStore';
+import { useWorkerPermissions } from '../../staff/hooks/useWorkerPermissions';
 import { CalendarPdfExportModal } from '../components/CalendarPdfExportModal';
 import type { ReportPeriod, ReportTab } from '../types';
 
@@ -62,6 +63,9 @@ const Reports: React.FC = () => {
   }, [customers]);
 
   // Profit Calculation (Estimated based on 25% average profit margin if cost price missing)
+  const { can } = useWorkerPermissions();
+  const showProfit = can('viewProfit');
+
   const grossProfit = useMemo(() => {
     const estimatedCost = totalRevenue * 0.75;
     return Math.max(0, Math.round(totalRevenue - estimatedCost));
@@ -298,6 +302,7 @@ const Reports: React.FC = () => {
         </div>
 
         {/* Estimated Gross Profit */}
+        {showProfit && (
         <div style={{
           backgroundColor: 'var(--bg-card)',
           borderRadius: '18px',
@@ -322,6 +327,7 @@ const Reports: React.FC = () => {
             <PieChart size={20} />
           </div>
         </div>
+        )}
       </div>
 
       {/* ------------------------------------------------------------- */}
@@ -341,7 +347,7 @@ const Reports: React.FC = () => {
           { id: 'profit', label: 'Profit & Loss' },
           { id: 'outstanding', label: `Outstanding Debt (${debtorsList.length})` },
           { id: 'customers', label: 'Customer Sales' },
-        ].map((tab) => (
+        ].filter((tab) => showProfit || tab.id !== 'profit').map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id as ReportTab)}
@@ -440,7 +446,7 @@ const Reports: React.FC = () => {
       {/* ------------------------------------------------------------- */}
       {/* TAB CONTENT 2: PROFIT & LOSS                                  */}
       {/* ------------------------------------------------------------- */}
-      {activeTab === 'profit' && (
+      {activeTab === 'profit' && showProfit && (
         <div style={{
           backgroundColor: 'var(--bg-card)',
           borderRadius: '20px',

@@ -25,6 +25,10 @@ export class SupabaseAuthRepository implements IAuthRepository {
     if (supabase) {
       try {
         const { data: { user }, error } = await supabase.auth.getUser();
+        // Worker accounts (and anonymous sessions) are never shop owners.
+        if (!error && (user?.is_anonymous || user?.app_metadata?.role === 'worker')) {
+          return null;
+        }
         if (!error && user) {
           const { data: profile } = await supabase
             .from('profiles')

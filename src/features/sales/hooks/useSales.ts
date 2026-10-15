@@ -6,6 +6,7 @@ import { useAuthStore } from '../../../stores/authStore';
 import { EventBus } from '../../../services/EventBus';
 
 import { useWorkerStore } from '../../staff/stores/workerStore';
+import { isSupabaseConfigured } from '../../../config/supabase';
 
 export const useSales = () => {
   const { shop } = useAuthStore();
@@ -53,15 +54,18 @@ export const useSales = () => {
     EventBus.publish('ledger:changed');
     EventBus.publish('customers:changed');
 
-    try {
-      await useWorkerStore.getState().recordWorkerActivity(
-        shop.id,
-        `Created Sale (${dto.items.length} items)`,
-        'sale',
-        dto.totalAmount
-      );
-    } catch {
-      // Non-blocking
+    // With Supabase, record_sale writes the activity entry itself.
+    if (!isSupabaseConfigured()) {
+      try {
+        await useWorkerStore.getState().recordWorkerActivity(
+          shop.id,
+          `Created Sale (${dto.items.length} items)`,
+          'sale',
+          dto.totalAmount
+        );
+      } catch {
+        // Non-blocking
+      }
     }
 
     return created;

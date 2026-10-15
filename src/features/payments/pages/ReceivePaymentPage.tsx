@@ -1,5 +1,5 @@
 /* features/payments/pages/ReceivePaymentPage.tsx */
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { 
   ArrowLeft, 
@@ -56,6 +56,8 @@ export const ReceivePaymentPage: React.FC = () => {
 
   const [showQrModal, setShowQrModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  // One id per payment, kept across retries so the server records it once.
+  const requestIdRef = useRef(crypto.randomUUID());
   const [error, setError] = useState<string | null>(null);
   const [savedSuccessPayment, setSavedSuccessPayment] = useState<any | null>(null);
 
@@ -138,7 +140,9 @@ export const ReceivePaymentPage: React.FC = () => {
         referenceNo: referenceNo.trim() || undefined,
         proofImageUrl: proofImageUrl || undefined,
         notes: notes.trim() || (paymentType === 'shop_deposit' ? 'Direct Shop Cash Deposit' : undefined),
+        requestId: requestIdRef.current,
       });
+      requestIdRef.current = crypto.randomUUID();
 
       await Promise.all([
         refetchCustomers(),

@@ -1,5 +1,5 @@
 /* features/sales/components/NewSaleWizardModal.tsx */
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   X, 
   Search, 
@@ -66,6 +66,8 @@ export const NewSaleWizardModal: React.FC<NewSaleWizardModalProps> = ({
   const [autoSendWhatsApp, setAutoSendWhatsApp] = useState<boolean>(true);
 
   const [submitting, setSubmitting] = useState(false);
+  // One id per sale, kept across retries so the server records it once.
+  const requestIdRef = useRef(crypto.randomUUID());
   const [savedSaleRecord, setSavedSaleRecord] = useState<any | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -215,7 +217,9 @@ export const NewSaleWizardModal: React.FC<NewSaleWizardModalProps> = ({
           unitPrice: item.unitPrice,
           totalPrice: item.quantity * item.unitPrice,
         })),
+        requestId: requestIdRef.current,
       });
+      requestIdRef.current = crypto.randomUUID();
 
       // Clear draft
       localStorage.removeItem('khattabook_sale_draft');

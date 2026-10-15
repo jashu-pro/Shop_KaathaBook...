@@ -26,4 +26,6 @@ export interface CreatePaymentDTO {
   referenceNo?: string;
   proofImageUrl?: string;
   notes?: string;
+  /** Same id for retries of one submission, so it is recorded once. */
+  requestId?: string;
 }

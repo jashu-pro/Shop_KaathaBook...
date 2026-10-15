@@ -127,7 +127,7 @@ export const ManageWorkerAccessModal: React.FC<ManageWorkerAccessModalProps> = (
     });
   };
 
-  const handleToggleDirect = (key: 'dashboard' | 'reports' | 'settings' | 'staffManagement') => {
+  const handleToggleDirect = (key: 'dashboard' | 'reports' | 'viewProfit' | 'settings' | 'staffManagement') => {
     setSelectedPreset('custom');
     setPermissions((prev) => {
       if (!prev) return prev;
@@ -573,6 +573,16 @@ export const ManageWorkerAccessModal: React.FC<ManageWorkerAccessModalProps> = (
                   style={{ accentColor: 'var(--primary)' }}
                 />
                 <span>Financial Reports & Analytics</span>
+              </label>
+
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.82rem', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={!!permissions.viewProfit}
+                  onChange={() => handleToggleDirect('viewProfit')}
+                  style={{ accentColor: 'var(--primary)' }}
+                />
+                <span>View Cost Prices & Profit</span>
               </label>
 
               <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.82rem', cursor: 'pointer' }}>

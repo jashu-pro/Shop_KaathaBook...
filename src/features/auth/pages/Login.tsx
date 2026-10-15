@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useLanguage } from '../../../providers/languageContext';
-import { Eye, EyeOff, Lock, Mail } from 'lucide-react';
+import { Eye, EyeOff, Lock, Mail, KeyRound } from 'lucide-react';
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
@@ -198,42 +198,38 @@ const Login: React.FC = () => {
           </button>
         </form>
 
-        {/* Worker Space PIN Login Section */}
+        {/* Staff & Worker Access */}
         <div style={{
-          marginTop: '0.5rem',
-          marginBottom: '1.5rem',
-          padding: '1rem',
+          marginTop: '0.25rem',
+          marginBottom: '1.25rem',
+          padding: '0.75rem',
           backgroundColor: 'rgba(2, 132, 199, 0.08)',
           border: '1px solid rgba(2, 132, 199, 0.25)',
-          borderRadius: '16px',
-          textAlign: 'center'
+          borderRadius: 'var(--radius-md, 14px)',
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-            <span style={{ fontSize: '1.25rem' }}>👷</span>
-            <span style={{ fontWeight: '700', color: '#0284c7', fontSize: '0.95rem' }}>Staff & Worker Access</span>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', marginBottom: '0.6rem' }}>
+            <KeyRound size={15} style={{ color: '#0284C7', flexShrink: 0 }} />
+            <span style={{ fontWeight: '700', color: '#0284C7', fontSize: '0.85rem' }}>Staff & Worker Access</span>
           </div>
-          <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '0 0 0.75rem 0' }}>
-            Are you a staff member or helper assigned to this shop?
-          </p>
           <button
             type="button"
             onClick={() => navigate('/worker-login')}
             className="btn"
             style={{
               width: '100%',
-              padding: '0.75rem',
-              gap: '0.5rem',
-              justifyContent: 'center',
+              minHeight: '44px',
+              padding: '0 1rem',
               backgroundColor: '#0284C7',
               color: '#FFFFFF',
               fontWeight: '700',
               fontSize: '0.875rem',
-              borderRadius: '12px',
+              borderRadius: 'var(--radius-md, 14px)',
               border: 'none',
-              boxShadow: '0 4px 12px rgba(2, 132, 199, 0.3)'
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
             }}
           >
-            Enter Worker Space (PIN Login) →
+            Staff Login with PIN →
           </button>
         </div>
 

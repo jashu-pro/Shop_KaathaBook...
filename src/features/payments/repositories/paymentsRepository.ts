@@ -63,6 +63,7 @@ export class SupabasePaymentRepository implements IPaymentRepository {
       p_reference_no: dto.referenceNo || null,
       p_proof_image_url: dto.proofImageUrl || null,
       p_notes: dto.notes || null,
+      p_request_id: dto.requestId ?? crypto.randomUUID(),
     });
     if (error || !paymentId) throw error || new Error('Failed to record payment');
 

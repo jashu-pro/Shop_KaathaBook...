@@ -2,6 +2,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
+import { useWorkerStore } from '../features/staff/stores/workerStore';
 
 // Layouts
 import MainLayout from '../layouts/MainLayout';
@@ -58,8 +59,10 @@ const DashboardRouter: React.FC = () => {
 export const ProtectedRoute: React.FC<{ requireShop?: boolean }> = ({ requireShop = true }) => {
   const { isAuthenticated, shop, isLoading } = useAuthStore();
   const { isWorker } = useWorkerPermissions();
+  // Wait for a saved worker session to be checked before redirecting anywhere.
+  const isRestoringWorker = useWorkerStore((st) => st.isRestoring);
 
-  if (isLoading) {
+  if (isLoading || isRestoringWorker) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#0f172a' }}>
         <div className="spinner"></div>
@@ -89,8 +92,10 @@ export const PublicRoute: React.FC = () => {
   const { isAuthenticated, shop, isLoading } = useAuthStore();
 
   const { isWorker } = useWorkerPermissions();
+  // Wait for a saved worker session to be checked before redirecting anywhere.
+  const isRestoringWorker = useWorkerStore((st) => st.isRestoring);
 
-  if (isLoading) {
+  if (isLoading || isRestoringWorker) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#0f172a' }}>
         <div className="spinner"></div>

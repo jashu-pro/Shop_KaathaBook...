@@ -1,9 +1,37 @@
 /* features/staff/pages/WorkerLoginPage.tsx */
 import React, { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { Phone, ArrowLeft, KeyRound, AlertCircle, Clock, ShieldAlert } from 'lucide-react';
+import { User, ArrowLeft, KeyRound, AlertCircle, Clock, ShieldAlert } from 'lucide-react';
 import { useWorkerStore } from '../stores/workerStore';
 import { useAuthStore } from '../../../stores/authStore';
+import { describeWorkerAuthError } from '../services/workerAuthMessages';
+
+const REASON_BANNERS: Record<string, { icon: typeof Clock; text: string; color: string; bg: string }> = {
+  inactivity: {
+    icon: Clock,
+    text: 'You were logged out after 30 minutes of no activity. Enter your PIN to continue.',
+    color: '#B45309',
+    bg: 'rgba(245, 158, 11, 0.1)',
+  },
+  revoked: {
+    icon: ShieldAlert,
+    text: 'The shop owner signed you out. Please log in again.',
+    color: '#DC2626',
+    bg: 'rgba(239, 68, 68, 0.1)',
+  },
+  removed: {
+    icon: AlertCircle,
+    text: 'Your staff account was removed by the shop owner.',
+    color: '#DC2626',
+    bg: 'rgba(239, 68, 68, 0.1)',
+  },
+  suspended: {
+    icon: AlertCircle,
+    text: 'The shop owner has paused your access. Please talk to them.',
+    color: '#DC2626',
+    bg: 'rgba(239, 68, 68, 0.1)',
+  },
+};
 
 export const WorkerLoginPage: React.FC = () => {
   const navigate = useNavigate();
@@ -11,236 +39,227 @@ export const WorkerLoginPage: React.FC = () => {
   const { shop } = useAuthStore();
   const { loginWorkerWithPin, isLoading } = useWorkerStore();
 
-  const queryParams = new URLSearchParams(location.search);
-  const reason = queryParams.get('reason');
+  const reason = new URLSearchParams(location.search).get('reason');
+  const banner = reason ? REASON_BANNERS[reason] : undefined;
 
   const shopId = shop?.id || 'default_shop';
-  const shopName = shop?.name || 'Shop KhattaBook';
 
   const [emailOrPhone, setEmailOrPhone] = useState('');
   const [pin, setPin] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<{ id?: string; pin?: string }>({});
   const [isNotActivated, setIsNotActivated] = useState(false);
+  const [shopChoices, setShopChoices] = useState<Array<{ id: string; name: string }> | null>(null);
 
+  const signIn = async (targetShopId: string) => {
+    try {
+      await loginWorkerWithPin(targetShopId, emailOrPhone.trim(), pin.trim());
+      navigate('/');
+    } catch (err) {
+      const info = describeWorkerAuthError(err, 'login');
+      setError(info.message);
+      setIsNotActivated(!!info.notActivated);
+      setShopChoices(info.shops && info.shops.length > 0 ? info.shops : null);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setShopChoices(null);
     setIsNotActivated(false);
 
-    if (!emailOrPhone.trim()) {
-      setError('Please enter your registered email or mobile number.');
-      return;
-    }
-    if (!pin || pin.length !== 4) {
-      setError('Please enter your 4-digit personal PIN.');
-      return;
-    }
+    const nextFieldErrors: { id?: string; pin?: string } = {};
+    if (!emailOrPhone.trim()) nextFieldErrors.id = 'Enter your email or phone number.';
+    if (pin.length !== 4) nextFieldErrors.pin = 'Enter your 4-digit PIN.';
+    setFieldErrors(nextFieldErrors);
+    if (nextFieldErrors.id || nextFieldErrors.pin) return;
 
-    try {
-      await loginWorkerWithPin(shopId, emailOrPhone.trim(), pin.trim());
-      navigate('/');
-    } catch (err: any) {
-      const msg = err.message || 'Login failed. Please verify credentials.';
-      setError(msg);
-      if (msg.includes('not activated') || msg.includes('temporary approval code') || msg.includes('Approval Code')) {
-        setIsNotActivated(true);
-      }
-    }
+    await signIn(shopId);
   };
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        minHeight: '85vh',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '1.5rem 1rem',
-      }}
-    >
+    <div style={{
+      minHeight: '100dvh',
+      boxSizing: 'border-box',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '1rem 0.75rem',
+      backgroundColor: 'var(--bg-primary)',
+    }}>
       <div
         className="glass-panel"
         style={{
           width: '100%',
-          maxWidth: '420px',
+          maxWidth: '440px',
           backgroundColor: 'var(--bg-card)',
-          borderRadius: '28px',
+          borderRadius: 'var(--radius-xl, 28px)',
           border: '1px solid var(--border-color)',
-          padding: '2.25rem 2rem',
           boxShadow: 'var(--glass-shadow)',
-          animation: 'modal-slide 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          overflow: 'hidden',
         }}
       >
         {/* Header */}
-        <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
-          <div
-            style={{
-              width: '52px',
-              height: '52px',
-              borderRadius: '16px',
-              backgroundColor: '#0284C7',
-              color: '#FFFFFF',
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontWeight: '800',
-              fontSize: '1.5rem',
-              marginBottom: '0.75rem',
-              boxShadow: '0 6px 18px rgba(2, 132, 199, 0.3)',
-            }}
-          >
-            👷
+        <div style={{
+          padding: '1rem 1.5rem',
+          borderBottom: '1px solid var(--border-color)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.65rem',
+        }}>
+          <div style={{
+            width: '34px', height: '34px', borderRadius: '11px', flexShrink: 0,
+            backgroundColor: '#0284C7', color: '#FFFFFF',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <KeyRound size={18} />
           </div>
-
-          <h2 style={{ color: 'var(--text-heading)', fontWeight: '800', fontSize: '1.4rem' }}>
-            Worker Space
-          </h2>
-          <p style={{ color: 'var(--text-body)', fontSize: '0.875rem', marginTop: '0.3rem' }}>
-            {shopName}
-          </p>
-        </div>
-
-        {/* Reason Banners */}
-        {reason === 'inactivity' && (
-          <div
-            style={{
-              marginBottom: '1.25rem',
-              padding: '0.75rem 1rem',
-              borderRadius: '14px',
-              backgroundColor: 'rgba(245, 158, 11, 0.1)',
-              border: '1px solid rgba(245, 158, 11, 0.25)',
-              color: '#F59E0B',
-              fontSize: '0.82rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-            }}
-          >
-            <Clock size={16} style={{ flexShrink: 0 }} />
-            <span>You were logged out due to 30 minutes of inactivity. Please enter your PIN to continue.</span>
-          </div>
-        )}
-
-        {reason === 'revoked' && (
-          <div
-            style={{
-              marginBottom: '1.25rem',
-              padding: '0.75rem 1rem',
-              borderRadius: '14px',
-              backgroundColor: 'rgba(239, 68, 68, 0.1)',
-              border: '1px solid rgba(239, 68, 68, 0.25)',
-              color: '#EF4444',
-              fontSize: '0.82rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-            }}
-          >
-            <ShieldAlert size={16} style={{ flexShrink: 0 }} />
-            <span>Active sessions were revoked by the shop owner. Please log in again.</span>
-          </div>
-        )}
-
-        {reason === 'suspended' && (
-          <div
-            style={{
-              marginBottom: '1.25rem',
-              padding: '0.75rem 1rem',
-              borderRadius: '14px',
-              backgroundColor: 'rgba(239, 68, 68, 0.1)',
-              border: '1px solid rgba(239, 68, 68, 0.25)',
-              color: '#EF4444',
-              fontSize: '0.82rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-            }}
-          >
-            <AlertCircle size={16} style={{ flexShrink: 0 }} />
-            <span>Your worker access has been suspended by the shop owner.</span>
-          </div>
-        )}
-
-
-        <form onSubmit={handleSubmit}>
-          {/* Email or Phone Input */}
-          <div className="form-group" style={{ marginBottom: '1rem' }}>
-            <label className="form-label">Registered Email or Phone</label>
-            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-              <Phone size={18} style={{ position: 'absolute', left: '1rem', color: 'var(--text-muted)' }} />
-              <input
-                type="text"
-                className="input-field"
-                placeholder="ramesh@gmail.com or 9876543210"
-                style={{ paddingLeft: '2.75rem' }}
-                value={emailOrPhone}
-                onChange={(e) => setEmailOrPhone(e.target.value)}
-              />
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: '1.2rem', fontWeight: '800', color: 'var(--text-heading)', letterSpacing: '-0.3px', lineHeight: 1.2 }}>
+              Worker Login
+            </div>
+            <div style={{ color: 'var(--text-muted)', fontSize: '0.78rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              Sign in to your worker account.
             </div>
           </div>
+        </div>
 
-          {/* 4-digit PIN Input */}
-          <div className="form-group" style={{ marginBottom: '1.25rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <label className="form-label">Personal 4-Digit PIN</label>
+        <form onSubmit={handleSubmit} noValidate style={{ padding: '1.25rem 1.25rem' }}>
+          {banner && (
+            <div style={{
+              marginBottom: '1rem',
+              padding: '0.6rem 0.85rem',
+              borderRadius: '12px',
+              backgroundColor: banner.bg,
+              color: banner.color,
+              fontSize: '0.8rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+            }}>
+              <banner.icon size={16} style={{ flexShrink: 0 }} />
+              <span>{banner.text}</span>
+            </div>
+          )}
+
+          {/* Phone or email */}
+          <div className="form-group" style={{ marginBottom: '0.85rem' }}>
+            <label className="form-label" htmlFor="worker-id">Email or phone number</label>
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+              <User size={17} style={{ position: 'absolute', left: '0.9rem', color: 'var(--text-muted)' }} />
+              <input
+                id="worker-id"
+                type="text"
+                inputMode="email"
+                autoComplete="username"
+                className="input-field"
+                placeholder="Email or phone number"
+                aria-invalid={!!fieldErrors.id}
+                aria-describedby={fieldErrors.id ? 'worker-id-error' : undefined}
+                style={{ width: '100%', minWidth: 0, paddingLeft: '2.5rem', borderColor: fieldErrors.id ? 'var(--error)' : undefined }}
+                value={emailOrPhone}
+                onChange={(e) => {
+                  setEmailOrPhone(e.target.value);
+                  if (fieldErrors.id) setFieldErrors((f) => ({ ...f, id: undefined }));
+                }}
+                autoFocus
+              />
+            </div>
+            {fieldErrors.id && (
+              <span id="worker-id-error" style={{ fontSize: '0.75rem', color: 'var(--error)', fontWeight: '600' }}>
+                {fieldErrors.id}
+              </span>
+            )}
+          </div>
+
+          {/* PIN */}
+          <div className="form-group" style={{ marginBottom: '1rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.25rem 0.75rem' }}>
+              <label className="form-label" htmlFor="worker-pin">4-digit PIN</label>
               <Link
                 to="/worker-activate"
+                state={{ emailOrPhone }}
                 style={{ fontSize: '0.78rem', color: 'var(--primary)', fontWeight: '600' }}
               >
                 First time? Activate PIN
               </Link>
             </div>
-
             <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-              <KeyRound size={18} style={{ position: 'absolute', left: '1rem', color: 'var(--text-muted)' }} />
+              <KeyRound size={17} style={{ position: 'absolute', left: '0.9rem', color: 'var(--text-muted)' }} />
               <input
+                id="worker-pin"
                 type="password"
+                inputMode="numeric"
+                autoComplete="current-password"
                 maxLength={4}
                 className="input-field"
                 placeholder="••••"
+                aria-invalid={!!fieldErrors.pin}
+                aria-describedby={fieldErrors.pin ? 'worker-pin-error' : undefined}
                 style={{
-                  paddingLeft: '2.75rem',
+                  width: '100%',
+                  minWidth: 0,
+                  paddingLeft: '2.5rem',
                   letterSpacing: '0.4rem',
                   fontSize: '1.2rem',
                   fontWeight: '800',
+                  borderColor: fieldErrors.pin ? 'var(--error)' : undefined,
                 }}
                 value={pin}
-                onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
+                onChange={(e) => {
+                  setPin(e.target.value.replace(/\D/g, ''));
+                  if (fieldErrors.pin) setFieldErrors((f) => ({ ...f, pin: undefined }));
+                }}
               />
             </div>
+            {fieldErrors.pin && (
+              <span id="worker-pin-error" style={{ fontSize: '0.75rem', color: 'var(--error)', fontWeight: '600' }}>
+                {fieldErrors.pin}
+              </span>
+            )}
           </div>
 
           {error && (
             <div
-              className="input-error"
+              role="alert"
               style={{
-                marginBottom: '1.25rem',
-                padding: '0.75rem 0.95rem',
+                marginBottom: '1rem',
+                padding: '0.6rem 0.85rem',
                 backgroundColor: 'var(--error-light)',
                 color: 'var(--error)',
-                borderRadius: '14px',
-                fontSize: '0.85rem',
+                borderRadius: '12px',
+                fontSize: '0.82rem',
                 display: 'flex',
                 flexDirection: 'column',
                 gap: '0.5rem',
               }}
             >
               <span>{error}</span>
+              {shopChoices && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                  {shopChoices.map((choice) => (
+                    <button
+                      key={choice.id}
+                      type="button"
+                      onClick={() => signIn(choice.id)}
+                      disabled={isLoading}
+                      className="btn btn-secondary"
+                      style={{ width: '100%', minHeight: '40px', padding: '0 0.85rem', fontSize: '0.85rem', justifyContent: 'flex-start', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                    >
+                      {choice.name}
+                    </button>
+                  ))}
+                </div>
+              )}
               {isNotActivated && (
                 <button
                   type="button"
                   onClick={() => navigate('/worker-activate', { state: { emailOrPhone } })}
                   className="btn btn-primary"
-                  style={{
-                    padding: '0.45rem 0.85rem',
-                    fontSize: '0.8rem',
-                    fontWeight: '700',
-                    alignSelf: 'flex-start',
-                    borderRadius: '10px',
-                  }}
+                  style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', fontWeight: '700', alignSelf: 'flex-start', borderRadius: '10px' }}
                 >
-                  Activate with Approval Code →
+                  Activate PIN →
                 </button>
               )}
             </div>
@@ -249,21 +268,23 @@ export const WorkerLoginPage: React.FC = () => {
           <button
             type="submit"
             className="btn btn-primary"
-            style={{ width: '100%', padding: '0.85rem', marginBottom: '1.25rem' }}
+            style={{ width: '100%', minHeight: '46px', padding: '0 1rem', borderRadius: 'var(--radius-md, 14px)', fontWeight: '700' }}
             disabled={isLoading}
+            aria-busy={isLoading}
           >
-            {isLoading ? 'Verifying PIN...' : 'Enter Worker Space'}
+            {isLoading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
 
-        <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '1.25rem', textAlign: 'center' }}>
+        <div style={{ borderTop: '1px solid var(--border-color)', padding: '0.75rem 1.5rem', textAlign: 'center' }}>
           <button
+            type="button"
             onClick={() => navigate('/login')}
             className="btn btn-ghost"
             style={{ fontSize: '0.85rem', color: 'var(--text-muted)', gap: '0.4rem' }}
           >
             <ArrowLeft size={16} />
-            <span>Return to Owner Sign In</span>
+            <span>Back to owner login</span>
           </button>
         </div>
       </div>

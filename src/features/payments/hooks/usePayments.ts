@@ -6,6 +6,7 @@ import { useAuthStore } from '../../../stores/authStore';
 import { EventBus } from '../../../services/EventBus';
 
 import { useWorkerStore } from '../../staff/stores/workerStore';
+import { isSupabaseConfigured } from '../../../config/supabase';
 
 export const usePayments = () => {
   const { shop } = useAuthStore();
@@ -53,15 +54,18 @@ export const usePayments = () => {
     EventBus.publish('ledger:changed');
     EventBus.publish('customers:changed');
 
-    try {
-      await useWorkerStore.getState().recordWorkerActivity(
-        shop.id,
-        `Received Payment via ${dto.paymentMethod.toUpperCase()}`,
-        'payment',
-        dto.amount
-      );
-    } catch {
-      // Non-blocking
+    // With Supabase, record_payment writes the activity entry itself.
+    if (!isSupabaseConfigured()) {
+      try {
+        await useWorkerStore.getState().recordWorkerActivity(
+          shop.id,
+          `Received Payment via ${dto.paymentMethod.toUpperCase()}`,
+          'payment',
+          dto.amount
+        );
+      } catch {
+        // Non-blocking
+      }
     }
 
     return created;

@@ -25,6 +25,8 @@ export interface WorkerPermissions {
     adjustStock: boolean;
   };
   reports: boolean;
+  /** Cost prices, margins and profit figures. Also enforced by the database. */
+  viewProfit: boolean;
   settings: boolean;
   staffManagement: boolean;
 }
@@ -53,7 +55,7 @@ export interface WorkerActivityLog {
   workerId: string;
   workerName: string;
   action: string;              // e.g. "Created Sale #1024", "Received ₹2,000 payment"
-  category: 'sale' | 'payment' | 'customer' | 'inventory' | 'access';
+  category: 'sale' | 'payment' | 'customer' | 'inventory' | 'access' | 'security';
   amount?: number;
   timestamp: string;
 }
@@ -109,6 +111,7 @@ export const DEFAULT_WORKER_PERMISSIONS: WorkerPermissions = {
     adjustStock: false,
   },
   reports: false,
+  viewProfit: false,
   settings: false,
   staffManagement: false,
 };
@@ -126,6 +129,7 @@ export const PERMISSION_PRESETS: PermissionPreset[] = [
       customers: { view: true, add: true, edit: false, ledger: true },
       inventory: { view: false, add: false, edit: false, adjustStock: false },
       reports: false,
+      viewProfit: false,
       settings: false,
       staffManagement: false,
     },
@@ -142,6 +146,7 @@ export const PERMISSION_PRESETS: PermissionPreset[] = [
       customers: { view: true, add: true, edit: false, ledger: true },
       inventory: { view: false, add: false, edit: false, adjustStock: false },
       reports: false,
+      viewProfit: false,
       settings: false,
       staffManagement: false,
     },
@@ -158,6 +163,7 @@ export const PERMISSION_PRESETS: PermissionPreset[] = [
       customers: { view: false, add: false, edit: false, ledger: false },
       inventory: { view: true, add: true, edit: true, adjustStock: true },
       reports: false,
+      viewProfit: false,
       settings: false,
       staffManagement: false,
     },
@@ -174,6 +180,7 @@ export const PERMISSION_PRESETS: PermissionPreset[] = [
       customers: { view: true, add: true, edit: true, ledger: true },
       inventory: { view: true, add: true, edit: true, adjustStock: true },
       reports: false,
+      viewProfit: false,
       settings: false,
       staffManagement: false,
     },
@@ -205,6 +212,7 @@ export const FULL_OWNER_PERMISSIONS: WorkerPermissions = {
     adjustStock: true,
   },
   reports: true,
+  viewProfit: true,
   settings: true,
   staffManagement: true,
 };

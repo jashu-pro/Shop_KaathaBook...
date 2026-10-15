@@ -89,6 +89,7 @@ export class SupabaseSaleRepository implements ISaleRepository {
       p_bill_image_url: dto.billImageUrl || null,
       p_notes: dto.notes || null,
       p_items: dto.items,
+      p_request_id: dto.requestId ?? crypto.randomUUID(),
     });
     if (error || !saleId) throw error || new Error('Failed to record sale');
 

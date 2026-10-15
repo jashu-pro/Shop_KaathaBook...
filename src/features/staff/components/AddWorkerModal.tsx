@@ -135,7 +135,7 @@ export const AddWorkerModal: React.FC<AddWorkerModalProps> = ({ isOpen, onClose 
   };
 
   const getInvitationText = () => {
-    return `Namaste ${createdWorkerName}! You have been invited to Shop KhattaBook. Open "Worker Space" and enter your mobile/email along with your 4-digit Approval Code: ${createdCode} to set up your personal 4-digit PIN.`;
+    return `Namaste ${createdWorkerName}! You have been invited to Shop KhattaBook. Open the app, tap "Staff Login with PIN", then "First time? Activate PIN", and enter your activation code ${createdCode} to set your 4-digit PIN.`;
   };
 
   const handleCopyCode = () => {
@@ -227,7 +227,7 @@ export const AddWorkerModal: React.FC<AddWorkerModalProps> = ({ isOpen, onClose 
               </h4>
 
               <p style={{ color: 'var(--text-body)', fontSize: '0.875rem', marginTop: '0.35rem' }}>
-                Share this 4-digit temporary approval code with <strong>{createdWorkerName}</strong> for first-time login:
+                Share this one-time activation code with <strong>{createdWorkerName}</strong> for first-time login:
               </p>
 
               <div
@@ -268,7 +268,7 @@ export const AddWorkerModal: React.FC<AddWorkerModalProps> = ({ isOpen, onClose 
                   textAlign: 'left',
                 }}
               >
-                ⏳ <strong>48-Hour Expiry:</strong> This code expires after first activation or in 48 hours. The worker will use it to set their personal 4-digit PIN.
+                ⏳ <strong>48-Hour Expiry:</strong> The code works once and expires in 48 hours. The worker uses it to set their own 4-digit PIN.
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
@@ -489,7 +489,7 @@ export const AddWorkerModal: React.FC<AddWorkerModalProps> = ({ isOpen, onClose 
                 Cancel
               </button>
               <button type="submit" className="btn btn-primary" disabled={isAddingWorker}>
-                {isAddingWorker ? 'Generating Access...' : 'Generate 4-Digit Code'}
+                {isAddingWorker ? 'Generating Access...' : 'Generate Activation Code'}
               </button>
             </div>
           </form>

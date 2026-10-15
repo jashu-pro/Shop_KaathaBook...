@@ -3,6 +3,7 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { ArrowLeft, CheckCircle2, ShieldCheck } from 'lucide-react';
 import { useWorkerStore } from '../stores/workerStore';
 import { useAuthStore } from '../../../stores/authStore';
+import { describeWorkerAuthError } from '../services/workerAuthMessages';
 
 export const WorkerPinSetupPage: React.FC = () => {
   const navigate = useNavigate();
@@ -35,8 +36,8 @@ export const WorkerPinSetupPage: React.FC = () => {
       setError('Please enter your registered email or mobile number.');
       return;
     }
-    if (!tempCode || tempCode.length !== 4) {
-      setError('Please enter the 4-digit temporary approval code given by your shop owner.');
+    if (!/^\d{4,6}$/.test(tempCode)) {
+      setError('Enter the activation code from your shop owner.');
       return;
     }
     if (!newPin || newPin.length !== 4) {
@@ -54,8 +55,8 @@ export const WorkerPinSetupPage: React.FC = () => {
       setTimeout(() => {
         navigate('/');
       }, 1200);
-    } catch (err: any) {
-      setError(err.message || 'Activation failed. Please verify approval code.');
+    } catch (err) {
+      setError(describeWorkerAuthError(err, 'activate').message);
     }
   };
 
@@ -132,7 +133,7 @@ export const WorkerPinSetupPage: React.FC = () => {
                 First-Time Worker Activation
               </h2>
               <p style={{ color: 'var(--text-body)', fontSize: '0.85rem', marginTop: '0.35rem' }}>
-                Enter your approval code to create your personal 4-digit login PIN
+                Enter the code from your shop owner and create your 4-digit PIN
               </p>
             </div>
 
@@ -143,7 +144,7 @@ export const WorkerPinSetupPage: React.FC = () => {
                 <input
                   type="text"
                   className="input-field"
-                  placeholder="e.g. ramesh@gmail.com"
+                  placeholder="Email or phone number"
                   value={emailOrPhone}
                   onChange={(e) => setEmailOrPhone(e.target.value)}
                 />
@@ -151,12 +152,14 @@ export const WorkerPinSetupPage: React.FC = () => {
 
               {/* 4-digit Temporary Approval Code */}
               <div className="form-group" style={{ marginBottom: '1rem' }}>
-                <label className="form-label">Owner's 4-Digit Approval Code</label>
+                <label className="form-label">Activation code</label>
                 <input
                   type="text"
-                  maxLength={4}
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  maxLength={6}
                   className="input-field"
-                  placeholder="e.g. 4821"
+                  placeholder="From your shop owner"
                   style={{ textAlign: 'center', letterSpacing: '0.35rem', fontSize: '1.15rem', fontWeight: '800' }}
                   value={tempCode}
                   onChange={(e) => setTempCode(e.target.value.replace(/\D/g, ''))}
