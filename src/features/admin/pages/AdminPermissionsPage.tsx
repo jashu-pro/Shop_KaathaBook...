@@ -9,7 +9,6 @@ import {
   AlertTriangle,
   Lock,
   UserCheck,
-  KeyRound,
   ShieldCheck,
   Mail,
   HelpCircle,
@@ -425,7 +424,7 @@ export const AdminPermissionsPage: React.FC = () => {
                 <span>Super Administrator</span>
               </div>
               <p style={{ fontSize: '0.82rem', color: '#9ca3af', lineHeight: '1.5', margin: 0 }}>
-                Unrestricted system-wide governance. Can review, approve, reject, or suspend any merchant shop, view all staff, and add or revoke administrator privileges.
+                Unrestricted system-wide governance. Can review, approve, reject, or suspend any merchant shop, and add or revoke administrator privileges.
               </p>
             </div>
 
@@ -436,21 +435,9 @@ export const AdminPermissionsPage: React.FC = () => {
                 <span>Merchant Shop Owner</span>
               </div>
               <p style={{ fontSize: '0.82rem', color: '#9ca3af', lineHeight: '1.5', margin: 0 }}>
-                Tenant authority over their own store. Full control of customers, products, sales, and workers, but strictly blocked from accessing the store dashboard until approved.
+                Tenant authority over their own store. Full control of customers, products, and sales, but strictly blocked from accessing the store dashboard until approved.
               </p>
-            </div>
-
-            {/* Shop Worker */}
-            <div style={{ padding: '1.25rem', borderRadius: '12px', backgroundColor: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(139, 92, 246, 0.2)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#c4b5fd', fontWeight: 700, marginBottom: '0.5rem' }}>
-                <KeyRound size={16} />
-                <span>Shop Worker / Staff</span>
-              </div>
-              <p style={{ fontSize: '0.82rem', color: '#9ca3af', lineHeight: '1.5', margin: 0 }}>
-                Restricted operational access. Can ring up sales and receive payments, subject to granular owner permissions. Every transaction logs an immutable audit event.
-              </p>
-            </div>
-          </div>
+            </div>          </div>
         </div>
       )}
     </div>

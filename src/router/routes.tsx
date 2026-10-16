@@ -2,7 +2,6 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
-import { useWorkerStore } from '../features/staff/stores/workerStore';
 
 // Layouts
 import MainLayout from '../layouts/MainLayout';
@@ -19,13 +18,12 @@ import ShopRegistration from '../features/shop/pages/ShopRegistration';
 import RegistrationApprovalStatusPage from '../features/shop/pages/RegistrationApprovalStatusPage';
 
 // Admin Portal Pages & Hook
-import { 
+import {
   useAdminAuth,
   AdminLoginPage,
   AdminDashboardPage,
   AdminPendingRequestsPage,
   AdminShopsPage,
-  AdminWorkersPage,
   AdminPermissionsPage,
   AdminAuditLogsPage,
   AdminReportsPage,
@@ -42,27 +40,12 @@ import { LedgerPage } from '../features/ledger';
 import Reports from '../features/reports/pages/Reports';
 import { SettingsPage } from '../features/settings';
 import { AIAssistantPage } from '../features/dashboard/pages/AIAssistantPage';
-import { 
-  WorkerLoginPage, 
-  WorkerPinSetupPage, 
-  WorkerDashboardPage, 
-  PermissionGuard,
-  useWorkerPermissions 
-} from '../features/staff';
-
-const DashboardRouter: React.FC = () => {
-  const { isWorker } = useWorkerPermissions();
-  return isWorker ? <WorkerDashboardPage /> : <Dashboard />;
-};
 
 // Guard for routes that require merchant authentication and active shop status
 export const ProtectedRoute: React.FC<{ requireShop?: boolean }> = ({ requireShop = true }) => {
   const { isAuthenticated, shop, isLoading } = useAuthStore();
-  const { isWorker } = useWorkerPermissions();
-  // Wait for a saved worker session to be checked before redirecting anywhere.
-  const isRestoringWorker = useWorkerStore((st) => st.isRestoring);
 
-  if (isLoading || isRestoringWorker) {
+  if (isLoading) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#0f172a' }}>
         <div className="spinner"></div>
@@ -70,12 +53,11 @@ export const ProtectedRoute: React.FC<{ requireShop?: boolean }> = ({ requireSho
     );
   }
 
-  // Allow active workers or authenticated owners
-  if (!isAuthenticated && !isWorker) {
+  if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
 
-  if (requireShop && !isWorker) {
+  if (requireShop) {
     if (!shop) {
       return <Navigate to="/shop-setup" replace />;
     }
@@ -91,11 +73,7 @@ export const ProtectedRoute: React.FC<{ requireShop?: boolean }> = ({ requireSho
 export const PublicRoute: React.FC = () => {
   const { isAuthenticated, shop, isLoading } = useAuthStore();
 
-  const { isWorker } = useWorkerPermissions();
-  // Wait for a saved worker session to be checked before redirecting anywhere.
-  const isRestoringWorker = useWorkerStore((st) => st.isRestoring);
-
-  if (isLoading || isRestoringWorker) {
+  if (isLoading) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#0f172a' }}>
         <div className="spinner"></div>
@@ -103,14 +81,12 @@ export const PublicRoute: React.FC = () => {
     );
   }
 
-  if (isAuthenticated || isWorker) {
-    if (!isWorker) {
-      if (!shop) {
-        return <Navigate to="/shop-setup" replace />;
-      }
-      if (shop.status !== 'active') {
-        return <Navigate to="/approval-status" replace />;
-      }
+  if (isAuthenticated) {
+    if (!shop) {
+      return <Navigate to="/shop-setup" replace />;
+    }
+    if (shop.status !== 'active') {
+      return <Navigate to="/approval-status" replace />;
     }
     return <Navigate to="/" replace />;
   }
@@ -144,8 +120,6 @@ export const AppRouter: React.FC = () => {
         {/* Public Auth Routes */}
         <Route element={<PublicRoute />}>
           <Route path="/login" element={<Login />} />
-          <Route path="/worker-login" element={<WorkerLoginPage />} />
-          <Route path="/worker-activate" element={<WorkerPinSetupPage />} />
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
         </Route>
@@ -162,7 +136,6 @@ export const AppRouter: React.FC = () => {
             <Route path="/admin" element={<AdminDashboardPage />} />
             <Route path="/admin/pending" element={<AdminPendingRequestsPage />} />
             <Route path="/admin/shops" element={<AdminShopsPage />} />
-            <Route path="/admin/workers" element={<AdminWorkersPage />} />
             <Route path="/admin/permissions" element={<AdminPermissionsPage />} />
             <Route path="/admin/audit" element={<AdminAuditLogsPage />} />
             <Route path="/admin/reports" element={<AdminReportsPage />} />
@@ -176,79 +149,31 @@ export const AppRouter: React.FC = () => {
           <Route path="/approval-status" element={<RegistrationApprovalStatusPage />} />
         </Route>
 
-        {/* Protected Merchant Application Routes - Strictly requires active approved shop (or worker) */}
+        {/* Protected Merchant Application Routes - Strictly requires active approved shop */}
         <Route element={<ProtectedRoute requireShop={true} />}>
           <Route element={<MainLayout />}>
-            <Route path="/" element={<DashboardRouter />} />
-            
-            <Route path="/customers" element={
-              <PermissionGuard module="customers" action="view">
-                <CustomerListPage />
-              </PermissionGuard>
-            } />
-            <Route path="/customers/:id" element={
-              <PermissionGuard module="customers" action="view">
-                <CustomerListPage />
-              </PermissionGuard>
-            } />
-            
-            <Route path="/inventory" element={
-              <PermissionGuard module="inventory" action="view">
-                <ProductListPage />
-              </PermissionGuard>
-            } />
-            <Route path="/inventory/new" element={
-              <PermissionGuard module="inventory" action="add">
-                <ProductListPage />
-              </PermissionGuard>
-            } />
+            <Route path="/" element={<Dashboard />} />
 
-            <Route path="/sales" element={
-              <PermissionGuard module="sales" action="view">
-                <SalesListPage />
-              </PermissionGuard>
-            } />
-            <Route path="/sales/new" element={
-              <PermissionGuard module="sales" action="create">
-                <NewSale />
-              </PermissionGuard>
-            } />
+            <Route path="/customers" element={<CustomerListPage />} />
+            <Route path="/customers/:id" element={<CustomerListPage />} />
 
-            <Route path="/payments" element={
-              <PermissionGuard module="payments" action="view">
-                <PaymentsListPage />
-              </PermissionGuard>
-            } />
-            <Route path="/payments/receive" element={
-              <PermissionGuard module="payments" action="receive">
-                <ReceivePaymentPage />
-              </PermissionGuard>
-            } />
+            <Route path="/inventory" element={<ProductListPage />} />
+            <Route path="/inventory/new" element={<ProductListPage />} />
 
-            <Route path="/ledger" element={
-              <PermissionGuard module="customers" action="ledger">
-                <LedgerPage />
-              </PermissionGuard>
-            } />
-            <Route path="/cashbook" element={
-              <PermissionGuard module="customers" action="ledger">
-                <LedgerPage />
-              </PermissionGuard>
-            } />
+            <Route path="/sales" element={<SalesListPage />} />
+            <Route path="/sales/new" element={<NewSale />} />
 
-            <Route path="/reports" element={
-              <PermissionGuard module="reports">
-                <Reports />
-              </PermissionGuard>
-            } />
+            <Route path="/payments" element={<PaymentsListPage />} />
+            <Route path="/payments/receive" element={<ReceivePaymentPage />} />
+
+            <Route path="/ledger" element={<LedgerPage />} />
+            <Route path="/cashbook" element={<LedgerPage />} />
+
+            <Route path="/reports" element={<Reports />} />
 
             <Route path="/ai-assistant" element={<AIAssistantPage />} />
 
-            <Route path="/settings" element={
-              <PermissionGuard module="settings">
-                <SettingsPage />
-              </PermissionGuard>
-            } />
+            <Route path="/settings" element={<SettingsPage />} />
           </Route>
         </Route>
 

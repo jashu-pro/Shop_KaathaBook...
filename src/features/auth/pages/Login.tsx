@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useLanguage } from '../../../providers/languageContext';
-import { Eye, EyeOff, Lock, Mail, KeyRound } from 'lucide-react';
+import { Eye, EyeOff, Lock, Mail } from 'lucide-react';
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
@@ -197,41 +197,6 @@ const Login: React.FC = () => {
             {isLoading ? 'Signing In...' : 'Sign In'}
           </button>
         </form>
-
-        {/* Staff & Worker Access */}
-        <div style={{
-          marginTop: '0.25rem',
-          marginBottom: '1.25rem',
-          padding: '0.75rem',
-          backgroundColor: 'rgba(2, 132, 199, 0.08)',
-          border: '1px solid rgba(2, 132, 199, 0.25)',
-          borderRadius: 'var(--radius-md, 14px)',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', marginBottom: '0.6rem' }}>
-            <KeyRound size={15} style={{ color: '#0284C7', flexShrink: 0 }} />
-            <span style={{ fontWeight: '700', color: '#0284C7', fontSize: '0.85rem' }}>Staff & Worker Access</span>
-          </div>
-          <button
-            type="button"
-            onClick={() => navigate('/worker-login')}
-            className="btn"
-            style={{
-              width: '100%',
-              minHeight: '44px',
-              padding: '0 1rem',
-              backgroundColor: '#0284C7',
-              color: '#FFFFFF',
-              fontWeight: '700',
-              fontSize: '0.875rem',
-              borderRadius: 'var(--radius-md, 14px)',
-              border: 'none',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-            }}
-          >
-            Staff Login with PIN →
-          </button>
-        </div>
 
         {/* Create Account Link */}
         <div style={{ textAlign: 'center', fontSize: '0.875rem', color: 'var(--text-body)' }}>

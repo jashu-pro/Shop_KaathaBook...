@@ -3,9 +3,8 @@ import { LocalStorageDB } from '../../../services/localStorageDB';
 import { EventBus } from '../../../services/EventBus';
 import type { 
   AdminKPIStats, 
-  AdminShopListItem, 
-  AdminWorkerItem, 
-  AdminAuditLog, 
+  AdminShopListItem,
+  AdminAuditLog,
   ShopStatus, 
   ShopRegistrationRequest,
   AdminProfile 
@@ -28,10 +27,8 @@ export interface IAdminRepository {
   getAllShops(filterStatus?: ShopStatus): Promise<AdminShopListItem[]>;
   getShopDetails(shopId: string): Promise<{
     shop: AdminShopListItem;
-    workers: AdminWorkerItem[];
     auditLogs: AdminAuditLog[];
   } | null>;
-  getWorkers(shopId?: string): Promise<AdminWorkerItem[]>;
   getAuditLogs(): Promise<AdminAuditLog[]>;
   approveRegistration(requestId: string, adminId?: string): Promise<{ success: boolean; shopId: string }>;
   rejectRegistration(requestId: string, reason: string, adminId?: string): Promise<{ success: boolean; shopId: string }>;
@@ -77,10 +74,6 @@ export class SupabaseAdminRepository implements IAdminRepository {
     if (!supabase) return localStats;
     try {
       const allShops = await this.getAllShops();
-      const { count: workerCount } = await supabase
-        .from('shop_memberships')
-        .select('*', { count: 'exact', head: true })
-        .eq('member_type', 'worker');
 
       const total = allShops.length;
       const active = allShops.filter((s) => s.status === 'active').length;
@@ -94,7 +87,6 @@ export class SupabaseAdminRepository implements IAdminRepository {
         pendingShops: pending,
         rejectedShops: rejected,
         suspendedShops: suspended,
-        totalWorkers: (workerCount || 0) + localStats.totalWorkers,
       };
     } catch {
       return localStats;
@@ -199,10 +191,6 @@ export class SupabaseAdminRepository implements IAdminRepository {
           profiles:owner_id (
             email,
             full_name
-          ),
-          shop_memberships (
-            id,
-            member_type
           )
         `)
         .order('created_at', { ascending: false });
@@ -216,8 +204,6 @@ export class SupabaseAdminRepository implements IAdminRepository {
 
       const remoteShops: AdminShopListItem[] = data.map((row: any) => {
         const profile = Array.isArray(row.profiles) ? row.profiles[0] : row.profiles;
-        const memberships = Array.isArray(row.shop_memberships) ? row.shop_memberships : [];
-        const workerCount = memberships.filter((m: any) => m.member_type === 'worker').length;
 
         return {
           id: row.id,
@@ -233,7 +219,6 @@ export class SupabaseAdminRepository implements IAdminRepository {
           state: row.state || undefined,
           pincode: row.pincode || undefined,
           status: row.status as ShopStatus,
-          workerCount,
           createdAt: row.created_at,
           updatedAt: row.updated_at,
         };
@@ -254,74 +239,16 @@ export class SupabaseAdminRepository implements IAdminRepository {
 
   async getShopDetails(shopId: string): Promise<{
     shop: AdminShopListItem;
-    workers: AdminWorkerItem[];
     auditLogs: AdminAuditLog[];
   } | null> {
     const shops = await this.getAllShops();
     const shop = shops.find((s) => s.id === shopId);
     if (!shop) return null;
 
-    const workers = await this.getWorkers(shopId);
     const allLogs = await this.getAuditLogs();
     const auditLogs = allLogs.filter((l) => l.shopId === shopId);
 
-    return { shop, workers, auditLogs };
-  }
-
-  async getWorkers(shopId?: string): Promise<AdminWorkerItem[]> {
-    const localWorkers = await this.localFallback.getWorkers(shopId);
-    if (!supabase) return localWorkers;
-    try {
-      let query = supabase
-        .from('shop_memberships')
-        .select(`
-          id,
-          shop_id,
-          user_id,
-          member_type,
-          name,
-          email_or_phone,
-          status,
-          permissions,
-          last_active_at,
-          created_at,
-          shops:shop_id (name)
-        `)
-        .eq('member_type', 'worker')
-        .order('created_at', { ascending: false });
-
-      if (shopId) {
-        query = query.eq('shop_id', shopId);
-      }
-
-      const { data, error } = await query;
-      const remoteWorkers: AdminWorkerItem[] = (!error && data) ? data.map((d: any) => {
-        const shopData = Array.isArray(d.shops) ? d.shops[0] : d.shops;
-        return {
-          id: d.id,
-          shopId: d.shop_id,
-          shopName: shopData?.name || 'Unknown Shop',
-          userId: d.user_id || undefined,
-          memberType: d.member_type,
-          name: d.name,
-          emailOrPhone: d.email_or_phone,
-          status: d.status,
-          permissions: d.permissions || {},
-          lastActiveAt: d.last_active_at || undefined,
-          createdAt: d.created_at,
-        };
-      }) : [];
-
-      const merged = [...remoteWorkers];
-      for (const loc of localWorkers) {
-        if (!merged.some((w) => w.id === loc.id)) {
-          merged.push(loc);
-        }
-      }
-      return merged;
-    } catch {
-      return localWorkers;
-    }
+    return { shop, auditLogs };
   }
 
   async getAuditLogs(): Promise<AdminAuditLog[]> {
@@ -693,8 +620,6 @@ export class LocalAdminRepository implements IAdminRepository {
 
   async getKPIStats(): Promise<AdminKPIStats> {
     const shops = await LocalStorageDB.select('shops');
-    const memberships = await LocalStorageDB.select('shop_memberships');
-    const workerCount = memberships.filter((m: any) => m.member_type === 'worker').length;
 
     const total = shops.length;
     const active = shops.filter((s: any) => s.status === 'active').length;
@@ -708,7 +633,6 @@ export class LocalAdminRepository implements IAdminRepository {
       pendingShops: pending,
       rejectedShops: rejected,
       suspendedShops: suspended,
-      totalWorkers: workerCount,
     };
   }
 
@@ -778,9 +702,6 @@ export class LocalAdminRepository implements IAdminRepository {
     const memberships = await LocalStorageDB.select('shop_memberships');
 
     return shops.map((s: any) => {
-      const shopWorkers = memberships.filter(
-        (m: any) => m.shop_id === s.id && m.member_type === 'worker'
-      );
       const ownerMembership = memberships.find(
         (m: any) => m.shop_id === s.id && m.member_type === 'owner'
       );
@@ -799,7 +720,6 @@ export class LocalAdminRepository implements IAdminRepository {
         state: s.state || undefined,
         pincode: s.pincode || undefined,
         status: (s.status as ShopStatus) || 'pending',
-        workerCount: shopWorkers.length,
         createdAt: s.created_at,
         updatedAt: s.updated_at,
       };
@@ -808,41 +728,16 @@ export class LocalAdminRepository implements IAdminRepository {
 
   async getShopDetails(shopId: string): Promise<{
     shop: AdminShopListItem;
-    workers: AdminWorkerItem[];
     auditLogs: AdminAuditLog[];
   } | null> {
     const shops = await this.getAllShops();
     const shop = shops.find((s) => s.id === shopId);
     if (!shop) return null;
 
-    const workers = await this.getWorkers(shopId);
     const allLogs = await this.getAuditLogs();
     const auditLogs = allLogs.filter((l) => l.shopId === shopId);
 
-    return { shop, workers, auditLogs };
-  }
-
-  async getWorkers(shopId?: string): Promise<AdminWorkerItem[]> {
-    const memberships = await LocalStorageDB.select('shop_memberships', (m: any) => {
-      const matchType = m.member_type === 'worker';
-      return shopId ? matchType && m.shop_id === shopId : matchType;
-    });
-    const shops = await LocalStorageDB.select('shops');
-    const shopMap = new Map<string, string>(shops.map((s: any) => [s.id, s.name]));
-
-    return memberships.map((m: any) => ({
-      id: m.id,
-      shopId: m.shop_id,
-      shopName: shopMap.get(m.shop_id) || 'Unknown Shop',
-      userId: m.user_id || undefined,
-      memberType: m.member_type,
-      name: m.name,
-      emailOrPhone: m.email_or_phone,
-      status: m.status,
-      permissions: m.permissions || {},
-      lastActiveAt: m.last_active_at || undefined,
-      createdAt: m.created_at,
-    }));
+    return { shop, auditLogs };
   }
 
   async getAuditLogs(): Promise<AdminAuditLog[]> {

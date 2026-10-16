@@ -13,7 +13,6 @@ import {
   Sun, 
   Download, 
   QrCode,
-  Users,
   Trash2,
   FileText,
   Upload
@@ -27,8 +26,6 @@ import { useCustomers } from '../../customers/hooks/useCustomers';
 import { useLedger } from '../../ledger/hooks/useLedger';
 import { useSales } from '../../sales/hooks/useSales';
 import { usePayments } from '../../payments/hooks/usePayments';
-import { StaffAccessSection } from '../../staff';
-import { useWorkerPermissions } from '../../staff/hooks/useWorkerPermissions';
 
 export const SettingsPage: React.FC = () => {
   const { shop, user, updateShop, signOut } = useAuthStore();
@@ -38,13 +35,7 @@ export const SettingsPage: React.FC = () => {
   const { sales } = useSales();
   const { payments } = usePayments();
 
-  const [activeTab, setActiveTab] = useState<'profile' | 'staff' | 'appearance' | 'khatta' | 'backup' | 'account'>('profile');
-
-  // Workers with Settings access must not manage staff, backups or the owner account.
-  const { isWorker, can } = useWorkerPermissions();
-  const hiddenTabs = isWorker
-    ? ['backup', 'account', ...(can('staffManagement') ? [] : ['staff'])]
-    : [];
+  const [activeTab, setActiveTab] = useState<'profile' | 'appearance' | 'khatta' | 'backup' | 'account'>('profile');
 
   // Shop Profile State
   const [name, setName] = useState('');
@@ -259,12 +250,11 @@ export const SettingsPage: React.FC = () => {
       }}>
         {[
           { id: 'profile', label: 'Shop Profile', icon: Store },
-          { id: 'staff', label: '👥 Staff & Access', icon: Users },
           { id: 'appearance', label: 'Theme & Appearance', icon: Palette },
           { id: 'khatta', label: 'Khatta & UPI', icon: CreditCard },
           { id: 'backup', label: 'Data Backup', icon: Database },
           { id: 'account', label: 'Account', icon: User },
-        ].filter((tab) => !hiddenTabs.includes(tab.id)).map((tab) => {
+        ].map((tab) => {
           const isActive = activeTab === tab.id;
           return (
             <button
@@ -293,13 +283,6 @@ export const SettingsPage: React.FC = () => {
           );
         })}
       </div>
-
-      {/* TAB: STAFF & ACCESS */}
-      {activeTab === 'staff' && !hiddenTabs.includes('staff') && (
-        <div style={{ animation: 'modal-slide 0.2s ease' }}>
-          <StaffAccessSection />
-        </div>
-      )}
 
       {/* TAB 1: SHOP PROFILE */}
       {activeTab === 'profile' && (
@@ -627,7 +610,7 @@ export const SettingsPage: React.FC = () => {
       )}
 
       {/* TAB 4: DATA BACKUP & EXPORT */}
-      {activeTab === 'backup' && !hiddenTabs.includes('backup') && (
+      {activeTab === 'backup' && (
         <div style={{
           backgroundColor: 'var(--bg-card)',
           borderRadius: '24px',
@@ -726,7 +709,7 @@ export const SettingsPage: React.FC = () => {
       )}
 
       {/* TAB 5: ACCOUNT & LOGOUT */}
-      {activeTab === 'account' && !hiddenTabs.includes('account') && (
+      {activeTab === 'account' && (
         <div style={{
           backgroundColor: 'var(--bg-card)',
           borderRadius: '24px',

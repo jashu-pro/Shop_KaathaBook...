@@ -2,7 +2,6 @@
 import React from 'react';
 import { Package, Edit3, PackagePlus, Trash2, AlertTriangle, Tag } from 'lucide-react';
 import type { Product } from '../types';
-import { useWorkerPermissions } from '../../staff/hooks/useWorkerPermissions';
 
 interface ProductCardProps {
   product: Product;
@@ -22,8 +21,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   const isLowStock = !isOutOfStock && product.stockQty <= product.alertQty;
 
   // Profit Amount & Margin % Calculation (Display analytics only)
-  const { can } = useWorkerPermissions();
-  const showProfit = can('viewProfit');
   const sellingPrice = product.price || 0;
   const costPrice = product.costPrice || 0;
   const profitAmount = sellingPrice - costPrice;
@@ -99,7 +96,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         backgroundColor: 'var(--bg-secondary)',
         border: '1px solid var(--border-color)',
         display: 'grid',
-        gridTemplateColumns: showProfit ? '1fr 1fr 1fr' : '1fr',
+        gridTemplateColumns: '1fr 1fr 1fr',
         gap: '0.5rem',
         textAlign: 'center'
       }}>
@@ -112,8 +109,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           </span>
         </div>
 
-        {showProfit && (
-          <>
         <div>
           <span style={{ fontSize: '0.675rem', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block' }}>
             Cost Price
@@ -131,8 +126,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             {marginPercentage}%
           </span>
         </div>
-          </>
-        )}
       </div>
 
       {/* Stock Quantity Progress Indicator & SKU/Barcode */}

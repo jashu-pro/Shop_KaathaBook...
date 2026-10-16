@@ -1,16 +1,14 @@
 /* features/admin/pages/AdminShopsPage.tsx */
 import React, { useState, useEffect } from 'react';
 import { RepositoryFactory } from '../../../repositories/RepositoryFactory';
-import type { AdminShopListItem, ShopStatus, AdminWorkerItem } from '../types';
+import type { AdminShopListItem, ShopStatus } from '../types';
 import {
   Store,
-  Users,
   Search,
   CheckCircle2,
   Clock,
   XCircle,
   AlertTriangle,
-  Eye,
   PauseCircle,
   PlayCircle,
 } from 'lucide-react';
@@ -23,11 +21,6 @@ export const AdminShopsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | ShopStatus>('all');
-
-  // Workers Drawer/Modal
-  const [selectedShopForWorkers, setSelectedShopForWorkers] = useState<AdminShopListItem | null>(null);
-  const [shopWorkers, setShopWorkers] = useState<AdminWorkerItem[]>([]);
-  const [workersLoading, setWorkersLoading] = useState(false);
 
   // Suspend Modal
   const [suspendShopId, setSuspendShopId] = useState<string | null>(null);
@@ -49,19 +42,6 @@ export const AdminShopsPage: React.FC = () => {
   useEffect(() => {
     loadShops();
   }, []);
-
-  const handleOpenWorkers = async (shop: AdminShopListItem) => {
-    setSelectedShopForWorkers(shop);
-    try {
-      setWorkersLoading(true);
-      const workers = await adminRepo.getWorkers(shop.id);
-      setShopWorkers(workers);
-    } catch (err) {
-      console.error('Error loading shop workers:', err);
-    } finally {
-      setWorkersLoading(false);
-    }
-  };
 
   const handleConfirmSuspend = async () => {
     if (!suspendShopId || !suspendReason.trim()) {
@@ -168,7 +148,7 @@ export const AdminShopsPage: React.FC = () => {
             Shops Management & Hierarchy
           </h1>
           <p style={{ fontSize: '0.9rem', color: '#9ca3af', margin: '0.35rem 0 0' }}>
-            Comprehensive directory of shops, owners, assigned workers, and lifecycle states.
+            Comprehensive directory of shops, owners, and lifecycle states.
           </p>
         </div>
 
@@ -295,7 +275,6 @@ export const AdminShopsPage: React.FC = () => {
                   <th style={{ padding: '1rem 1.25rem' }}>Owner Profile</th>
                   <th style={{ padding: '1rem 1.25rem' }}>Location</th>
                   <th style={{ padding: '1rem 1.25rem' }}>Status</th>
-                  <th style={{ padding: '1rem 1.25rem' }}>Worker Count</th>
                   <th style={{ padding: '1rem 1.25rem', textAlign: 'right' }}>Actions</th>
                 </tr>
               </thead>
@@ -332,29 +311,6 @@ export const AdminShopsPage: React.FC = () => {
 
                     <td style={{ padding: '1.15rem 1.25rem' }}>
                       {getStatusBadge(shop.status)}
-                    </td>
-
-                    <td style={{ padding: '1.15rem 1.25rem' }}>
-                      <button
-                        onClick={() => handleOpenWorkers(shop)}
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '0.45rem',
-                          padding: '0.35rem 0.75rem',
-                          borderRadius: '8px',
-                          backgroundColor: 'rgba(139, 92, 246, 0.15)',
-                          border: '1px solid rgba(139, 92, 246, 0.3)',
-                          color: '#c4b5fd',
-                          fontSize: '0.8rem',
-                          fontWeight: 700,
-                          cursor: 'pointer',
-                        }}
-                      >
-                        <Users size={14} />
-                        <span>{shop.workerCount} Workers</span>
-                        <Eye size={12} style={{ opacity: 0.7 }} />
-                      </button>
                     </td>
 
                     <td style={{ padding: '1.15rem 1.25rem', textAlign: 'right' }}>
@@ -415,147 +371,6 @@ export const AdminShopsPage: React.FC = () => {
         )}
       </div>
 
-      {/* Workers Inspection Modal */}
-      {selectedShopForWorkers && (
-        <div style={{
-          position: 'fixed',
-          inset: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.8)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '1rem',
-          zIndex: 50,
-          backdropFilter: 'blur(4px)',
-        }}>
-          <div style={{
-            backgroundColor: '#111827',
-            borderRadius: '24px',
-            border: '1px solid rgba(255, 255, 255, 0.12)',
-            maxWidth: '700px',
-            width: '100%',
-            overflow: 'hidden',
-            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.6)',
-          }}>
-            <div style={{
-              padding: '1.5rem 2rem',
-              borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-            }}>
-              <div>
-                <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#ffffff', margin: 0 }}>
-                  Workers for {selectedShopForWorkers.name}
-                </h3>
-                <p style={{ fontSize: '0.8rem', color: '#9ca3af', margin: '0.25rem 0 0' }}>
-                  Total Staff Members: {shopWorkers.length}
-                </p>
-              </div>
-
-              <button
-                onClick={() => setSelectedShopForWorkers(null)}
-                style={{ background: 'none', border: 'none', color: '#9ca3af', fontSize: '1.25rem', cursor: 'pointer' }}
-              >
-                ✕
-              </button>
-            </div>
-
-            <div style={{ padding: '1.5rem 2rem', maxHeight: '420px', overflowY: 'auto' }}>
-              {workersLoading ? (
-                <div style={{ padding: '2rem', textAlign: 'center', color: '#9ca3af' }}>
-                  Loading worker accounts...
-                </div>
-              ) : shopWorkers.length === 0 ? (
-                <div style={{ padding: '2.5rem', textAlign: 'center', color: '#6b7280' }}>
-                  <Users size={36} style={{ margin: '0 auto 0.5rem', opacity: 0.5 }} />
-                  <div style={{ fontSize: '0.95rem', fontWeight: 600, color: '#9ca3af' }}>
-                    No Workers Assigned
-                  </div>
-                  <p style={{ fontSize: '0.8rem', margin: '0.25rem 0 0' }}>
-                    This shop currently operates solely under the merchant owner account.
-                  </p>
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                  {shopWorkers.map((worker) => (
-                    <div
-                      key={worker.id}
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        padding: '0.85rem 1rem',
-                        borderRadius: '12px',
-                        backgroundColor: 'rgba(255, 255, 255, 0.02)',
-                        border: '1px solid rgba(255, 255, 255, 0.06)',
-                      }}
-                    >
-                      <div>
-                        <div style={{ fontWeight: 700, color: '#ffffff', fontSize: '0.92rem' }}>
-                          {worker.name}
-                        </div>
-                        <div style={{ fontSize: '0.78rem', color: '#9ca3af' }}>
-                          {worker.emailOrPhone}
-                        </div>
-                      </div>
-
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        <span style={{
-                          fontSize: '0.72rem',
-                          padding: '0.2rem 0.5rem',
-                          borderRadius: '6px',
-                          fontWeight: 700,
-                          textTransform: 'uppercase',
-                          backgroundColor: worker.status === 'active' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)',
-                          color: worker.status === 'active' ? '#34d399' : '#fbbf24',
-                        }}>
-                          {worker.status}
-                        </span>
-
-                        <span style={{
-                          fontSize: '0.72rem',
-                          padding: '0.2rem 0.5rem',
-                          borderRadius: '6px',
-                          backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                          color: '#d1d5db',
-                        }}>
-                          Role: Worker
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div style={{
-              padding: '1rem 2rem',
-              borderTop: '1px solid rgba(255, 255, 255, 0.08)',
-              backgroundColor: 'rgba(0, 0, 0, 0.25)',
-              display: 'flex',
-              justifyContent: 'flex-end',
-            }}>
-              <button
-                onClick={() => setSelectedShopForWorkers(null)}
-                style={{
-                  padding: '0.5rem 1.25rem',
-                  borderRadius: '8px',
-                  backgroundColor: '#3b82f6',
-                  color: '#ffffff',
-                  fontWeight: 600,
-                  fontSize: '0.85rem',
-                  border: 'none',
-                  cursor: 'pointer',
-                }}
-              >
-                Done
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Suspend Modal */}
       {suspendShopId && (
         <div style={{
@@ -586,7 +401,7 @@ export const AdminShopsPage: React.FC = () => {
             </div>
 
             <p style={{ fontSize: '0.875rem', color: '#9ca3af', lineHeight: '1.5', margin: '0 0 1.25rem' }}>
-              Suspending this shop blocks login access for the owner and all assigned workers. An audit record will be logged.
+              Suspending this shop blocks login access for the owner. An audit record will be logged.
             </p>
 
             <div style={{ marginBottom: '1.5rem' }}>

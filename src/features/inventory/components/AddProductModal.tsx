@@ -4,7 +4,6 @@ import { X, PackagePlus, Barcode, Plus, Edit3 } from 'lucide-react';
 import { useInventory } from '../hooks/useInventory';
 import { ImageUploader } from '../../../components/common/ImageUploader';
 import type { Product, ProductUnit } from '../types';
-import { useWorkerPermissions } from '../../staff/hooks/useWorkerPermissions';
 
 interface AddProductModalProps {
   isOpen: boolean;
@@ -32,8 +31,6 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
   const [mrp, setMrp] = useState('');
   const [price, setPrice] = useState('');
   const [costPrice, setCostPrice] = useState('');
-  const { can } = useWorkerPermissions();
-  const showProfit = can('viewProfit');
   const [unit, setUnit] = useState<ProductUnit>('piece');
   const [stockQty, setStockQty] = useState('50');
   const [alertQty, setAlertQty] = useState('5');
@@ -272,7 +269,6 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
               />
             </div>
 
-            {showProfit && (
             <div className="form-group">
               <label className="form-label">Cost / Purchase Price (₹)</label>
               <input
@@ -283,7 +279,6 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
                 onChange={(e) => setCostPrice(e.target.value)}
               />
             </div>
-            )}
 
             <div className="form-group">
               <label className="form-label">MRP (₹)</label>
@@ -298,7 +293,6 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
           </div>
 
           {/* Real-time Profit Analytics Box */}
-          {showProfit && (
           <div style={{
             padding: '0.85rem 1rem',
             borderRadius: '16px',
@@ -322,7 +316,6 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
               </div>
             </div>
           </div>
-          )}
 
           {/* Stock Qty, Alert Threshold & Unit */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
