@@ -9,7 +9,6 @@ export interface AdminKPIStats {
   pendingShops: number;
   rejectedShops: number;
   suspendedShops: number;
-  totalWorkers: number;
 }
 
 export interface AdminShopListItem {
@@ -26,23 +25,8 @@ export interface AdminShopListItem {
   state?: string;
   pincode?: string;
   status: ShopStatus;
-  workerCount: number;
   createdAt: string;
   updatedAt: string;
-}
-
-export interface AdminWorkerItem {
-  id: string;
-  shopId: string;
-  shopName: string;
-  userId?: string;
-  memberType: 'owner' | 'worker';
-  name: string;
-  emailOrPhone: string;
-  status: 'invited' | 'active' | 'suspended';
-  permissions: Record<string, any>;
-  lastActiveAt?: string;
-  createdAt: string;
 }
 
 export type AdminAuditAction = 

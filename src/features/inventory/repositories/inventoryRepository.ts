@@ -90,6 +90,8 @@ export class LocalCategoryRepository implements ICategoryRepository {
 }
 
 // Product implementations
+const PRODUCT_SELECT = '*, categories(name), product_costs(cost_price)';
+
 export class SupabaseProductRepository implements IProductRepository {
   private map(p: any): Product {
     return {
@@ -102,7 +104,11 @@ export class SupabaseProductRepository implements IProductRepository {
       barcode: p.barcode || undefined,
       mrp: Number(p.mrp || p.price),
       price: Number(p.price),
-      costPrice: Number(p.cost_price || 0),
+      // Cost lives in product_costs (migration 024); RLS returns it only to the
+      // owner and workers allowed to see profit.
+      costPrice: Number(
+        (Array.isArray(p.product_costs) ? p.product_costs[0]?.cost_price : p.product_costs?.cost_price) ?? 0
+      ),
       sku: p.sku || undefined,
       unit: p.unit || 'piece',
       stockQty: Number(p.stock_qty || 0),
@@ -116,14 +122,14 @@ export class SupabaseProductRepository implements IProductRepository {
 
   async list(shopId: string): Promise<Product[]> {
     if (!supabase) return [];
-    const { data, error } = await supabase.from('products').select('*, categories(name)').eq('shop_id', shopId);
+    const { data, error } = await supabase.from('products').select(PRODUCT_SELECT).eq('shop_id', shopId);
     if (error || !data) return [];
     return data.map((d: any) => this.map(d));
   }
 
   async getById(id: string, shopId?: string): Promise<Product | null> {
     if (!supabase) return null;
-    let query = supabase.from('products').select('*, categories(name)').eq('id', id);
+    let query = supabase.from('products').select(PRODUCT_SELECT).eq('id', id);
     if (shopId) query = query.eq('shop_id', shopId);
     const { data, error } = await query.maybeSingle();
     if (error || !data) return null;
@@ -150,7 +156,7 @@ export class SupabaseProductRepository implements IProductRepository {
         image_url: dto.imageUrl || null,
         notes: dto.notes || null,
       })
-      .select('*, categories(name)')
+      .select(PRODUCT_SELECT)
       .single();
     if (error || !data) throw error || new Error('Failed to create product');
     return this.map(data);
@@ -178,7 +184,7 @@ export class SupabaseProductRepository implements IProductRepository {
       })
       .eq('id', id);
     if (shopId) query = query.eq('shop_id', shopId);
-    const { data, error } = await query.select('*, categories(name)').single();
+    const { data, error } = await query.select(PRODUCT_SELECT).single();
     if (error || !data) throw error || new Error('Failed to update product');
     return this.map(data);
   }
@@ -192,20 +198,17 @@ export class SupabaseProductRepository implements IProductRepository {
 
   async adjustStock(shopId: string, productId: string, deltaQty: number, reason?: string): Promise<Product> {
     if (!supabase) throw new Error('Supabase client not initialized');
-    const current = await this.getById(productId);
-    if (!current) throw new Error('Product not found');
-
-    const newStock = Math.max(0, current.stockQty + deltaQty);
-    const updated = await this.update(productId, { stockQty: newStock });
-
-    await supabase.from('stock_movements').insert({
-      shop_id: shopId,
-      product_id: productId,
-      type: deltaQty > 0 ? 'in' : 'out',
-      quantity: Math.abs(deltaQty),
-      reason: reason || 'Manual Stock Adjustment',
+    // One checked database call: changes stock only and records the movement.
+    const { error } = await supabase.rpc('adjust_stock', {
+      p_shop_id: shopId,
+      p_product_id: productId,
+      p_delta: deltaQty,
+      p_reason: reason || 'Manual Stock Adjustment',
     });
+    if (error) throw error;
 
+    const updated = await this.getById(productId, shopId);
+    if (!updated) throw new Error('Product not found');
     return updated;
   }
 

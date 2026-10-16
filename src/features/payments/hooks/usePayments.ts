@@ -5,8 +5,6 @@ import { RepositoryFactory } from '../../../repositories/RepositoryFactory';
 import { useAuthStore } from '../../../stores/authStore';
 import { EventBus } from '../../../services/EventBus';
 
-import { useWorkerStore } from '../../staff/stores/workerStore';
-
 export const usePayments = () => {
   const { shop } = useAuthStore();
   const [payments, setPayments] = useState<Payment[]>([]);
@@ -52,17 +50,6 @@ export const usePayments = () => {
     EventBus.publish('payments:changed', created);
     EventBus.publish('ledger:changed');
     EventBus.publish('customers:changed');
-
-    try {
-      await useWorkerStore.getState().recordWorkerActivity(
-        shop.id,
-        `Received Payment via ${dto.paymentMethod.toUpperCase()}`,
-        'payment',
-        dto.amount
-      );
-    } catch {
-      // Non-blocking
-    }
 
     return created;
   };

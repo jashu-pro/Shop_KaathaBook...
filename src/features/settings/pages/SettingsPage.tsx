@@ -13,7 +13,6 @@ import {
   Sun, 
   Download, 
   QrCode,
-  Users,
   Trash2,
   FileText,
   Upload
@@ -27,7 +26,6 @@ import { useCustomers } from '../../customers/hooks/useCustomers';
 import { useLedger } from '../../ledger/hooks/useLedger';
 import { useSales } from '../../sales/hooks/useSales';
 import { usePayments } from '../../payments/hooks/usePayments';
-import { StaffAccessSection } from '../../staff';
 
 export const SettingsPage: React.FC = () => {
   const { shop, user, updateShop, signOut } = useAuthStore();
@@ -37,7 +35,7 @@ export const SettingsPage: React.FC = () => {
   const { sales } = useSales();
   const { payments } = usePayments();
 
-  const [activeTab, setActiveTab] = useState<'profile' | 'staff' | 'appearance' | 'khatta' | 'backup' | 'account'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'appearance' | 'khatta' | 'backup' | 'account'>('profile');
 
   // Shop Profile State
   const [name, setName] = useState('');
@@ -252,7 +250,6 @@ export const SettingsPage: React.FC = () => {
       }}>
         {[
           { id: 'profile', label: 'Shop Profile', icon: Store },
-          { id: 'staff', label: '👥 Staff & Access', icon: Users },
           { id: 'appearance', label: 'Theme & Appearance', icon: Palette },
           { id: 'khatta', label: 'Khatta & UPI', icon: CreditCard },
           { id: 'backup', label: 'Data Backup', icon: Database },
@@ -286,13 +283,6 @@ export const SettingsPage: React.FC = () => {
           );
         })}
       </div>
-
-      {/* TAB: STAFF & ACCESS */}
-      {activeTab === 'staff' && (
-        <div style={{ animation: 'modal-slide 0.2s ease' }}>
-          <StaffAccessSection />
-        </div>
-      )}
 
       {/* TAB 1: SHOP PROFILE */}
       {activeTab === 'profile' && (

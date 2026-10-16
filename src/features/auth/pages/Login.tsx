@@ -198,45 +198,6 @@ const Login: React.FC = () => {
           </button>
         </form>
 
-        {/* Worker Space PIN Login Section */}
-        <div style={{
-          marginTop: '0.5rem',
-          marginBottom: '1.5rem',
-          padding: '1rem',
-          backgroundColor: 'rgba(2, 132, 199, 0.08)',
-          border: '1px solid rgba(2, 132, 199, 0.25)',
-          borderRadius: '16px',
-          textAlign: 'center'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-            <span style={{ fontSize: '1.25rem' }}>👷</span>
-            <span style={{ fontWeight: '700', color: '#0284c7', fontSize: '0.95rem' }}>Staff & Worker Access</span>
-          </div>
-          <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '0 0 0.75rem 0' }}>
-            Are you a staff member or helper assigned to this shop?
-          </p>
-          <button
-            type="button"
-            onClick={() => navigate('/worker-login')}
-            className="btn"
-            style={{
-              width: '100%',
-              padding: '0.75rem',
-              gap: '0.5rem',
-              justifyContent: 'center',
-              backgroundColor: '#0284C7',
-              color: '#FFFFFF',
-              fontWeight: '700',
-              fontSize: '0.875rem',
-              borderRadius: '12px',
-              border: 'none',
-              boxShadow: '0 4px 12px rgba(2, 132, 199, 0.3)'
-            }}
-          >
-            Enter Worker Space (PIN Login) →
-          </button>
-        </div>
-
         {/* Create Account Link */}
         <div style={{ textAlign: 'center', fontSize: '0.875rem', color: 'var(--text-body)' }}>
           Don't have an account?{' '}

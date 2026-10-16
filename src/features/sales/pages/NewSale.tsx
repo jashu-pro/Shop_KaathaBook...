@@ -63,6 +63,8 @@ export const NewSale: React.FC = () => {
 
   // Submission & Post-Sale Success Screen
   const [submitting, setSubmitting] = useState(false);
+  // One id per sale, kept across retries so the server records it once.
+  const requestIdRef = useRef(crypto.randomUUID());
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [savedSuccessSale, setSavedSuccessSale] = useState<any | null>(null);
 
@@ -287,8 +289,10 @@ export const NewSale: React.FC = () => {
           totalPrice: item.unitPrice * item.quantity,
           unit: item.unit,
           taxRate: taxRate,
-        }))
+        })),
+        requestId: requestIdRef.current,
       });
+      requestIdRef.current = crypto.randomUUID();
 
       // Refresh relevant data stores
       await Promise.all([

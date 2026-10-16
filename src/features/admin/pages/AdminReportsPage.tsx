@@ -14,9 +14,8 @@ export const AdminReportsPage: React.FC = () => {
   }, []);
 
   const handleExportJSON = async () => {
-    const [shops, workers, audit] = await Promise.all([
+    const [shops, audit] = await Promise.all([
       adminRepo.getAllShops(),
-      adminRepo.getWorkers(),
       adminRepo.getAuditLogs(),
     ]);
 
@@ -24,7 +23,6 @@ export const AdminReportsPage: React.FC = () => {
       exportTimestamp: new Date().toISOString(),
       stats,
       shops,
-      workers,
       audit,
     };
 
@@ -91,16 +89,6 @@ export const AdminReportsPage: React.FC = () => {
             </div>
             <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.25rem' }}>
               {stats?.activeShops || 0} of {stats?.totalShops || 0} active
-            </div>
-          </div>
-
-          <div style={{ padding: '1.25rem', borderRadius: '12px', backgroundColor: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
-            <div style={{ fontSize: '0.8rem', color: '#9ca3af' }}>Staff Utilization</div>
-            <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#c4b5fd', marginTop: '0.35rem' }}>
-              {stats?.totalWorkers || 0}
-            </div>
-            <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.25rem' }}>
-              Total active staff memberships
             </div>
           </div>
 

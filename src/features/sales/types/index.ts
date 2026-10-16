@@ -69,6 +69,8 @@ export interface CreateSaleDTO {
   billImageUrls?: string[];
   notes?: string;
   items: CreateSaleItemDTO[];
+  /** Same id for retries of one submission, so it is recorded once. */
+  requestId?: string;
 }
 
 

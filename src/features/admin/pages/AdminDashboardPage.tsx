@@ -9,7 +9,6 @@ import {
   Clock,
   XCircle,
   AlertTriangle,
-  Users,
   ArrowRight,
   History,
   Check,
@@ -28,7 +27,6 @@ export const AdminDashboardPage: React.FC = () => {
     pendingShops: 0,
     rejectedShops: 0,
     suspendedShops: 0,
-    totalWorkers: 0,
   });
   const [pendingRequests, setPendingRequests] = useState<ShopRegistrationRequest[]>([]);
   const [recentShops, setRecentShops] = useState<AdminShopListItem[]>([]);
@@ -107,9 +105,7 @@ export const AdminDashboardPage: React.FC = () => {
     { title: 'Active Shops', value: stats.activeShops, icon: CheckCircle2, color: '#10b981', bg: 'rgba(16, 185, 129, 0.1)' },
     { title: 'Pending Approval', value: stats.pendingShops, icon: Clock, color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.1)', alert: stats.pendingShops > 0 },
     { title: 'Rejected Shops', value: stats.rejectedShops, icon: XCircle, color: '#ef4444', bg: 'rgba(239, 68, 68, 0.1)' },
-    { title: 'Suspended Shops', value: stats.suspendedShops, icon: AlertTriangle, color: '#f97316', bg: 'rgba(249, 115, 22, 0.1)' },
-    { title: 'Total Workers', value: stats.totalWorkers, icon: Users, color: '#8b5cf6', bg: 'rgba(139, 92, 246, 0.1)' },
-  ];
+    { title: 'Suspended Shops', value: stats.suspendedShops, icon: AlertTriangle, color: '#f97316', bg: 'rgba(249, 115, 22, 0.1)' },  ];
 
   return (
     <div>
@@ -333,7 +329,7 @@ export const AdminDashboardPage: React.FC = () => {
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
             <h2 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#ffffff', margin: 0 }}>
-              Recent Shops & Workers
+              Recent Shops
             </h2>
             <button
               onClick={() => navigate('/admin/shops')}
@@ -365,17 +361,6 @@ export const AdminDashboardPage: React.FC = () => {
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <span style={{
-                    fontSize: '0.75rem',
-                    padding: '0.2rem 0.5rem',
-                    borderRadius: '6px',
-                    backgroundColor: 'rgba(139, 92, 246, 0.15)',
-                    color: '#c4b5fd',
-                    fontWeight: 600,
-                  }}>
-                    {shop.workerCount} Workers
-                  </span>
-
                   <span style={{
                     fontSize: '0.72rem',
                     padding: '0.2rem 0.5rem',
